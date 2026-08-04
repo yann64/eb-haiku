@@ -77,9 +77,10 @@ lifecycle - see `src/path.bas`, `src/entry.bas`, `src/directory.bas`,
 - **Explicitly out of scope, with reasoning**: `BMimeType` (the
   separate meta-mime-database class - icons, sniffer rules, supported-
   apps registry; the common per-file case is already covered by
-  `BNodeInfo::GetType`/`SetType` from Phase 1), `BAppFileInfo`/
-  `BResources` (executable metadata/embedded resources - no current
-  eBasic packaging story), the Disk Device Kit (mount/unmount, raw
+  `BNodeInfo::GetType`/`SetType` from Phase 1 - bound as of v0.9.0, see
+  below), `BAppFileInfo` (executable metadata - bound as of v0.9.0, see
+  below) / `BResources` (embedded resources - still no current eBasic
+  packaging story), the Disk Device Kit (mount/unmount, raw
   device path - a different Kit), `BQuery`'s `Push*`/`PushOp` stack
   builder (a string predicate covers the same expressiveness),
   live/watching variants (`BQuery::SetTarget`/`IsLive`,
@@ -126,8 +127,9 @@ a separate per-control one.
   `HViewCreate` + `HViewSetLayout`).
 
 **Explicitly out of scope**: overriding `BView`/`BWindow` methods
-beyond the specific set above (e.g. `AttachedToWindow`, drag-and-drop),
-and menus (`BMenuBar`/`BMenuItem`).
+beyond the specific set above (e.g. `AttachedToWindow`), and menus
+(`BMenuBar`/`BMenuItem`). (Drag-and-drop, via `BView::DragMessage`, is
+bound as of v0.9.0 - see below.)
 
 **Translation Kit (v0.4.0, complete)** - see `src/translation.bas`,
 `src/bitmap.bas`, `src/file.bas`: Haiku's own system for converting
@@ -203,8 +205,8 @@ comment. `HMenuItemInvokeViaMessenger` mirrors `HButtonInvoke`'s own
 `Messenger()`-based fix (`BMenuItem` is a `BInvoker` too - same crash
 risk) - confirmed the real auto-target-to-window behavior end to end
 with it (`tests/menu_basics.bas`), with no real mouse hardware needed.
-**Not bound**: radio-mode item grouping. (`BPopUpMenu`/`BMenuField` are
-bound as of v0.8.0 - see below.)
+(`BPopUpMenu`/`BMenuField` are bound as of v0.8.0, radio-mode item
+grouping as of v0.9.0 - see below.)
 
 **`BRoster`/`BClipboard` (v0.6.0, complete)** - see `src/roster.bas`,
 `src/clipboard.bas`: find/launch/activate other running apps
@@ -218,12 +220,9 @@ a raw `B_MIME_TYPE` field named `"text/plain"` (confirmed via the real
 (`src/message.bas`) is the general escape hatch for other MIME types.
 (`GetAppInfo`/`GetRunningAppInfo`/`FindApp`/`GetRecentDocuments`/
 `Folders`/`Apps` and `BClipboard::StartWatching` are bound as of
-v0.8.0 - see below.) **Not bound**: `BRoster::StartWatching` (app
-launch/quit notifications - a different live-watching mechanism than
-`BClipboard`'s own, not requested), the `entry_ref`-based `IsRunning`/
-`TeamFor`/`GetAppInfo`/`FindApp` overloads (need a path-to-`entry_ref`
-conversion - the signature/mimeType-based overloads already cover the
-common case).
+v0.8.0; `BRoster::StartWatching` app launch/quit notifications and the
+`entry_ref`-based `IsRunning`/`TeamFor`/`GetAppInfo`/`FindApp` overloads
+are bound as of v0.9.0 - see below.)
 
 **Network Kit + `BUrl` (v0.6.0, complete)** - see `src/network.bas`:
 real TCP networking - `BNetworkAddress` (`HNetworkAddressSetTo`, real
@@ -237,10 +236,9 @@ literally declared inside `namespace BPrivate::Network`, and the only
 libs (`libnetservices.a`/`libnetservices2.a`) are static, unversioned
 internals, not the stable `libbnetapi.so` this package links against -
 **not a safely bindable target**, deliberately not attempted.
-(`BSecureSocket`/TLS and `BDatagramSocket`/UDP are bound as of v0.8.0 -
-see below.) **Not bound**: `BNetworkInterface`/`BNetworkRoster`
-(enumerating the *local* machine's own interfaces - a diagnostics
-feature, not core to "connect to a server").
+(`BSecureSocket`/TLS and `BDatagramSocket`/UDP are bound as of v0.8.0;
+`BNetworkInterface`/`BNetworkRoster` - enumerating the *local*
+machine's own interfaces - as of v0.9.0, see below.)
 
 **Locale Kit (v0.7.0, complete)** - see `src/locale.bas`: locale-aware
 formatting and comparison, ICU-backed, living directly in `libbe.so`
@@ -370,7 +368,8 @@ linked.
   inconsistency**: `GetInstalledSupertypes` fills a field named
   `"super_types"`, NOT `"types"` like `GetInstalledTypes` - easy to
   assume wrong, confirmed via probe before trusting it. Icon get/set
-  and sniffer-rule get/set/check deliberately not bound.
+  bound as of v0.9.0 (see below); sniffer-rule get/set/check
+  deliberately still not bound.
 - **`HWatcher` + real live `BQuery`/`BVolumeRoster` watching** - the
   one genuinely new piece of infrastructure this phase: a small
   `ShimHandler : public BHandler` (`native/shim.cpp`, alongside
@@ -430,6 +429,103 @@ examples (`popup_menu.bas`, `text_editor.bas`, `mime_lookup.bas`,
 `live_query.bas`, `https_fetch.bas`), one per major area. Published:
 pushed with a `v0.8.0` tag, `ebpm-index` updated, `ebpm add eb-haiku`
 confirmed resolving to `v0.8.0` from the live index.
+
+**v0.9.0 (remaining gaps in already-bound Kits)**: asked again whether
+any Kits are still not fully implemented - re-read every "not bound"/
+"deliberately out of scope" line in this file, confirmed real APIs on
+the host, and surfaced seven tractable candidates across two multi-
+select questions; user picked all seven. No new libraries needed -
+`BNetworkInterface`/`BNetworkRoster` live in the already-linked
+`libbnetapi.so`; everything else lives in the already-linked
+`libbe.so`.
+
+- **Radio-mode menu grouping** (`src/menu.bas`, extended) -
+  `BMenu::SetRadioMode`/`IsRadioMode`/`SetLabelFromMarked` - once radio
+  mode is on, marking one item automatically unmarks its siblings,
+  entirely handled internally by real Haiku. **A real, confirmed
+  gotcha, a variant of the existing "needs BApplication first" family**:
+  constructing a *new* `BMenu`/`BMenuItem` (or presumably any other
+  `BView`) *after* the owning `HApplication` has already been freed
+  hangs indefinitely - needs a still-*live* `BApplication`, not merely
+  one that existed once.
+- **`BMimeType` icon get/set** (`src/mimetype.bas`, extended) -
+  `GetIcon`/`SetIcon` and the `*ForType` static-equivalent siblings,
+  reusing the existing `HBitmap` type directly (`H_LARGE_ICON = 32`/
+  `H_MINI_ICON = 16`, plain pixel dimensions). **Confirmed by direct
+  reproduction, caught by a probe before shipping this time**: these
+  hang indefinitely without a real `HApplication` existing first - the
+  same family as `GetBitmap`/`BClipboard::Lock`.
+- **`BAppFileInfo`** (new `src/appfileinfo.bas`) - real executable
+  metadata: `SetTo`/`Get`/`SetSignature`, `Get`/`SetAppFlags`/
+  `RemoveAppFlags`, `Get`/`SetSupportedTypes`/`IsSupportedType` (a
+  `BMessage` repeated-string field, reusing `HMessageCountItems`/
+  `FindStringAt` from v0.8.0). **A second real occurrence of the
+  Translation Kit's own MI-pointer-adjustment bug class**:
+  `eb_haiku_file_create` stores its handle as `BPositionIO*` (`BFile`'s
+  non-first base, a non-zero-offset erasure), so a naive
+  `static_cast<BFile*>` in the new `SetTo` shim function silently
+  returned `B_BAD_VALUE` against a perfectly valid file - fixed via
+  `dynamic_cast<BFile*>(static_cast<BPositionIO*>(handle))`, the same
+  pattern the original bug was fixed with. The general lesson: any
+  later, independently-written shim function receiving an
+  already-erased handle from an earlier one must re-derive that exact
+  erasure convention, not assume a plain `static_cast`.
+- **Drag-and-drop** (`src/view.bas`/`message.bas`, extended) - the
+  single most-requested standing gap, closed with the smallest useful
+  slice: `HViewDragMessage` (`BView::DragMessage`, the simplest
+  no-bitmap overload, called from inside an existing `MouseDown`
+  callback) and `HMessageWasDropped`/`DropPoint` on the drop target's
+  own existing `MessageReceived` callback. **Confirmed by direct
+  reproduction**: calling `HViewDragMessage` outside a real `MouseDown`
+  (i.e. without an actual mouse button currently held) blocks
+  indefinitely - the same "not triggerable over SSH" limitation as
+  `HPopUpMenuGo`/`HPrintJobConfigJob`; this package's own automated
+  test never calls it, only `examples/drag_and_drop.bas`, meant to be
+  run interactively.
+- **`BTextView` styled text (color only)** (`src/textview.bas`,
+  extended) - `SetFontAndColor`, scoped to `HTextViewSetStylable`/
+  `IsStylable` + `HTextViewSetColor`/`GetColor` (a plain `rgb_color`
+  value, no new handle type, no `BFont` binding needed). **A real,
+  non-obvious finding, found only because the test checked an
+  out-of-range offset**: real `BTextView::IsStylable()` defaults to
+  `false`, and while false, `SetFontAndColor`'s own color change is NOT
+  scoped to its given range at all - it silently applies to the ENTIRE
+  text. `HTextViewSetStylable(tv, 1)` must be called first.
+- **`BRoster::StartWatching` + `entry_ref` overloads** (`src/roster.bas`,
+  extended) - real app launch/quit notifications
+  (`HRosterStartWatching`/`StopWatching`, reusing the existing
+  `HWatcher` primitive from v0.8.0; real `H_SOME_APP_LAUNCHED =
+  1112686931`/`H_SOME_APP_QUIT = 1112686929`, confirmed via probe, not
+  hand-derived) plus `IsRunningForPath`/`TeamForPath`/
+  `GetAppInfoForPath`/`FindAppForPath` (a plain file path at this
+  package's own idiomatic layer, constructing the real `entry_ref`
+  internally via `BEntry`). **A real finding that took three iterative
+  probes to pin down**: these notifications are only actually delivered
+  while the watching program's own message loop (`Run()`) is actively
+  pumping - triggering the launch/quit via a backgrounded `system()`
+  shell subprocess produced zero notifications (an unrelated SSH-pipe-
+  holding artifact from the backgrounded process keeping stdout open),
+  and calling `Launch()` before `Run()` also produced zero notifications
+  despite succeeding, because nothing was dispatching the already-queued
+  messages yet - fixed by triggering from a background thread while
+  `Run()` is already pumping on the main thread, the same pattern
+  already proven for `BQuery`/`BVolumeRoster` watching in v0.8.0.
+- **`BNetworkInterface`/`BNetworkRoster`** (new
+  `src/networkinterface.bas`) - enumerates the local machine's own real
+  network interfaces: `BNetworkRoster::Default()` (a shared,
+  never-destroyed singleton, matching `be_roster`/`be_clipboard`'s own
+  convention), `CountInterfaces`/`GetNextInterface`, and per-interface
+  `Name`/`Flags`/`HasLink`/`CountAddresses`/`GetAddressAt`. An
+  interface address's own `Address()` is copied into an existing
+  `HNetworkAddress` (`network.bas`) rather than exposing a third
+  address-shaped handle. Diagnostics/enumeration only - interface
+  configuration deliberately not bound.
+
+Verified end-to-end on real Haiku hardware via `scripts/haiku_verify.sh`,
+now running 38 `tests/*.bas` files. Five new examples
+(`drag_and_drop.bas`, `styled_text.bas`, `mimetype_icon.bas`,
+`app_launch_watching.bas`, `network_interfaces.bas`), one per major
+area.
 
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
@@ -533,7 +629,6 @@ Matching `eb-cjson`'s own convention:
   `HNodeInfoGetType` return a raw, freshly-heap-allocated `ANY PTR`
   instead (freed via `HFreeString`), matching `eb-cjson`'s own
   `JsonStringify`/`JsonFreeString` fix for exactly the same issue.
-- No drag-and-drop support.
 - **`ebpm`'s automatic linker-flag forwarding doesn't cover Translation
   Kit, Network Kit, Device Kit, Package Kit, or Media Kit functions** -
   a downstream program calling any of these needs to pass
