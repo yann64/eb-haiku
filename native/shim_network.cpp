@@ -2,6 +2,8 @@
 
 #include <DatagramSocket.h>
 #include <NetworkAddress.h>
+#include <NetworkInterface.h>
+#include <NetworkRoster.h>
 #include <SecureSocket.h>
 #include <Socket.h>
 #include <Url.h>
@@ -122,5 +124,60 @@ int eb_haiku_url_path(void* url, char* outBuf, int bufSize) {
 int eb_haiku_url_port(void* url) { return static_cast<BUrl*>(url)->Port(); }
 
 void eb_haiku_url_destroy(void* url) { delete static_cast<BUrl*>(url); }
+
+// ---- BNetworkRoster/BNetworkInterface ----
+
+void* eb_haiku_network_roster_default(void) { return &BNetworkRoster::Default(); }
+
+int eb_haiku_network_roster_count_interfaces(void* roster) {
+    return static_cast<int>(static_cast<BNetworkRoster*>(roster)->CountInterfaces());
+}
+
+int eb_haiku_network_roster_get_next_interface(void* roster, unsigned int* cookie,
+                                                void* interface) {
+    uint32 c = *cookie;
+    status_t rc = static_cast<BNetworkRoster*>(roster)->GetNextInterface(
+        &c, *static_cast<BNetworkInterface*>(interface));
+    *cookie = c;
+    return rc;
+}
+
+void* eb_haiku_network_interface_create(void) { return new BNetworkInterface(); }
+
+void eb_haiku_network_interface_destroy(void* interface) {
+    delete static_cast<BNetworkInterface*>(interface);
+}
+
+const char* eb_haiku_network_interface_name(void* interface) {
+    return static_cast<BNetworkInterface*>(interface)->Name();
+}
+
+unsigned int eb_haiku_network_interface_flags(void* interface) {
+    return static_cast<BNetworkInterface*>(interface)->Flags();
+}
+
+int eb_haiku_network_interface_has_link(void* interface) {
+    return static_cast<BNetworkInterface*>(interface)->HasLink() ? 1 : 0;
+}
+
+int eb_haiku_network_interface_count_addresses(void* interface) {
+    return static_cast<int>(static_cast<BNetworkInterface*>(interface)->CountAddresses());
+}
+
+void* eb_haiku_network_interface_address_create(void) { return new BNetworkInterfaceAddress(); }
+
+void eb_haiku_network_interface_address_destroy(void* ifAddr) {
+    delete static_cast<BNetworkInterfaceAddress*>(ifAddr);
+}
+
+int eb_haiku_network_interface_get_address_at(void* interface, int index, void* ifAddr) {
+    return static_cast<BNetworkInterface*>(interface)->GetAddressAt(
+        index, *static_cast<BNetworkInterfaceAddress*>(ifAddr));
+}
+
+void eb_haiku_network_interface_address_copy_address(void* ifAddr, void* outAddr) {
+    *static_cast<BNetworkAddress*>(outAddr) =
+        static_cast<BNetworkInterfaceAddress*>(ifAddr)->Address();
+}
 
 } // extern "C"

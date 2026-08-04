@@ -40,4 +40,21 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_url_path(BYVAL url AS ANY PTR, BYVAL outBuf AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
     Declare Function eb_haiku_url_port(BYVAL url AS ANY PTR) AS INTEGER
     Declare Sub eb_haiku_url_destroy(BYVAL url AS ANY PTR)
+
+    ' ---- BNetworkRoster/BNetworkInterface ----
+    Declare Function eb_haiku_network_roster_default() AS ANY PTR
+    Declare Function eb_haiku_network_roster_count_interfaces(BYVAL roster AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_network_roster_get_next_interface(BYVAL roster AS ANY PTR, BYVAL cookie AS ANY PTR, BYVAL interface AS ANY PTR) AS INTEGER
+
+    Declare Function eb_haiku_network_interface_create() AS ANY PTR
+    Declare Sub eb_haiku_network_interface_destroy(BYVAL interface AS ANY PTR)
+    Declare Function eb_haiku_network_interface_name(BYVAL interface AS ANY PTR) AS ZSTRING
+    Declare Function eb_haiku_network_interface_flags(BYVAL interface AS ANY PTR) AS UINTEGER
+    Declare Function eb_haiku_network_interface_has_link(BYVAL interface AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_network_interface_count_addresses(BYVAL interface AS ANY PTR) AS INTEGER
+
+    Declare Function eb_haiku_network_interface_address_create() AS ANY PTR
+    Declare Sub eb_haiku_network_interface_address_destroy(BYVAL ifAddr AS ANY PTR)
+    Declare Function eb_haiku_network_interface_get_address_at(BYVAL interface AS ANY PTR, BYVAL index AS INTEGER, BYVAL ifAddr AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_network_interface_address_copy_address(BYVAL ifAddr AS ANY PTR, BYVAL outAddr AS ANY PTR)
 End Extern

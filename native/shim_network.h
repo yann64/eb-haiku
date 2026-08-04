@@ -83,4 +83,44 @@ int eb_haiku_url_path(void* url, char* outBuf, int bufSize);
 int eb_haiku_url_port(void* url);
 void eb_haiku_url_destroy(void* url);
 
+// ---- BNetworkRoster/BNetworkInterface (net/NetworkRoster.h,
+// NetworkInterface.h) - enumerate the local machine's own real network
+// interfaces. Configuration (AddAddress/SetMTU/routes/persistent
+// wireless networks) deliberately not bound - diagnostics/enumeration
+// only, matching what was actually asked for. ----
+
+// A shared, never-destroyed singleton (&BNetworkRoster::Default(), like
+// be_roster/be_clipboard elsewhere in this shim) - do not destroy.
+void* eb_haiku_network_roster_default(void);
+int eb_haiku_network_roster_count_interfaces(void* roster);
+// `cookie` is caller-owned (start at 0, do not reuse across a fresh
+// enumeration), `interface` an existing
+// eb_haiku_network_interface_create result, filled in place. Returns a
+// status_t (0 = success, a real negative status once the real
+// enumeration is exhausted - confirmed via probe, not guessed).
+int eb_haiku_network_roster_get_next_interface(void* roster, unsigned int* cookie, void* interface);
+
+void* eb_haiku_network_interface_create(void);
+void eb_haiku_network_interface_destroy(void* interface);
+// BNetworkInterface::Name() returns a pointer into the object's own
+// fixed-size internal buffer (not a BString) - safe to return directly
+// as long as `interface` itself stays alive, matching
+// eb_haiku_path_get's own established convention.
+const char* eb_haiku_network_interface_name(void* interface);
+unsigned int eb_haiku_network_interface_flags(void* interface);
+int eb_haiku_network_interface_has_link(void* interface);
+int eb_haiku_network_interface_count_addresses(void* interface);
+
+void* eb_haiku_network_interface_address_create(void);
+void eb_haiku_network_interface_address_destroy(void* ifAddr);
+// Fills `ifAddr` (an existing eb_haiku_network_interface_address_create
+// result) with the interface's `index`'th address. Returns a status_t
+// (0 = success).
+int eb_haiku_network_interface_get_address_at(void* interface, int index, void* ifAddr);
+// Copies ifAddr's own real BNetworkAddress& (Address()) into `outAddr`
+// (an existing eb_haiku_network_address_create_empty result) - reuses
+// the existing HNetworkAddress type entirely rather than exposing a
+// third address-shaped handle.
+void eb_haiku_network_interface_address_copy_address(void* ifAddr, void* outAddr);
+
 } // extern "C"

@@ -73,7 +73,7 @@ for test_name in integration window_basics controls_basics drawing_basics layout
                  locale_basics thread_basics serial_basics package_basics media_basics \
                  printjob_basics textview_basics popup_menu_field_basics mimetype_basics \
                  watcher_basics secure_datagram_socket_basics appfileinfo_basics \
-                 drag_drop_basics; do
+                 drag_drop_basics network_interface_basics; do
     echo "==> Compiling+running tests/$test_name.bas..."
     if ssh "$HOST" "cd ~/$REMOTE_DIR && ebc tests/$test_name.bas -o /tmp/eb_haiku_${test_name}_test -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be -l translation -l root -l bnetapi -l device -l package -l media && /tmp/eb_haiku_${test_name}_test"; then
         echo "    PASS: $test_name"

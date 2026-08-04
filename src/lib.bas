@@ -39,6 +39,7 @@
 #include once "roster.bas"
 #include once "clipboard.bas"
 #include once "network.bas"
+#include once "networkinterface.bas"
 #include once "locale.bas"
 #include once "thread.bas"
 #include once "serial.bas"
