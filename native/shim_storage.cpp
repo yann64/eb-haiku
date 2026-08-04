@@ -2,6 +2,8 @@
 
 #include <Directory.h>
 #include <Entry.h>
+#include <Handler.h>
+#include <Messenger.h>
 #include <MimeType.h>
 #include <Query.h>
 #include <SymLink.h>
@@ -109,6 +111,15 @@ int eb_haiku_volume_roster_get_boot_volume(void* roster, void* outVolume) {
     return static_cast<BVolumeRoster*>(roster)->GetBootVolume(static_cast<BVolume*>(outVolume));
 }
 
+int eb_haiku_volume_roster_start_watching(void* roster, void* watcher) {
+    return static_cast<BVolumeRoster*>(roster)->StartWatching(
+        BMessenger(static_cast<BHandler*>(watcher)));
+}
+
+void eb_haiku_volume_roster_stop_watching(void* roster) {
+    static_cast<BVolumeRoster*>(roster)->StopWatching();
+}
+
 void eb_haiku_volume_roster_destroy(void* roster) { delete static_cast<BVolumeRoster*>(roster); }
 
 // ---- BQuery ----
@@ -134,6 +145,12 @@ int eb_haiku_query_rewind(void* query) { return static_cast<BQuery*>(query)->Rew
 int eb_haiku_query_count_entries(void* query) {
     return static_cast<BQuery*>(query)->CountEntries();
 }
+
+int eb_haiku_query_set_target(void* query, void* watcher) {
+    return static_cast<BQuery*>(query)->SetTarget(BMessenger(static_cast<BHandler*>(watcher)));
+}
+
+int eb_haiku_query_is_live(void* query) { return static_cast<BQuery*>(query)->IsLive() ? 1 : 0; }
 
 void eb_haiku_query_destroy(void* query) { delete static_cast<BQuery*>(query); }
 

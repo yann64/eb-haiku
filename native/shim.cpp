@@ -1,10 +1,13 @@
 #include "shim.h"
 
+#include <AppDefs.h>
 #include <Clipboard.h>
 #include <Directory.h>
 #include <Entry.h>
+#include <Handler.h>
 #include <Locker.h>
 #include <Message.h>
+#include <Messenger.h>
 #include <Roster.h>
 #include <Node.h>
 #include <NodeInfo.h>
@@ -479,6 +482,50 @@ int eb_haiku_locker_count_locks(void* locker) {
 
 void eb_haiku_locker_destroy(void* locker) { delete static_cast<BLocker*>(locker); }
 
+namespace {
+class ShimHandler : public BHandler {
+public:
+    ShimHandler() : BHandler("eb_haiku_watcher") {}
+
+    void SetMessageReceivedCallback(EbHaikuWatcherMessageCallback cb, void* userData) {
+        fCallback = cb;
+        fUserData = userData;
+    }
+
+    void MessageReceived(BMessage* message) override {
+        if (fCallback) {
+            fCallback(fUserData, message);
+        } else {
+            BHandler::MessageReceived(message);
+        }
+    }
+
+private:
+    EbHaikuWatcherMessageCallback fCallback = nullptr;
+    void* fUserData = nullptr;
+};
+} // namespace
+
+// ---- HWatcher ----
+
+void* eb_haiku_watcher_create(void) {
+    ShimHandler* handler = new ShimHandler();
+    be_app->AddHandler(handler);
+    return handler;
+}
+
+void eb_haiku_watcher_set_message_received_callback(void* watcher,
+                                                      EbHaikuWatcherMessageCallback cb,
+                                                      void* userData) {
+    static_cast<ShimHandler*>(watcher)->SetMessageReceivedCallback(cb, userData);
+}
+
+void eb_haiku_watcher_destroy(void* watcher) {
+    ShimHandler* handler = static_cast<ShimHandler*>(watcher);
+    be_app->RemoveHandler(handler);
+    delete handler;
+}
+
 // ---- BRoster ----
 
 void* eb_haiku_roster_default(void) { return const_cast<BRoster*>(be_roster); }
@@ -574,7 +621,18 @@ int eb_haiku_application_run(void* app) {
     return static_cast<int>(static_cast<BApplication*>(app)->Run());
 }
 
-void eb_haiku_application_quit(void* app) { static_cast<BApplication*>(app)->Quit(); }
+void eb_haiku_application_quit(void* app) {
+    // IMPORTANT, confirmed by direct reproduction: calling Quit()
+    // directly from a thread other than the one that called Run()
+    // fails ("you must Lock the application object before calling
+    // Quit()") - the same cross-thread hazard already documented for
+    // BInvoker::Invoke()/BView::Invalidate() elsewhere in this shim.
+    // Post a real B_QUIT_REQUESTED message instead (same fix as
+    // eb_haiku_window_close above) - safe to call from any thread,
+    // which is the whole point of this function (this package's own
+    // doc comment already says "typically from another thread").
+    BMessenger(static_cast<BApplication*>(app)).SendMessage(B_QUIT_REQUESTED);
+}
 void eb_haiku_application_destroy(void* app) { delete static_cast<BApplication*>(app); }
 
 } // extern "C"

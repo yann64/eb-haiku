@@ -34,7 +34,12 @@ FUNCTION HApplicationRun(BYVAL a AS HApplication) AS INTEGER
     HApplicationRun = eb_haiku_application_run(a.handle)
 END FUNCTION
 
-''' Requests the application's message loop to stop.
+''' Requests the application's message loop to stop - safe to call from
+''' any thread (posts a real B_QUIT_REQUESTED message rather than
+''' calling Quit() directly, confirmed by direct reproduction: a direct
+''' call fails with "you must Lock the application object" when called
+''' from a thread other than the one that called HApplicationRun - the
+''' same fix as HWindowClose's own).
 SUB HApplicationQuit(BYVAL a AS HApplication)
     CALL eb_haiku_application_quit(a.handle)
 END SUB

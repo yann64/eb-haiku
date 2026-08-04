@@ -158,6 +158,11 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_locker_count_locks(BYVAL locker AS ANY PTR) AS INTEGER
     Declare Sub eb_haiku_locker_destroy(BYVAL locker AS ANY PTR)
 
+    ' ---- HWatcher ----
+    Declare Function eb_haiku_watcher_create() AS ANY PTR
+    Declare Sub eb_haiku_watcher_set_message_received_callback(BYVAL watcher AS ANY PTR, BYVAL cb AS ANY PTR, BYVAL userData AS ANY PTR)
+    Declare Sub eb_haiku_watcher_destroy(BYVAL watcher AS ANY PTR)
+
     ' ---- BRoster ----
     Declare Function eb_haiku_roster_default() AS ANY PTR
     Declare Function eb_haiku_roster_is_running(BYVAL roster AS ANY PTR, BYVAL signature AS ZSTRING) AS INTEGER

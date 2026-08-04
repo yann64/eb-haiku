@@ -4,12 +4,14 @@
 ' the plain predicate-string API (HQuerySetPredicate), not the
 ' Push*/PushOp reverse-polish stack builder - identical expressiveness
 ' for a single string parameter, e.g. `HQuerySetPredicate(q, "TestInt32
-' = 424242")`. Not "live" - a one-shot HQueryFetch + iterate.
+' = 424242")`. Supports both a one-shot HQueryFetch + iterate AND a
+' real live HQuerySetTarget path (via the HWatcher primitive below).
 
 #include once "raw/haiku_shim_storage.bas"
 #include once "raw/haiku_fs_index.bas"
 #include once "entry.bas"
 #include once "volume.bas"
+#include once "watcher.bas"
 
 ''' Creates a real filesystem index for `name` on `device` (an
 ''' HVolume's own HVolumeDevice) - required before a query predicate on
@@ -91,6 +93,34 @@ END FUNCTION
 ''' The total number of matching entries.
 FUNCTION HQueryCountEntries(BYVAL q AS HQuery) AS INTEGER
     HQueryCountEntries = eb_haiku_query_count_entries(q.handle)
+END FUNCTION
+
+''' Marks this query as *live*: once HQueryFetch is called afterward
+''' (still required - see below), real H_QUERY_UPDATE messages (see
+''' raw/haiku_shim_storage.bas's own constants) are delivered to
+''' `watcher`'s own registered callback as matching entries come and go,
+''' in addition to the initial HQueryFetch/GetNextEntry results. Returns
+''' a status code (0 = success).
+'''
+''' IMPORTANT, confirmed by direct reproduction (a standalone C++ probe,
+''' before trusting this): HQuerySetTarget alone does NOT establish the
+''' real live monitor, even though HQueryIsLive already reports true
+''' immediately after it - HQueryFetch is what actually registers the
+''' live watch with the kernel (as well as running the initial query),
+''' so it must still be called, in this order: HQuerySetVolume ->
+''' HQuerySetPredicate -> HQuerySetTarget -> HQueryFetch.
+'''
+''' DIM msg AS HMessage : msg.handle = messageHandle
+''' IF HMessageWhat(msg) = H_QUERY_UPDATE THEN
+'''     DIM opcode AS INTEGER : opcode = HMessageFindInt32(msg, "opcode")
+'''     IF opcode = H_ENTRY_CREATED THEN ... (fields "device"/"directory"/"name")
+FUNCTION HQuerySetTarget(BYVAL q AS HQuery, BYVAL watcher AS HWatcher) AS INTEGER
+    HQuerySetTarget = eb_haiku_query_set_target(q.handle, watcher.handle)
+END FUNCTION
+
+''' Whether HQuerySetTarget has made this a real live query.
+FUNCTION HQueryIsLive(BYVAL q AS HQuery) AS INTEGER
+    HQueryIsLive = eb_haiku_query_is_live(q.handle)
 END FUNCTION
 
 ''' Frees an HQuery - call exactly once.

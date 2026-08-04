@@ -205,6 +205,21 @@ int eb_haiku_locker_is_locked(void* locker);
 int eb_haiku_locker_count_locks(void* locker);
 void eb_haiku_locker_destroy(void* locker);
 
+// ---- HWatcher (a small ShimHandler : public BHandler, AddHandler'd
+// onto be_app) - the real, minimal way to become a live BMessenger
+// target for BQuery::SetTarget/BVolumeRoster::StartWatching/
+// BClipboard::StartWatching, none of which are reachable without one.
+// Needs a real BApplication first (be_app must exist) - the same
+// "needs BApplication" gotcha as GetBitmap/BClipboard::Lock. Delivered
+// messages are forwarded to an eBasic callback exactly like
+// eb_haiku_window_set_message_received_callback (shim_interface.h).
+typedef void (*EbHaikuWatcherMessageCallback)(void* userData, void* messageHandle);
+void* eb_haiku_watcher_create(void);
+void eb_haiku_watcher_set_message_received_callback(void* watcher,
+                                                      EbHaikuWatcherMessageCallback cb,
+                                                      void* userData);
+void eb_haiku_watcher_destroy(void* watcher);
+
 // ---- BRoster (app/Roster.h) - the shared be_roster singleton, exposed
 // the same way BTranslatorRoster::Default() already is. Never freed by
 // this package (owned by the Application Kit itself).
@@ -254,6 +269,11 @@ int eb_haiku_application_init_check(void* app);
 // eb_haiku_application_quit is called (from another thread) - matching
 // real BApplication::Run()'s own documented blocking behavior.
 int eb_haiku_application_run(void* app);
+// IMPORTANT, confirmed by direct reproduction: posts a real
+// B_QUIT_REQUESTED message rather than calling Quit() directly (which
+// fails with "you must Lock the application object" when called from
+// a thread other than the one that called eb_haiku_application_run) -
+// safe to call from any thread, the same fix as eb_haiku_window_close.
 void eb_haiku_application_quit(void* app);
 void eb_haiku_application_destroy(void* app);
 

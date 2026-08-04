@@ -1,6 +1,24 @@
 ' Raw FFI layer: eb-haiku's Storage Kit extension shim additions - see
 ' /home/yann64/git/cpp/eb-haiku/native/shim_storage.h.
 
+' Real node-monitor notification constants (storage/NodeMonitor.h,
+' app/AppDefs.h) - confirmed by compiling and printing each one on the
+' real Haiku host, NOT hand-derived (B_QUERY_UPDATE/B_NODE_MONITOR are
+' packed 4-character codes, not small sequential values). A live
+' BQuery (HQuerySetTarget) delivers H_QUERY_UPDATE messages; a watching
+' BVolumeRoster (HVolumeRosterStartWatching) delivers H_NODE_MONITOR
+' messages - both carry an int32 "opcode" field, one of the H_ENTRY_*/
+' H_DEVICE_* constants below (read via HMessageFindInt32).
+CONST H_QUERY_UPDATE = 1364545604
+CONST H_NODE_MONITOR = 1313099086
+CONST H_ENTRY_CREATED = 1
+CONST H_ENTRY_REMOVED = 2
+CONST H_ENTRY_MOVED = 3
+CONST H_STAT_CHANGED = 4
+CONST H_ATTR_CHANGED = 5
+CONST H_DEVICE_MOUNTED = 6
+CONST H_DEVICE_UNMOUNTED = 7
+
 Extern "C" Lib "ebhaikushim"
     ' ---- BSymLink ----
     Declare Function eb_haiku_symlink_create(BYVAL path AS ZSTRING) AS ANY PTR
@@ -33,6 +51,8 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_volume_roster_get_next_volume(BYVAL roster AS ANY PTR, BYVAL outVolume AS ANY PTR) AS INTEGER
     Declare Sub eb_haiku_volume_roster_rewind(BYVAL roster AS ANY PTR)
     Declare Function eb_haiku_volume_roster_get_boot_volume(BYVAL roster AS ANY PTR, BYVAL outVolume AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_volume_roster_start_watching(BYVAL roster AS ANY PTR, BYVAL watcher AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_volume_roster_stop_watching(BYVAL roster AS ANY PTR)
     Declare Sub eb_haiku_volume_roster_destroy(BYVAL roster AS ANY PTR)
 
     ' ---- BQuery ----
@@ -43,6 +63,8 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_query_get_next_entry(BYVAL query AS ANY PTR, BYVAL outEntry AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_query_rewind(BYVAL query AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_query_count_entries(BYVAL query AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_query_set_target(BYVAL query AS ANY PTR, BYVAL watcher AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_query_is_live(BYVAL query AS ANY PTR) AS INTEGER
     Declare Sub eb_haiku_query_destroy(BYVAL query AS ANY PTR)
 
     ' ---- BMimeType ----

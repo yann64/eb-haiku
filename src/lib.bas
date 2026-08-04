@@ -29,6 +29,7 @@
 #include once "file.bas"
 #include once "translation.bas"
 #include once "symlink.bas"
+#include once "watcher.bas"
 #include once "volume.bas"
 #include once "mimetype.bas"
 #include once "query.bas"

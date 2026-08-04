@@ -61,13 +61,21 @@ void* eb_haiku_volume_roster_create(void);
 int eb_haiku_volume_roster_get_next_volume(void* roster, void* outVolume);
 void eb_haiku_volume_roster_rewind(void* roster);
 int eb_haiku_volume_roster_get_boot_volume(void* roster, void* outVolume);
+// IMPORTANT: `watcher` is an eb_haiku_watcher_create result (shim.h) -
+// needs a real BApplication to already exist (be_app), same as the
+// watcher itself. Delivers real B_DEVICE_MOUNTED/B_DEVICE_UNMOUNTED
+// messages (raw/haiku_shim_storage.bas's own H_DEVICE_* constants) to
+// the watcher's own registered callback.
+int eb_haiku_volume_roster_start_watching(void* roster, void* watcher);
+void eb_haiku_volume_roster_stop_watching(void* roster);
 void eb_haiku_volume_roster_destroy(void* roster);
 
 // ---- BQuery (storage/Query.h) - Haiku's own live attribute-based
 // filesystem query mechanism. Bound via the plain predicate-string API
 // (SetPredicate) rather than the Push*/PushOp reverse-polish stack
 // builder - identical expressiveness for a single string parameter.
-// Not "live" (SetTarget/IsLive) - a one-shot Fetch()+iterate.
+// Both a one-shot Fetch()+iterate AND a real live SetTarget/IsLive path
+// are bound (the live path via the new HWatcher primitive, shim.h).
 
 void* eb_haiku_query_create(void);
 int eb_haiku_query_set_volume(void* query, void* volume);
@@ -80,6 +88,17 @@ int eb_haiku_query_fetch(void* query);
 int eb_haiku_query_get_next_entry(void* query, void* outEntry);
 int eb_haiku_query_rewind(void* query);
 int eb_haiku_query_count_entries(void* query);
+// IMPORTANT: `watcher` is an eb_haiku_watcher_create result (shim.h).
+// CONFIRMED BY DIRECT REPRODUCTION: this call alone does NOT establish
+// the real live monitor (even though IsLive() reports true right
+// after) - eb_haiku_query_fetch must still be called afterward, which
+// is what actually registers the live watch with the kernel (as well
+// as running the initial query). Once fetched, real B_QUERY_UPDATE
+// messages (opcode field one of H_ENTRY_CREATED/REMOVED/MOVED - raw/
+// haiku_shim_storage.bas's own constants) are delivered to the
+// watcher's own registered callback as matching entries come and go.
+int eb_haiku_query_set_target(void* query, void* watcher);
+int eb_haiku_query_is_live(void* query);
 void eb_haiku_query_destroy(void* query);
 
 // ---- BMimeType (storage/MimeType.h) - the per-file BNodeInfo type is

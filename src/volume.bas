@@ -7,6 +7,7 @@
 #include once "raw/haiku_shim_storage.bas"
 #include once "entry.bas"
 #include once "node.bas"
+#include once "watcher.bas"
 
 TYPE HVolume
     handle AS ANY PTR
@@ -125,6 +126,21 @@ END SUB
 FUNCTION HVolumeRosterGetBootVolume(BYVAL r AS HVolumeRoster, BYVAL outVolume AS HVolume) AS INTEGER
     HVolumeRosterGetBootVolume = eb_haiku_volume_roster_get_boot_volume(r.handle, outVolume.handle)
 END FUNCTION
+
+''' Makes `watcher` a real live target for mount/unmount notifications -
+''' real H_NODE_MONITOR messages (see raw/haiku_shim_storage.bas's own
+''' constants) are delivered to its own registered callback whenever a
+''' volume is mounted/unmounted anywhere on the system, with an
+''' "opcode" field of H_DEVICE_MOUNTED/H_DEVICE_UNMOUNTED and a "new
+''' device" int32 field (the mounted volume's own dev_t). Returns a
+''' status code (0 = success).
+FUNCTION HVolumeRosterStartWatching(BYVAL r AS HVolumeRoster, BYVAL watcher AS HWatcher) AS INTEGER
+    HVolumeRosterStartWatching = eb_haiku_volume_roster_start_watching(r.handle, watcher.handle)
+END FUNCTION
+
+SUB HVolumeRosterStopWatching(BYVAL r AS HVolumeRoster)
+    CALL eb_haiku_volume_roster_stop_watching(r.handle)
+END SUB
 
 ''' Frees an HVolumeRoster - call exactly once.
 SUB HVolumeRosterFree(BYVAL r AS HVolumeRoster)
