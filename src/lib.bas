@@ -12,6 +12,7 @@
 
 #include once "raw/haiku_shim.bas"
 #include once "raw/haiku_shim_interface.bas"
+#include once "raw/haiku_shim_translation.bas"
 #include once "path.bas"
 #include once "entry.bas"
 #include once "directory.bas"
@@ -22,3 +23,6 @@
 #include once "view.bas"
 #include once "controls.bas"
 #include once "layout.bas"
+#include once "bitmap.bas"
+#include once "file.bas"
+#include once "translation.bas"

@@ -145,3 +145,9 @@ END SUB
 SUB HViewDrawString(BYVAL view AS ANY PTR, text AS ZSTRING, BYVAL x AS SINGLE, BYVAL y AS SINGLE)
     CALL eb_haiku_view_draw_string(view, text, x, y)
 END SUB
+
+''' Draws `bitmap` (an HBitmap's own `.handle` - see bitmap.bas) with
+''' its top-left corner at (x, y), at its own native size (no scaling).
+SUB HViewDrawBitmap(BYVAL view AS ANY PTR, BYVAL bitmap AS ANY PTR, BYVAL x AS SINGLE, BYVAL y AS SINGLE)
+    CALL eb_haiku_view_draw_bitmap(view, bitmap, x, y)
+END SUB

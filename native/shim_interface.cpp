@@ -2,6 +2,7 @@
 
 #include <AppDefs.h>
 #include <Alignment.h>
+#include <Bitmap.h>
 #include <Button.h>
 #include <CardLayout.h>
 #include <GridLayout.h>
@@ -447,6 +448,10 @@ void eb_haiku_view_stroke_line(void* view, float x1, float y1, float x2, float y
 
 void eb_haiku_view_draw_string(void* view, const char* text, float x, float y) {
     static_cast<BView*>(view)->DrawString(text, BPoint(x, y));
+}
+
+void eb_haiku_view_draw_bitmap(void* view, void* bitmap, float x, float y) {
+    static_cast<BView*>(view)->DrawBitmap(static_cast<BBitmap*>(bitmap), BPoint(x, y));
 }
 
 } // extern "C"

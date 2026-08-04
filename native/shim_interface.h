@@ -88,6 +88,10 @@ void eb_haiku_view_fill_rect(void* view, float left, float top, float right, flo
 void eb_haiku_view_stroke_rect(void* view, float left, float top, float right, float bottom);
 void eb_haiku_view_stroke_line(void* view, float x1, float y1, float x2, float y2);
 void eb_haiku_view_draw_string(void* view, const char* text, float x, float y);
+// Draws `bitmap` (an eb_haiku_bitmap_create/eb_haiku_translation_utils_
+// get_bitmap result - see shim_translation.h) with its top-left corner
+// at (x, y), at its own native size (no scaling).
+void eb_haiku_view_draw_bitmap(void* view, void* bitmap, float x, float y);
 
 // ---- Stock controls (BButton/BStringView/BTextControl - plain,
 // non-subclassed) ----

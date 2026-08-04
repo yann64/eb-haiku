@@ -66,9 +66,11 @@ fi
 
 for test_name in integration window_basics controls_basics drawing_basics layout_basics \
                  nested_layout_basics grid_layout_basics card_layout_basics split_view_basics \
-                 space_layout_item_basics; do
+                 space_layout_item_basics translation_basics translation_get_bitmap \
+                 translation_draw_bitmap translation_convert translation_identify \
+                 translation_introspection; do
     echo "==> Compiling+running tests/$test_name.bas..."
-    if ssh "$HOST" "cd ~/$REMOTE_DIR && ebc tests/$test_name.bas -o /tmp/eb_haiku_${test_name}_test -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be && /tmp/eb_haiku_${test_name}_test"; then
+    if ssh "$HOST" "cd ~/$REMOTE_DIR && ebc tests/$test_name.bas -o /tmp/eb_haiku_${test_name}_test -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be -l translation && /tmp/eb_haiku_${test_name}_test"; then
         echo "    PASS: $test_name"
     else
         echo "    FAIL: $test_name"

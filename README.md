@@ -75,6 +75,58 @@ a separate per-control one.
 beyond the specific set above (e.g. `AttachedToWindow`, drag-and-drop),
 and menus (`BMenuBar`/`BMenuItem`).
 
+**Translation Kit (v0.4.0, complete)** - see `src/translation.bas`,
+`src/bitmap.bas`, `src/file.bas`: Haiku's own system for converting
+between data formats, most commonly images (PNG/JPEG/BMP/GIF/TIFF/
+WebP/...), backed by 20 real installed translator add-ons on a typical
+Haiku system.
+
+- `BFile` (minimal - just enough to drive Translation Kit's own I/O)
+  and `BBitmap` (minimal - hold/inspect/draw a loaded image), the two
+  necessary supporting bindings - not a general Storage Kit/Interface
+  Kit expansion.
+- `BTranslationUtils::GetBitmap` (`HGetBitmap`) - the single
+  highest-value function: load any supported image format from an
+  `HFile` stream directly into an `HBitmap`.
+- `BTranslatorRoster` (`HTranslatorRosterDefault`/`HTranslate`/
+  `HIdentify`/`HAddTranslators`, plus introspection -
+  `HGetAllTranslators`/`HTranslatorInfo`/`HInputFormats`/
+  `HOutputFormats`) and `BBitmapStream` (`HBitmapStreamCreate`/
+  `HBitmapStreamDetachBitmap`) for the "save this bitmap as PNG/
+  JPEG/..." direction.
+- `HViewDrawBitmap` (`src/view.bas`) - draw a loaded `HBitmap` directly
+  into a window, the natural pairing with the GUI Kit above.
+- **A real, non-obvious limitation, confirmed by direct reproduction**:
+  `HTranslate` going straight from one *compressed* format to a
+  *different* compressed format in a single call typically fails with
+  `B_NO_TRANSLATOR` - most translators only declare their own format
+  and the generic uncompressed `H_TRANSLATOR_BITMAP` ("bits") as
+  inputs, not other compressed formats directly. Convert in two hops
+  instead: `HGetBitmap` the source, then `HBitmapStreamCreate` the
+  result and `HTranslate` *that* to the real target format - see
+  `examples/convert_image_format.bas` and `HTranslate`'s own doc
+  comment in `src/translation.bas`.
+- **Explicitly out of scope, with reasoning**: writing a custom
+  `BTranslator` subclass (would need the same virtual-forwarding shim
+  machinery as `ShimWindow`/`ShimView` for very little real value - the
+  20 already-installed translators cover essentially all common real
+  formats), styled-text translation (needs `BTextView`, an unbound
+  multi-line control - a separate Interface Kit gap), per-translator
+  configuration UI, and `BMemoryIO`/`BMallocIO` (in-memory, non-file-
+  backed translation I/O - a reasonable future addition, not blocking).
+
+### Translation Kit - read this before calling any Translation Kit function
+
+`BTranslationUtils::GetBitmap` (and, by extension, the rest of the
+Translation Kit - it goes through the same registrar/add-on system)
+**hangs indefinitely** if called before any `HApplication` exists -
+confirmed by direct reproduction in a standalone C++ program with no
+eBasic involved at all. Always call `HApplicationCreate` first - not a
+new burden for a real GUI/app program, which always needs one anyway,
+but a real trap if you only want to use the Translation Kit on its own
+(you do not need to call `HApplicationRun` - just constructing the
+`HApplication` is enough).
+
 ### Threading - read this before writing a GUI program
 
 `BApplication::Run()` blocks whichever thread calls it. Each `BWindow`,
@@ -117,7 +169,8 @@ Matching `eb-cjson`'s own convention:
 - **Idiomatic layer** (`src/*.bas`, excluding `raw/`) - `HPath`/
   `HEntry`/`HDirectory`/`HNode`/`HNodeInfo`/`HMessage`/`HApplication`/
   `HWindow`/`HView`/`HShimView`/`HButton`/`HStringView`/`HTextControl`/
-  `HGroupLayout`/`HGridLayout`/`HCardLayout`/`HSplitView`, each a thin
+  `HGroupLayout`/`HGridLayout`/`HCardLayout`/`HSplitView`/`HBitmap`/
+  `HFile`/`HTranslatorRoster`/`HBitmapStream`, each a thin
   `TYPE ... : handle AS ANY PTR : END TYPE` wrapper plus free functions.
   Every parameter is explicitly `BYVAL` - each is just an 8-byte handle,
   cheap to copy. `BSize`/`BAlignment` are likewise plain value structs
@@ -173,19 +226,20 @@ scripts/haiku_verify.sh [ssh-host]   # default host: haiku
 
 Builds the shim, runs `ebpm build`, then compiles and runs every
 `tests/*.bas` file on the given SSH host - mirroring eBasic's own
-`scripts/haiku_verify.sh`. GUI behavior (Phase 2/Layout Kit) has no
-automated visual equivalent - there's no way to check "did it draw the
-right pixels" or "did the grid/split/card layout actually look right"
-other than looking at it; each GUI example/test in this package was
-verified by hand via Haiku's own `screenshot -s` utility during
-development (see `examples/` for what was actually checked - one
-example per Kit/GUI/layout area).
+`scripts/haiku_verify.sh`. GUI behavior (Phase 2/Layout Kit) and
+`HViewDrawBitmap` (Translation Kit) have no automated visual
+equivalent - there's no way to check "did it draw the right pixels" or
+"did the grid/split/card layout actually look right" other than
+looking at it; each GUI example/test in this package was verified by
+hand via Haiku's own `screenshot -s` utility during development (see
+`examples/` for what was actually checked - one example per Kit/GUI/
+layout area).
 
 ## Using as a dependency
 
 ```toml
 [dependencies]
-eb-haiku = "^0.3"
+eb-haiku = "^0.4"
 ```
 
 ```basic

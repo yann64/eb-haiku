@@ -94,6 +94,7 @@ Extern "C" Lib "ebhaikushim"
     Declare Sub eb_haiku_view_stroke_rect(BYVAL view AS ANY PTR, BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE)
     Declare Sub eb_haiku_view_stroke_line(BYVAL view AS ANY PTR, BYVAL x1 AS SINGLE, BYVAL y1 AS SINGLE, BYVAL x2 AS SINGLE, BYVAL y2 AS SINGLE)
     Declare Sub eb_haiku_view_draw_string(BYVAL view AS ANY PTR, BYVAL text AS ZSTRING, BYVAL x AS SINGLE, BYVAL y AS SINGLE)
+    Declare Sub eb_haiku_view_draw_bitmap(BYVAL view AS ANY PTR, BYVAL bitmap AS ANY PTR, BYVAL x AS SINGLE, BYVAL y AS SINGLE)
 
     ' ---- BGroupLayout ----
     Declare Function eb_haiku_group_layout_create(BYVAL layoutOrientation AS UINTEGER, BYVAL spacing AS SINGLE) AS ANY PTR
