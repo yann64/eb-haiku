@@ -164,10 +164,11 @@ Haiku system.
   `BTranslator` subclass (would need the same virtual-forwarding shim
   machinery as `ShimWindow`/`ShimView` for very little real value - the
   20 already-installed translators cover essentially all common real
-  formats), styled-text translation (needs `BTextView`, an unbound
-  multi-line control - a separate Interface Kit gap), per-translator
-  configuration UI, and `BMemoryIO`/`BMallocIO` (in-memory, non-file-
-  backed translation I/O - a reasonable future addition, not blocking).
+  formats), styled-text translation (`BTextView` is bound as of v0.8.0,
+  but only its plain-text API - `text_run_array` styled-text support is
+  a separate, still-unbound gap), per-translator configuration UI, and
+  `BMemoryIO`/`BMallocIO` (in-memory, non-file-backed translation I/O -
+  a reasonable future addition, not blocking).
 
 ### Translation Kit - read this before calling any Translation Kit function
 
@@ -202,9 +203,8 @@ comment. `HMenuItemInvokeViaMessenger` mirrors `HButtonInvoke`'s own
 `Messenger()`-based fix (`BMenuItem` is a `BInvoker` too - same crash
 risk) - confirmed the real auto-target-to-window behavior end to end
 with it (`tests/menu_basics.bas`), with no real mouse hardware needed.
-**Not bound**: `BPopUpMenu` (context menus - different usage pattern),
-`BMenuField` (a separate, combined menu+text-field control), radio-mode
-item grouping.
+**Not bound**: radio-mode item grouping. (`BPopUpMenu`/`BMenuField` are
+bound as of v0.8.0 - see below.)
 
 **`BRoster`/`BClipboard` (v0.6.0, complete)** - see `src/roster.bas`,
 `src/clipboard.bas`: find/launch/activate other running apps
@@ -216,11 +216,14 @@ a raw `B_MIME_TYPE` field named `"text/plain"` (confirmed via the real
 `clipboard` command-line tool's own debug dump) - `HClipboardSetText`/
 `GetText` already do this correctly; `HMessageAddData`/`FindData`
 (`src/message.bas`) is the general escape hatch for other MIME types.
-**Not bound**: `GetAppInfo`/`FindApp`/`GetRecentDocuments` (return
-`app_info`/`entry_ref` structs - a much larger surface for
-comparatively niche value), `BClipboard::StartWatching` (live
-notification - continues the established "no live/watching APIs"
-theme from `BQuery`/`BVolumeRoster`).
+(`GetAppInfo`/`GetRunningAppInfo`/`FindApp`/`GetRecentDocuments`/
+`Folders`/`Apps` and `BClipboard::StartWatching` are bound as of
+v0.8.0 - see below.) **Not bound**: `BRoster::StartWatching` (app
+launch/quit notifications - a different live-watching mechanism than
+`BClipboard`'s own, not requested), the `entry_ref`-based `IsRunning`/
+`TeamFor`/`GetAppInfo`/`FindApp` overloads (need a path-to-`entry_ref`
+conversion - the signature/mimeType-based overloads already cover the
+common case).
 
 **Network Kit + `BUrl` (v0.6.0, complete)** - see `src/network.bas`:
 real TCP networking - `BNetworkAddress` (`HNetworkAddressSetTo`, real
@@ -233,13 +236,11 @@ lives only under `headers/private/netservices{,2}/` - one class is
 literally declared inside `namespace BPrivate::Network`, and the only
 libs (`libnetservices.a`/`libnetservices2.a`) are static, unversioned
 internals, not the stable `libbnetapi.so` this package links against -
-**not a safely bindable target**, deliberately not attempted. **Not
-bound**: `BSecureSocket`/TLS (real added complexity around certificate
-handling - a good separate future phase), `BDatagramSocket`/UDP
-(smallest-useful-slice-first - TCP covers the common case),
-`BNetworkInterface`/`BNetworkRoster` (enumerating the *local* machine's
-own interfaces - a diagnostics feature, not core to "connect to a
-server").
+**not a safely bindable target**, deliberately not attempted.
+(`BSecureSocket`/TLS and `BDatagramSocket`/UDP are bound as of v0.8.0 -
+see below.) **Not bound**: `BNetworkInterface`/`BNetworkRoster`
+(enumerating the *local* machine's own interfaces - a diagnostics
+feature, not core to "connect to a server").
 
 **Locale Kit (v0.7.0, complete)** - see `src/locale.bas`: locale-aware
 formatting and comparison, ICU-backed, living directly in `libbe.so`
@@ -263,9 +264,9 @@ correctness (a semaphore genuinely blocking a second thread until
 released, a port read genuinely blocking until a writer thread sends -
 `tests/thread_basics.bas`), not just "the calls don't crash." A
 different kind of addition than the rest of this package - real,
-language-level concurrency, not an "OS Kit" wrapper. **Not bound**: the
-`_etc` timeout/flag variants, `clone_area`/`resize_area`/`find_area`/
-`area_for`.
+language-level concurrency, not an "OS Kit" wrapper. (The `_etc`
+timeout/flag variants and `clone_area`/`resize_area`/`find_area`/
+`area_for` are bound as of v0.8.0 - see below.)
 
 **Device Kit basics (v0.7.0, complete)** - see `src/serial.bas`:
 `BSerialPort` - `HSerialPortOpen`/`Read`/`Write`/`SetBlocking`/
@@ -276,9 +277,10 @@ confirmed via a compiled probe, not assumed), enumeration
 (`CountDevices`/`GetDeviceName`). **A real, confirmed detail**:
 `HSerialPortOpen` returns a non-negative value (not necessarily `0`) on
 success - check `>= 0`, unlike almost every other status-code-returning
-function in this package. **Not bound**: modem control lines
-(`SetDTR`/`SetRTS`/`IsCTS`/etc.) and `SetFlowControl` - exotic/rarely-
-needed serial details.
+function in this package. (Modem control lines - `SetDTR`/`SetRTS`/
+`IsCTS`/etc. - and `SetFlowControl` are bound as of v0.8.0, see below;
+likely no-ops/false on a virtual serial port with no real modem lines
+wired up.)
 
 **Package Kit basics (v0.7.0, complete)** - see `src/package.bas`:
 `BPackageRoster` - `HPackageRosterIsRebootNeeded`, real repository
@@ -313,9 +315,121 @@ primitives (`HViewSetHighColor`/`FillRect`/`DrawString`/`DrawBitmap`) -
 a real, satisfying close of the loop between Interface Kit's two
 previously-separate parts. `HPrintJobBeginJob`/`CommitJob`/`SpoolPage`/
 `CanContinue`/`CancelJob`, `PaperRect`/`PrintableRect`/`GetResolution`
-(`BRect`/plain ints, no new handle type). **Not bound**: `Settings`/
-`SetSettings`/`IsSettingsMessageValid` (raw print-settings `BMessage`
-manipulation - a real print dialog already handles this).
+(`BRect`/plain ints, no new handle type). (`Settings`/`SetSettings`/
+`IsSettingsMessageValid` are bound as of v0.8.0 - see below.)
+
+**v0.8.0 (closing gaps in already-bound Kits)**: asked for a plan to
+implement the Kits that aren't *fully* implemented (as opposed to
+brand-new Kits) - research re-read every "not bound"/"out of scope"
+list in this file, confirmed real APIs on the host, and surfaced seven
+tractable candidates across two multi-select questions; user picked
+all seven. No new libraries needed - everything here lives in
+`libbe.so`/`libbnetapi.so`/`libroot.so`/`libdevice.so`, all already
+linked.
+
+- **Small polish bucket** - Kernel Kit `_etc` timeout/flag variants
+  (`HSemaphoreAcquireEtc`/`ReleaseEtc`, `HPortReadEtc`/`WriteEtc`,
+  `HWaitForThreadEtc`) and area introspection (`HAreaClone`/`Resize`/
+  `Find`/`For`, `src/thread.bas`); `BSerialPort` modem control lines
+  (`HSerialPortSetDTR`/`SetRTS`/`IsCTS`/`IsDSR`/`IsRI`/`IsDCD`/
+  `SetFlowControl`, `src/serial.bas` - real, hardware-dependent, no-ops
+  on this host's virtual serial port); `BPrintJob` `Settings`/
+  `SetSettings`/`IsSettingsMessageValid` (`src/printjob.bas`, reusing
+  the existing `HMessage` type). **Two real findings along the way**:
+  `HAreaCreate`'s original `BYREF ANY PTR` parameter shape (shipped in
+  v0.7.0) never actually compiled at any real call site - a real eBasic
+  codegen issue with `BYREF ANY PTR` params, confirmed by direct
+  reproduction (it had never actually been exercised by any test) -
+  fixed by switching to the same `BYVAL`-pointer-to-pointer buffer-out
+  convention used everywhere else in this package (a breaking but
+  necessary signature fix, since no working caller could have existed
+  before). And `HPrintJobSetSettings` can hang indefinitely with
+  anything but a message from a real, configured job - the same
+  interactive-dialog-hazard category as `ConfigJob`/`ConfigPage`.
+- **`BTextView`** (`src/textview.bas`) - real multi-line, plain-text
+  editing. Needs no shim subclass, unlike `BWindow`/`BView`: `Text()`
+  returns a plain `const char*`, marshaling exactly like
+  `HStringViewGetText`/`HTextControlGetText` already do.
+  `HTextViewCreate`/`SetText`/`GetText`/`TextLength`/`SetWordWrap`/
+  `MakeEditable`/`Select`. Styled text deliberately still out of scope.
+- **`BPopUpMenu`/`BMenuField`** (`src/menu.bas`, extended) -
+  `BPopUpMenu` IS-A `BMenu` (like `BMenuBar` already is) and reuses the
+  existing `HMenu` type/`HMenuAddItem`/etc. directly; `HPopUpMenuGo`'s
+  `async` parameter is the only headlessly-testable path (real item
+  *selection* needs a human mouse click, the same real limitation as
+  `HPrintJobConfigJob`). `HMenuFieldCreate`/`HMenuFieldMenu` wrap an
+  existing `BMenu` in a labeled, clickable field.
+- **`BMimeType`** (`src/mimetype.bas`) - the separate meta-mime
+  database (distinct from the per-file `BNodeInfo` type from Phase 1):
+  `HMimeTypeSetTo`/`InitCheck`/`IsValid`/`IsInstalled`/`Install`/
+  `Delete`/`Type`, short/long description, preferred app, file
+  extensions/supporting apps (via `HMessage`), static
+  `GetInstalledTypes`/`GetInstalledSupertypes`, `GuessMimeType`. New
+  generic `HMessageCountItems`/`FindStringAt` (`src/message.bas`) read
+  `BMessage`'s own repeated-value fields. **A real, confirmed API
+  inconsistency**: `GetInstalledSupertypes` fills a field named
+  `"super_types"`, NOT `"types"` like `GetInstalledTypes` - easy to
+  assume wrong, confirmed via probe before trusting it. Icon get/set
+  and sniffer-rule get/set/check deliberately not bound.
+- **`HWatcher` + real live `BQuery`/`BVolumeRoster` watching** - the
+  one genuinely new piece of infrastructure this phase: a small
+  `ShimHandler : public BHandler` (`native/shim.cpp`, alongside
+  `BLocker`/`BRoster`/`BClipboard`), `AddHandler`'d onto `be_app`,
+  becomes a live `BMessenger` target for `HQuerySetTarget`
+  (`src/query.bas`) and `HVolumeRosterStartWatching`/`StopWatching`
+  (`src/volume.bas`, extended). **Three real findings, each confirmed
+  via direct reproduction before trusting them**: (1)
+  `HQuerySetTarget` alone does NOT establish the real live monitor,
+  even though `HQueryIsLive` reports true immediately - `HQueryFetch`
+  must still be called afterward, which is what actually registers the
+  live watch with the kernel; (2) `HApplicationQuit` had a real,
+  previously-undiscovered bug (never exercised cross-thread before this
+  phase) - calling `Quit()` directly from a thread other than the one
+  that called `Run()` fails ("you must Lock the application object") -
+  fixed the same way `HWindowClose` already does, posting a real
+  `B_QUIT_REQUESTED` message instead; (3) freeing a live query's
+  watcher *after* freeing the owning `HApplication` is a real
+  use-after-free (`HWatcherFree` does `be_app->RemoveHandler`
+  internally) - the correct order (watcher/query before
+  `HApplicationFree`) is now documented on `HWatcherFree` itself.
+  Verified with real concurrency correctness: a background thread
+  creates a file matching a live query's predicate, confirming a real
+  `B_QUERY_UPDATE` genuinely arrives.
+- **`BRoster` app-info/recent-lists + `BClipboard` watching**
+  (`src/roster.bas`/`clipboard.bas`, extended) - `HRosterGetAppInfo`
+  (by signature)/`GetRunningAppInfo` (by team)/`FindApp` (by MIME type)
+  fill the existing `HPath` type from `app_info`'s own `entry_ref`,
+  matching the `BPackageRoster` repository-path precedent.
+  `HRosterGetRecentDocuments`/`Folders`/`Apps` via a new
+  `HMessageFindRefAt` (`src/message.bas`, fills an `HPath`) reading a
+  real repeated `entry_ref` field. `HClipboardStartWatching`/
+  `StopWatching` via `HWatcher`. Verified against real system state:
+  `GetAppInfo` against Tracker, `FindApp("text/plain")` correctly
+  resolving to `StyledEdit`, and a real self-triggered clipboard-watch
+  test confirming `B_CLIPBOARD_CHANGED` actually fires.
+- **`BSecureSocket`/TLS + `BDatagramSocket`/UDP** (`src/network.bas`,
+  extended) - `BSecureSocket` IS-A `BSocket`, so a single new
+  `HSecureSocketCreate` (returning the existing `HSocket` type) is all
+  that's needed - every other `HSocket*` function already dispatches
+  correctly to the real TLS implementation via ordinary C++ virtual
+  dispatch. `HDatagramSocket` (`Create`/`Bind`/`SendTo`/`ReceiveFrom`/
+  `Free`) reuses the existing `HNetworkAddress` type. **A real,
+  confirmed finding**: a freshly-created `HDatagramSocket` has no real
+  underlying file descriptor until `HDatagramSocketBind` is called
+  (created lazily by `Bind`/`Connect`, not the constructor) -
+  `HDatagramSocketSendTo` on an unbound socket fails with a real "Bad
+  file descriptor" status, even for the sender, which must bind to an
+  ephemeral local address/port before ever sending. Verified with a
+  real TLS handshake against a real HTTPS server (a manual `GET`
+  request over the encrypted channel to `example.com`) and a real UDP
+  loopback round-trip using a second thread as the receiver.
+
+Verified end-to-end on real Haiku hardware via `eb-haiku`'s own
+`scripts/haiku_verify.sh`, now running 34 `tests/*.bas` files. Five new
+examples (`popup_menu.bas`, `text_editor.bas`, `mime_lookup.bas`,
+`live_query.bas`, `https_fetch.bas`), one per major area. Published:
+pushed with a `v0.8.0` tag, `ebpm-index` updated, `ebpm add eb-haiku`
+confirmed resolving to `v0.8.0` from the live index.
 
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
@@ -402,7 +516,8 @@ Matching `eb-cjson`'s own convention:
   `HClipboard`/`HSocket`/`HNetworkAddress`/`HUrl`/`HDateFormat`/
   `HTimeFormat`/`HNumberFormat`/`HCollator`/`HSerialPort`/
   `HPackageRoster`/`HPackageInfoSet`/`HPackageInfoIterator`/`HSound`/
-  `HSoundPlayer`/`HPrintJob`, each a thin
+  `HSoundPlayer`/`HPrintJob`/`HTextView`/`HMimeType`/`HWatcher`/
+  `HDatagramSocket`, each a thin
   `TYPE ... : handle AS ANY PTR : END TYPE` wrapper plus free functions.
   Every parameter is explicitly `BYVAL` - each is just an 8-byte handle,
   cheap to copy. `BSize`/`BAlignment` are likewise plain value structs
@@ -513,7 +628,7 @@ instead.
 
 ```toml
 [dependencies]
-eb-haiku = "^0.7"
+eb-haiku = "^0.8"
 ```
 
 ```basic
