@@ -1,12 +1,20 @@
 ' Idiomatic layer: BMimeType - the separate meta-mime database (icons,
 ' preferred-app registration, file-extension associations, the real
 ' installed-type registry), distinct from the per-file BNodeInfo type
-' already bound in Phase 1 (node.bas). Icon get/set and sniffer-rule
-' get/set/check are deliberately not bound - real added complexity
-' (BBitmap-buffer marshaling, rule-syntax validation) for modest value.
+' already bound in Phase 1 (node.bas). Sniffer-rule get/set/check are
+' deliberately not bound - real added complexity (rule-syntax
+' validation) for modest value.
+'
+' IMPORTANT, confirmed by direct reproduction: HMimeTypeGetIcon/SetIcon/
+' GetIconForType/SetIconForType hang indefinitely without a real
+' HApplication existing first - the same "needs BApplication first"
+' gotcha family as Translation Kit's GetBitmap/BClipboard::Lock (see
+' this package's own README). Every other function in this file works
+' fine without one.
 
 #include once "raw/haiku_shim_storage.bas"
 #include once "message.bas"
+#include once "bitmap.bas"
 
 TYPE HMimeType
     handle AS ANY PTR
@@ -105,6 +113,28 @@ END FUNCTION
 ''' "applications" - read via HMessageCountItems/FindStringAt.
 FUNCTION HMimeTypeGetSupportingApps(BYVAL m AS HMimeType, BYVAL outMessage AS HMessage) AS INTEGER
     HMimeTypeGetSupportingApps = eb_haiku_mime_type_get_supporting_apps(m.handle, outMessage.handle)
+END FUNCTION
+
+''' Fills `icon` (an existing HBitmapCreate result, sized/color-spaced
+''' to match `size`) with this type's own real icon. `size` is
+''' H_LARGE_ICON/H_MINI_ICON. Returns a status code (0 = success).
+FUNCTION HMimeTypeGetIcon(BYVAL m AS HMimeType, BYVAL icon AS HBitmap, BYVAL size AS UINTEGER) AS INTEGER
+    HMimeTypeGetIcon = eb_haiku_mime_type_get_icon(m.handle, icon.handle, size)
+END FUNCTION
+
+''' Registers `icon` as this type's own real icon.
+FUNCTION HMimeTypeSetIcon(BYVAL m AS HMimeType, BYVAL icon AS HBitmap, BYVAL size AS UINTEGER) AS INTEGER
+    HMimeTypeSetIcon = eb_haiku_mime_type_set_icon(m.handle, icon.handle, size)
+END FUNCTION
+
+''' Like HMimeTypeGetIcon, but for a specific file-extension `forType`
+''' registered under this (super)type, rather than the type itself.
+FUNCTION HMimeTypeGetIconForType(BYVAL m AS HMimeType, forType AS ZSTRING, BYVAL icon AS HBitmap, BYVAL size AS UINTEGER) AS INTEGER
+    HMimeTypeGetIconForType = eb_haiku_mime_type_get_icon_for_type(m.handle, forType, icon.handle, size)
+END FUNCTION
+
+FUNCTION HMimeTypeSetIconForType(BYVAL m AS HMimeType, forType AS ZSTRING, BYVAL icon AS HBitmap, BYVAL size AS UINTEGER) AS INTEGER
+    HMimeTypeSetIconForType = eb_haiku_mime_type_set_icon_for_type(m.handle, forType, icon.handle, size)
 END FUNCTION
 
 ''' Frees an HMimeType - call exactly once.

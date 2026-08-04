@@ -103,8 +103,8 @@ void eb_haiku_query_destroy(void* query);
 
 // ---- BMimeType (storage/MimeType.h) - the per-file BNodeInfo type is
 // already covered (shim.h, Phase 1); this is the separate meta-mime
-// database. Icon get/set and sniffer-rule get/set/check are
-// deliberately not bound (real added complexity for modest value).
+// database. Sniffer-rule get/set/check are deliberately not bound
+// (real added complexity for modest value).
 
 void* eb_haiku_mime_type_create(const char* mimeType);
 int eb_haiku_mime_type_set_to(void* mime, const char* mimeType);
@@ -136,6 +136,17 @@ int eb_haiku_mime_type_get_file_extensions(void* mime, void* outMessage);
 int eb_haiku_mime_type_set_file_extensions(void* mime, void* extensionsMessage);
 // Fills `outMessage` with a real repeated-string field ("applications").
 int eb_haiku_mime_type_get_supporting_apps(void* mime, void* outMessage);
+// `icon`/`iconForType` are existing eb_haiku_bitmap_create results
+// (shim_translation.h) - reuses the already-bound HBitmap type
+// directly, no new plumbing. `size` is H_LARGE_ICON (32)/H_MINI_ICON
+// (16) (raw/haiku_shim_storage.bas's own constants - real pixel
+// dimensions this time, not FourCC-packed).
+int eb_haiku_mime_type_get_icon(void* mime, void* icon, unsigned int size);
+int eb_haiku_mime_type_set_icon(void* mime, void* icon, unsigned int size);
+int eb_haiku_mime_type_get_icon_for_type(void* mime, const char* type, void* icon,
+                                          unsigned int size);
+int eb_haiku_mime_type_set_icon_for_type(void* mime, const char* type, void* icon,
+                                          unsigned int size);
 void eb_haiku_mime_type_destroy(void* mime);
 
 // Static methods - `outMime`/`outMessage` are existing handles the

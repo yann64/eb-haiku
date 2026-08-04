@@ -7,6 +7,15 @@
 
 #include once "../src/lib.bas"
 
+' IMPORTANT, confirmed by direct reproduction: HMimeTypeGetIcon/SetIcon
+' hang indefinitely without a real BApplication existing first - the
+' same "needs BApplication first" gotcha family as Translation Kit's
+' GetBitmap/BClipboard::Lock (see project README's own "read this
+' before" section) - construct one here even though most of this file's
+' own BMimeType calls don't otherwise need it.
+DIM app AS HApplication
+app = HApplicationCreate("application/x-vnd.EbHaiku-MimeTypeBasicsTest")
+
 DIM mt AS HMimeType
 mt = HMimeTypeCreate("text/plain")
 
@@ -146,6 +155,45 @@ IF guessedType <> "text/plain" THEN
 END IF
 CALL HMimeTypeFree(guessed)
 
+' ---- Icon get/set - reuses the existing HBitmap type directly.
+' text/plain has a real, always-installed icon on any real Haiku
+' system. ----
+
+DIM icon AS HBitmap
+icon = HBitmapCreate(0, 0, 31, 31, H_RGBA32, 0)
+rc = HMimeTypeGetIcon(mt, icon, H_LARGE_ICON)
+IF rc <> 0 THEN
+    PRINT "FAIL: HMimeTypeGetIcon returned ", rc
+    CALL ExitProcess(1)
+END IF
+PRINT "got a real large icon for text/plain ok"
+CALL HBitmapFree(icon)
+
+' Round-trip SetIcon/GetIcon on a throwaway custom type.
+DIM custom AS HMimeType
+custom = HMimeTypeCreate("application/x-vnd.EbHaiku-MimeTypeIconTest")
+DIM setIcon AS HBitmap
+setIcon = HBitmapCreate(0, 0, 15, 15, H_RGBA32, 0)
+rc = HMimeTypeSetIcon(custom, setIcon, H_MINI_ICON)
+IF rc <> 0 THEN
+    PRINT "FAIL: HMimeTypeSetIcon returned ", rc
+    CALL ExitProcess(1)
+END IF
+CALL HBitmapFree(setIcon)
+
+DIM readBackIcon AS HBitmap
+readBackIcon = HBitmapCreate(0, 0, 15, 15, H_RGBA32, 0)
+rc = HMimeTypeGetIcon(custom, readBackIcon, H_MINI_ICON)
+IF rc <> 0 THEN
+    PRINT "FAIL: HMimeTypeGetIcon (round-trip) returned ", rc
+    CALL ExitProcess(1)
+END IF
+PRINT "SetIcon/GetIcon round-trip ok"
+CALL HBitmapFree(readBackIcon)
+CALL HMimeTypeDelete(custom)
+CALL HMimeTypeFree(custom)
+
 CALL HMimeTypeFree(mt)
+CALL HApplicationFree(app)
 
 PRINT "mimetype basics test ok"

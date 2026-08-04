@@ -19,6 +19,11 @@ CONST H_ATTR_CHANGED = 5
 CONST H_DEVICE_MOUNTED = 6
 CONST H_DEVICE_UNMOUNTED = 7
 
+' Real icon_size enum (storage/Mime.h) - real pixel dimensions this
+' time, confirmed via the real header, not FourCC-packed.
+CONST H_LARGE_ICON = 32
+CONST H_MINI_ICON = 16
+
 Extern "C" Lib "ebhaikushim"
     ' ---- BSymLink ----
     Declare Function eb_haiku_symlink_create(BYVAL path AS ZSTRING) AS ANY PTR
@@ -85,6 +90,10 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_mime_type_get_file_extensions(BYVAL mime AS ANY PTR, BYVAL outMessage AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_mime_type_set_file_extensions(BYVAL mime AS ANY PTR, BYVAL extensionsMessage AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_mime_type_get_supporting_apps(BYVAL mime AS ANY PTR, BYVAL outMessage AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_mime_type_get_icon(BYVAL mime AS ANY PTR, BYVAL icon AS ANY PTR, BYVAL size AS UINTEGER) AS INTEGER
+    Declare Function eb_haiku_mime_type_set_icon(BYVAL mime AS ANY PTR, BYVAL icon AS ANY PTR, BYVAL size AS UINTEGER) AS INTEGER
+    Declare Function eb_haiku_mime_type_get_icon_for_type(BYVAL mime AS ANY PTR, BYVAL forType AS ZSTRING, BYVAL icon AS ANY PTR, BYVAL size AS UINTEGER) AS INTEGER
+    Declare Function eb_haiku_mime_type_set_icon_for_type(BYVAL mime AS ANY PTR, BYVAL forType AS ZSTRING, BYVAL icon AS ANY PTR, BYVAL size AS UINTEGER) AS INTEGER
     Declare Sub eb_haiku_mime_type_destroy(BYVAL mime AS ANY PTR)
     Declare Function eb_haiku_mime_type_guess_mime_type(BYVAL path AS ZSTRING, BYVAL outMime AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_mime_type_get_installed_types(BYVAL outMessage AS ANY PTR) AS INTEGER

@@ -1,5 +1,6 @@
 #include "shim_storage.h"
 
+#include <Bitmap.h>
 #include <Directory.h>
 #include <Entry.h>
 #include <Handler.h>
@@ -236,6 +237,28 @@ int eb_haiku_mime_type_set_file_extensions(void* mime, void* extensionsMessage) 
 
 int eb_haiku_mime_type_get_supporting_apps(void* mime, void* outMessage) {
     return static_cast<BMimeType*>(mime)->GetSupportingApps(static_cast<BMessage*>(outMessage));
+}
+
+int eb_haiku_mime_type_get_icon(void* mime, void* icon, unsigned int size) {
+    return static_cast<BMimeType*>(mime)->GetIcon(static_cast<BBitmap*>(icon),
+                                                    static_cast<icon_size>(size));
+}
+
+int eb_haiku_mime_type_set_icon(void* mime, void* icon, unsigned int size) {
+    return static_cast<BMimeType*>(mime)->SetIcon(static_cast<const BBitmap*>(icon),
+                                                    static_cast<icon_size>(size));
+}
+
+int eb_haiku_mime_type_get_icon_for_type(void* mime, const char* type, void* icon,
+                                          unsigned int size) {
+    return static_cast<BMimeType*>(mime)->GetIconForType(type, static_cast<BBitmap*>(icon),
+                                                           static_cast<icon_size>(size));
+}
+
+int eb_haiku_mime_type_set_icon_for_type(void* mime, const char* type, void* icon,
+                                          unsigned int size) {
+    return static_cast<BMimeType*>(mime)->SetIconForType(
+        type, static_cast<const BBitmap*>(icon), static_cast<icon_size>(size));
 }
 
 void eb_haiku_mime_type_destroy(void* mime) { delete static_cast<BMimeType*>(mime); }
