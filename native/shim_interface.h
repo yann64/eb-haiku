@@ -128,6 +128,24 @@ void* eb_haiku_textcontrol_create(float left, float top, float right, float bott
 void eb_haiku_textcontrol_set_text(void* view, const char* text);
 const char* eb_haiku_textcontrol_get_text(void* view);
 
+// ---- BTextView (multi-line, plain-text editing - a concrete BView
+// subclass needing no shim subclass of its own, unlike BWindow/BView:
+// Text() returns a plain const char*, so it marshals exactly like
+// eb_haiku_stringview_get_text/textcontrol_get_text above). Styled
+// text (text_run_array) is deliberately not bound - plain-text editing
+// only.
+void* eb_haiku_textview_create(float left, float top, float right, float bottom,
+                                const char* name);
+void eb_haiku_textview_set_text(void* view, const char* text);
+// Borrowed from the real BTextView's own long-lived storage - no heap
+// allocation, no matching free needed (same convention as
+// eb_haiku_stringview_get_text above).
+const char* eb_haiku_textview_get_text(void* view);
+int eb_haiku_textview_text_length(void* view);
+void eb_haiku_textview_set_word_wrap(void* view, int wrap);
+void eb_haiku_textview_make_editable(void* view, int editable);
+void eb_haiku_textview_select(void* view, int start, int end);
+
 // ---- View-level layout attachment + per-view size/alignment
 // constraints. BSize (two floats) and BAlignment (two ints) are plain
 // value structs in real Haiku - passed here as separate parameters,

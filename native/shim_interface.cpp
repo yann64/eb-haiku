@@ -21,6 +21,7 @@
 #include <SplitView.h>
 #include <StringView.h>
 #include <TextControl.h>
+#include <TextView.h>
 #include <TwoDimensionalLayout.h>
 #include <View.h>
 #include <Window.h>
@@ -304,6 +305,35 @@ void eb_haiku_textcontrol_set_text(void* view, const char* text) {
 
 const char* eb_haiku_textcontrol_get_text(void* view) {
     return static_cast<BTextControl*>(view)->Text();
+}
+
+void* eb_haiku_textview_create(float left, float top, float right, float bottom,
+                                const char* name) {
+    BRect frame(left, top, right, bottom);
+    BRect textRect(0, 0, right - left, bottom - top);
+    return new BTextView(frame, name, textRect, B_FOLLOW_LEFT_TOP);
+}
+
+void eb_haiku_textview_set_text(void* view, const char* text) {
+    static_cast<BTextView*>(view)->SetText(text);
+}
+
+const char* eb_haiku_textview_get_text(void* view) { return static_cast<BTextView*>(view)->Text(); }
+
+int eb_haiku_textview_text_length(void* view) {
+    return static_cast<BTextView*>(view)->TextLength();
+}
+
+void eb_haiku_textview_set_word_wrap(void* view, int wrap) {
+    static_cast<BTextView*>(view)->SetWordWrap(wrap != 0);
+}
+
+void eb_haiku_textview_make_editable(void* view, int editable) {
+    static_cast<BTextView*>(view)->MakeEditable(editable != 0);
+}
+
+void eb_haiku_textview_select(void* view, int start, int end) {
+    static_cast<BTextView*>(view)->Select(start, end);
 }
 
 void* eb_haiku_group_layout_create(unsigned int orientation, float spacing) {

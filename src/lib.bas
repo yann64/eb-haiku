@@ -23,6 +23,7 @@
 #include once "window.bas"
 #include once "view.bas"
 #include once "controls.bas"
+#include once "textview.bas"
 #include once "layout.bas"
 #include once "bitmap.bas"
 #include once "file.bas"

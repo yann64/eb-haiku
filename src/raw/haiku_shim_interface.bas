@@ -79,6 +79,15 @@ Extern "C" Lib "ebhaikushim"
     Declare Sub eb_haiku_textcontrol_set_text(BYVAL view AS ANY PTR, BYVAL text AS ZSTRING)
     Declare Function eb_haiku_textcontrol_get_text(BYVAL view AS ANY PTR) AS ZSTRING
 
+    ' ---- BTextView (multi-line, plain-text editing only) ----
+    Declare Function eb_haiku_textview_create(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, BYVAL name AS ZSTRING) AS ANY PTR
+    Declare Sub eb_haiku_textview_set_text(BYVAL view AS ANY PTR, BYVAL text AS ZSTRING)
+    Declare Function eb_haiku_textview_get_text(BYVAL view AS ANY PTR) AS ZSTRING
+    Declare Function eb_haiku_textview_text_length(BYVAL view AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_textview_set_word_wrap(BYVAL view AS ANY PTR, BYVAL wrap AS INTEGER)
+    Declare Sub eb_haiku_textview_make_editable(BYVAL view AS ANY PTR, BYVAL editable AS INTEGER)
+    Declare Sub eb_haiku_textview_select(BYVAL view AS ANY PTR, BYVAL start AS INTEGER, BYVAL end_ AS INTEGER)
+
     ' ---- Custom drawing/input (ShimView) - a view only receives Draw
     ' if created with the H_WILL_DRAW flag.
     Declare Function eb_haiku_shim_view_create(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, BYVAL name AS ZSTRING, BYVAL resizingMode AS UINTEGER, BYVAL flags AS UINTEGER) AS ANY PTR
