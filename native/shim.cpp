@@ -1,8 +1,11 @@
 #include "shim.h"
 
+#include <Clipboard.h>
 #include <Directory.h>
 #include <Entry.h>
+#include <Locker.h>
 #include <Message.h>
+#include <Roster.h>
 #include <Node.h>
 #include <NodeInfo.h>
 #include <Path.h>
@@ -412,6 +415,129 @@ double eb_haiku_message_find_double(void* msg, const char* name) {
 
 int eb_haiku_message_find_bool(void* msg, const char* name) {
     return static_cast<BMessage*>(msg)->FindBool(name) ? 1 : 0;
+}
+
+int eb_haiku_message_add_data(void* msg, const char* name, unsigned int type, const void* buffer,
+                               int size) {
+    return static_cast<BMessage*>(msg)->AddData(name, static_cast<type_code>(type), buffer,
+                                                 static_cast<ssize_t>(size));
+}
+
+int eb_haiku_message_find_data(void* msg, const char* name, unsigned int type, void* buffer,
+                                int bufferSize) {
+    const void* data = nullptr;
+    ssize_t numBytes = 0;
+    status_t rc = static_cast<BMessage*>(msg)->FindData(name, static_cast<type_code>(type), &data,
+                                                          &numBytes);
+    if (rc != B_OK) return rc;
+    ssize_t toCopy = numBytes < bufferSize ? numBytes : bufferSize;
+    std::memcpy(buffer, data, static_cast<size_t>(toCopy));
+    return static_cast<int>(numBytes);
+}
+
+// ---- BLocker ----
+
+void* eb_haiku_locker_create(void) { return new BLocker(); }
+
+int eb_haiku_locker_lock(void* locker) { return static_cast<BLocker*>(locker)->Lock() ? 1 : 0; }
+
+int eb_haiku_locker_lock_with_timeout(void* locker, long long timeoutMicros) {
+    return static_cast<BLocker*>(locker)->LockWithTimeout(static_cast<bigtime_t>(timeoutMicros));
+}
+
+void eb_haiku_locker_unlock(void* locker) { static_cast<BLocker*>(locker)->Unlock(); }
+
+int eb_haiku_locker_is_locked(void* locker) {
+    return static_cast<BLocker*>(locker)->IsLocked() ? 1 : 0;
+}
+
+int eb_haiku_locker_count_locks(void* locker) {
+    return static_cast<BLocker*>(locker)->CountLocks();
+}
+
+void eb_haiku_locker_destroy(void* locker) { delete static_cast<BLocker*>(locker); }
+
+// ---- BRoster ----
+
+void* eb_haiku_roster_default(void) { return const_cast<BRoster*>(be_roster); }
+
+int eb_haiku_roster_is_running(void* roster, const char* signature) {
+    return static_cast<BRoster*>(roster)->IsRunning(signature) ? 1 : 0;
+}
+
+int eb_haiku_roster_team_for(void* roster, const char* signature) {
+    return static_cast<BRoster*>(roster)->TeamFor(signature);
+}
+
+int eb_haiku_roster_launch(void* roster, const char* signature, int* outTeam) {
+    team_id team;
+    status_t rc = static_cast<BRoster*>(roster)->Launch(signature, static_cast<BMessage*>(nullptr),
+                                                          &team);
+    *outTeam = team;
+    return rc;
+}
+
+int eb_haiku_roster_activate_app(void* roster, int team) {
+    return static_cast<BRoster*>(roster)->ActivateApp(static_cast<team_id>(team));
+}
+
+int eb_haiku_roster_broadcast(void* roster, void* message) {
+    return static_cast<BRoster*>(roster)->Broadcast(static_cast<BMessage*>(message));
+}
+
+// ---- BClipboard ----
+
+void* eb_haiku_clipboard_default(void) { return be_clipboard; }
+
+void* eb_haiku_clipboard_create(const char* name) { return new BClipboard(name); }
+
+int eb_haiku_clipboard_lock(void* clipboard) {
+    return static_cast<BClipboard*>(clipboard)->Lock() ? 1 : 0;
+}
+
+void eb_haiku_clipboard_unlock(void* clipboard) { static_cast<BClipboard*>(clipboard)->Unlock(); }
+
+int eb_haiku_clipboard_clear(void* clipboard) {
+    return static_cast<BClipboard*>(clipboard)->Clear();
+}
+
+int eb_haiku_clipboard_commit(void* clipboard) {
+    return static_cast<BClipboard*>(clipboard)->Commit();
+}
+
+int eb_haiku_clipboard_revert(void* clipboard) {
+    return static_cast<BClipboard*>(clipboard)->Revert();
+}
+
+void* eb_haiku_clipboard_data(void* clipboard) {
+    return static_cast<BClipboard*>(clipboard)->Data();
+}
+
+void eb_haiku_clipboard_destroy(void* clipboard) { delete static_cast<BClipboard*>(clipboard); }
+
+int eb_haiku_clipboard_set_text(void* clipboard, const char* text) {
+    BClipboard* cb = static_cast<BClipboard*>(clipboard);
+    if (!cb->Lock()) return B_ERROR;
+    cb->Clear();
+    BMessage* data = cb->Data();
+    status_t rc = data->AddData("text/plain", B_MIME_TYPE, text, static_cast<ssize_t>(std::strlen(text)));
+    if (rc == B_OK) rc = cb->Commit();
+    cb->Unlock();
+    return rc;
+}
+
+int eb_haiku_clipboard_get_text(void* clipboard, char* outBuf, int bufSize) {
+    BClipboard* cb = static_cast<BClipboard*>(clipboard);
+    if (!cb->Lock()) return B_ERROR;
+    const void* data = nullptr;
+    ssize_t numBytes = 0;
+    status_t rc = cb->Data()->FindData("text/plain", B_MIME_TYPE, &data, &numBytes);
+    if (rc == B_OK) {
+        ssize_t toCopy = numBytes < bufSize ? numBytes : bufSize;
+        std::memcpy(outBuf, data, static_cast<size_t>(toCopy));
+    }
+    cb->Unlock();
+    return rc == B_OK ? static_cast<int>(numBytes) : rc;
 }
 
 // ---- BApplication ----

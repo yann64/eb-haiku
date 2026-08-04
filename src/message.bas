@@ -54,6 +54,23 @@ FUNCTION HMessageFindBool(BYVAL m AS HMessage, name AS ZSTRING) AS INTEGER
     HMessageFindBool = eb_haiku_message_find_bool(m.handle, name)
 END FUNCTION
 
+''' Generic raw-data field - `msgType` is one of the H_ATTR_TYPE_*
+''' constants (raw/haiku_shim.bas), `buffer`/`size` a plain caller-owned
+''' byte buffer (e.g. `@someArray(0)`). This is how real Haiku's own
+''' clipboard text convention works (H_ATTR_TYPE_MIME, field name
+''' "text/plain" - see clipboard.bas's own HClipboardSetText/GetText,
+''' which already do this correctly). Returns a status code (0 =
+''' success).
+FUNCTION HMessageAddData(BYVAL m AS HMessage, name AS ZSTRING, BYVAL msgType AS UINTEGER, BYVAL buffer AS ANY PTR, BYVAL size AS INTEGER) AS INTEGER
+    HMessageAddData = eb_haiku_message_add_data(m.handle, name, msgType, buffer, size)
+END FUNCTION
+
+''' Returns the field's real byte size (>= 0) with `buffer` filled, or
+''' a negative status code if absent/wrong type.
+FUNCTION HMessageFindData(BYVAL m AS HMessage, name AS ZSTRING, BYVAL msgType AS UINTEGER, BYVAL buffer AS ANY PTR, BYVAL bufferSize AS INTEGER) AS INTEGER
+    HMessageFindData = eb_haiku_message_find_data(m.handle, name, msgType, buffer, bufferSize)
+END FUNCTION
+
 ''' Frees an HMessage - call exactly once.
 SUB HMessageFree(BYVAL m AS HMessage)
     CALL eb_haiku_message_destroy(m.handle)

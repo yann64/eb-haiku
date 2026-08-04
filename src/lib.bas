@@ -30,3 +30,8 @@
 #include once "symlink.bas"
 #include once "volume.bas"
 #include once "query.bas"
+#include once "locker.bas"
+#include once "menu.bas"
+#include once "roster.bas"
+#include once "clipboard.bas"
+#include once "network.bas"

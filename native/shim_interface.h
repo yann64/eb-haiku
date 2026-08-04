@@ -204,4 +204,33 @@ void* eb_haiku_space_layout_item_create_glue(void);
 void* eb_haiku_space_layout_item_create_horizontal_strut(float width);
 void* eb_haiku_space_layout_item_create_vertical_strut(float height);
 
+// ---- BMenuBar/BMenu/BMenuItem (interface/{Menu,MenuBar,MenuItem}.h)
+// - real window menus. BMenuBar : public BMenu : public BView (single
+// inheritance throughout, confirmed) - a menu bar's own handle is
+// already safe to pass anywhere a BMenu*/BView* is expected, including
+// the existing eb_haiku_window_add_child (no separate "add menu bar to
+// window" function needed at all). Once added to a menu/window, Haiku
+// itself owns and destroys menus/items automatically - matching the
+// existing stock-controls convention (no destroy functions here,
+// exactly like eb_haiku_button_create/friends have none).
+void* eb_haiku_menu_bar_create(const char* name);
+void* eb_haiku_menu_create(const char* name);
+// A leaf item - `message` is an eb_haiku_message_create result (shim.h).
+void* eb_haiku_menu_item_create(const char* label, void* message);
+// A submenu item - `message` may be NULL (a pure submenu, no message
+// of its own).
+void* eb_haiku_menu_item_create_submenu(void* submenu, void* message);
+int eb_haiku_menu_add_item(void* menu, void* item);
+// Also used to add a BMenu to a BMenuBar - same underlying AddItem
+// overload, safe via the confirmed single-inheritance chain above.
+int eb_haiku_menu_add_submenu(void* menu, void* submenu);
+int eb_haiku_menu_add_separator_item(void* menu);
+void eb_haiku_menu_item_set_enabled(void* item, int enabled);
+void eb_haiku_menu_item_set_marked(void* item, int marked);
+// Same "not BInvoker::Invoke() directly" reasoning/fix as
+// eb_haiku_button_invoke above (BMenuItem is a BInvoker too - the same
+// documented crash risk applies) - manually sends the item's own
+// message to its own established target via Messenger().
+void eb_haiku_menu_item_invoke_via_messenger(void* item);
+
 } // extern "C"

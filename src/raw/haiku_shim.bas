@@ -27,6 +27,10 @@ CONST H_ATTR_TYPE_BOOL = 1112493900
 CONST H_ATTR_TYPE_DOUBLE = 1145195589
 CONST H_ATTR_TYPE_STRING = 1129534546
 CONST H_ATTR_TYPE_RAW = 1380013908
+' Also the real type Haiku's own clipboard convention uses for plain
+' text (a "text/plain" field, see eb_haiku_clipboard_data's own
+' comment) - confirmed the same way, not assumed.
+CONST H_ATTR_TYPE_MIME = 1296649541
 
 Extern "C" Lib "ebhaikushim"
     ' ---- BPath ----
@@ -139,6 +143,38 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_message_find_int32(BYVAL msg AS ANY PTR, BYVAL name AS ZSTRING) AS INTEGER
     Declare Function eb_haiku_message_find_double(BYVAL msg AS ANY PTR, BYVAL name AS ZSTRING) AS DOUBLE
     Declare Function eb_haiku_message_find_bool(BYVAL msg AS ANY PTR, BYVAL name AS ZSTRING) AS INTEGER
+    Declare Function eb_haiku_message_add_data(BYVAL msg AS ANY PTR, BYVAL name AS ZSTRING, BYVAL msgType AS UINTEGER, BYVAL buffer AS ANY PTR, BYVAL size AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_message_find_data(BYVAL msg AS ANY PTR, BYVAL name AS ZSTRING, BYVAL msgType AS UINTEGER, BYVAL buffer AS ANY PTR, BYVAL bufferSize AS INTEGER) AS INTEGER
+
+    ' ---- BLocker ----
+    Declare Function eb_haiku_locker_create() AS ANY PTR
+    Declare Function eb_haiku_locker_lock(BYVAL locker AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_locker_lock_with_timeout(BYVAL locker AS ANY PTR, BYVAL timeoutMicros AS LONGINT) AS INTEGER
+    Declare Sub eb_haiku_locker_unlock(BYVAL locker AS ANY PTR)
+    Declare Function eb_haiku_locker_is_locked(BYVAL locker AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_locker_count_locks(BYVAL locker AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_locker_destroy(BYVAL locker AS ANY PTR)
+
+    ' ---- BRoster ----
+    Declare Function eb_haiku_roster_default() AS ANY PTR
+    Declare Function eb_haiku_roster_is_running(BYVAL roster AS ANY PTR, BYVAL signature AS ZSTRING) AS INTEGER
+    Declare Function eb_haiku_roster_team_for(BYVAL roster AS ANY PTR, BYVAL signature AS ZSTRING) AS INTEGER
+    Declare Function eb_haiku_roster_launch(BYVAL roster AS ANY PTR, BYVAL signature AS ZSTRING, BYVAL outTeam AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_roster_activate_app(BYVAL roster AS ANY PTR, BYVAL team AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_roster_broadcast(BYVAL roster AS ANY PTR, BYVAL message AS ANY PTR) AS INTEGER
+
+    ' ---- BClipboard ----
+    Declare Function eb_haiku_clipboard_default() AS ANY PTR
+    Declare Function eb_haiku_clipboard_create(BYVAL name AS ZSTRING) AS ANY PTR
+    Declare Function eb_haiku_clipboard_lock(BYVAL clipboard AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_clipboard_unlock(BYVAL clipboard AS ANY PTR)
+    Declare Function eb_haiku_clipboard_clear(BYVAL clipboard AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_clipboard_commit(BYVAL clipboard AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_clipboard_revert(BYVAL clipboard AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_clipboard_data(BYVAL clipboard AS ANY PTR) AS ANY PTR
+    Declare Sub eb_haiku_clipboard_destroy(BYVAL clipboard AS ANY PTR)
+    Declare Function eb_haiku_clipboard_set_text(BYVAL clipboard AS ANY PTR, BYVAL text AS ZSTRING) AS INTEGER
+    Declare Function eb_haiku_clipboard_get_text(BYVAL clipboard AS ANY PTR, BYVAL outBuf AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
 
     ' ---- BApplication (lifecycle only, no subclass) ----
     Declare Function eb_haiku_application_create(BYVAL signature AS ZSTRING) AS ANY PTR

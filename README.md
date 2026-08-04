@@ -181,6 +181,78 @@ but a real trap if you only want to use the Translation Kit on its own
 (you do not need to call `HApplicationRun` - just constructing the
 `HApplication` is enough).
 
+**`BLocker` (v0.6.0, complete)** - see `src/locker.bas`: a real mutex/
+locking primitive (`Lock`/`LockWithTimeout`/`Unlock`/`IsLocked`/
+`CountLocks`, real recursive semantics). Closes the risk this README
+used to document as unsolved in its own "Threading" section below.
+**Not bound**: `BAutolock` - header-only inline RAII with no
+out-of-line methods to wrap, and doesn't map onto eBasic's own scoping
+model; use explicit `HLockerLock`/`HLockerUnlock` instead, the same
+pattern every other handle in this package already uses.
+
+**Menus (v0.6.0, complete)** - see `src/menu.bas`: real `BMenuBar`/
+`BMenu`/`BMenuItem` (`HMenuBarCreate`/`HMenuCreate`/`HMenuItemCreate`/
+`HMenuItemCreateSubmenu`, `HMenuAddItem`/`AddSubmenu`/
+`AddSeparatorItem`, `HMenuItemSetEnabled`/`SetMarked`). **A real,
+confirmed requirement**: a menu bar's own constructor takes no `BRect`
+frame at all - it renders at zero size (invisible) unless hosted in a
+real layout (`HWindowSetLayout` + `HGroupLayoutAddView` as the first
+item), not a plain `HWindowAddChild` - see `HMenuBarCreate`'s own doc
+comment. `HMenuItemInvokeViaMessenger` mirrors `HButtonInvoke`'s own
+`Messenger()`-based fix (`BMenuItem` is a `BInvoker` too - same crash
+risk) - confirmed the real auto-target-to-window behavior end to end
+with it (`tests/menu_basics.bas`), with no real mouse hardware needed.
+**Not bound**: `BPopUpMenu` (context menus - different usage pattern),
+`BMenuField` (a separate, combined menu+text-field control), radio-mode
+item grouping.
+
+**`BRoster`/`BClipboard` (v0.6.0, complete)** - see `src/roster.bas`,
+`src/clipboard.bas`: find/launch/activate other running apps
+(`HRosterIsRunning`/`TeamFor`/`Launch`/`ActivateApp`/`Broadcast`) and
+system copy/paste (`HClipboardLock`/`Clear`/`Commit`/`Revert`/`Data`,
+plus `HClipboardSetText`/`GetText` convenience wrappers). **A real,
+confirmed text convention**: Haiku's own clipboard stores plain text as
+a raw `B_MIME_TYPE` field named `"text/plain"` (confirmed via the real
+`clipboard` command-line tool's own debug dump) - `HClipboardSetText`/
+`GetText` already do this correctly; `HMessageAddData`/`FindData`
+(`src/message.bas`) is the general escape hatch for other MIME types.
+**Not bound**: `GetAppInfo`/`FindApp`/`GetRecentDocuments` (return
+`app_info`/`entry_ref` structs - a much larger surface for
+comparatively niche value), `BClipboard::StartWatching` (live
+notification - continues the established "no live/watching APIs"
+theme from `BQuery`/`BVolumeRoster`).
+
+**Network Kit + `BUrl` (v0.6.0, complete)** - see `src/network.bas`:
+real TCP networking - `BNetworkAddress` (`HNetworkAddressSetTo`, real
+DNS resolution), `BSocket` (`HSocketConnect`/`Read`/`Write`/
+`Disconnect`), and `BUrl` (Support Kit's own URL-parsing value class -
+`HUrlCreate`/`Protocol`/`Host`/`Port`/`Path`/`IsValid`, no I/O of its
+own). TCP only. **A real, confirmed finding**: Haiku's high-level HTTP/
+URL-request API (`BUrlRequest`/`BHttpRequest`/`BUrlProtocolRoster`)
+lives only under `headers/private/netservices{,2}/` - one class is
+literally declared inside `namespace BPrivate::Network`, and the only
+libs (`libnetservices.a`/`libnetservices2.a`) are static, unversioned
+internals, not the stable `libbnetapi.so` this package links against -
+**not a safely bindable target**, deliberately not attempted. **Not
+bound**: `BSecureSocket`/TLS (real added complexity around certificate
+handling - a good separate future phase), `BDatagramSocket`/UDP
+(smallest-useful-slice-first - TCP covers the common case),
+`BNetworkInterface`/`BNetworkRoster` (enumerating the *local* machine's
+own interfaces - a diagnostics feature, not core to "connect to a
+server").
+
+### `BClipboard`/Translation Kit/`BRoster` - read this before calling any of them standalone
+
+**A real, recurring gotcha, confirmed twice independently** (see
+`BTranslationUtils::GetBitmap`'s own note above): `BClipboard::Lock()`
+(and, by extension, the rest of `BClipboard`) also **hangs
+indefinitely** if called before any `HApplication` exists - confirmed
+by direct reproduction in a standalone C++ program with no eBasic
+involved at all. Always call `HApplicationCreate` first (no need to
+call `HApplicationRun`) - not a new burden for a real GUI/app program,
+but a real trap if you only want to use the clipboard on its own (see
+`examples/roster_and_clipboard.bas`).
+
 ### Threading - read this before writing a GUI program
 
 `BApplication::Run()` blocks whichever thread calls it. Each `BWindow`,
@@ -188,16 +260,17 @@ once shown, runs its own message loop on its own separate thread - so
 a program with even a single window already involves two threads, and
 every window/view callback (`HWindowSetMessageReceivedCallback`,
 `HShimViewSetDrawCallback`, etc.) is invoked from *that window's own
-thread*, never the thread that called `HApplicationRun`. eBasic has no
-locking primitives.
+thread*, never the thread that called `HApplicationRun`.
 
 **The safe, intended usage pattern**: the thread that calls
 `HApplicationRun` does nothing else afterward - all real program logic
 lives inside the window/app-level callbacks, which Haiku's own
 per-window message queue already serializes one at a time. Multiple
 simultaneous windows each get their own thread; if their callbacks ever
-need to touch shared state, that's a real, unsolved risk this package
-doesn't protect you from.
+need to touch shared state, use a real `HLocker` (`BLocker` - see
+`src/locker.bas`) around every access - confirmed via a real two-window
+contention test (`tests/locker_basics.bas`) that this genuinely
+prevents lost updates, not just "doesn't crash."
 
 **A related, sharper trap, found the hard way**: several real Haiku
 `BView`/`BWindow`/`BInvoker` methods (`BInvoker::Invoke()`,
@@ -225,7 +298,8 @@ Matching `eb-cjson`'s own convention:
   `HWindow`/`HView`/`HShimView`/`HButton`/`HStringView`/`HTextControl`/
   `HGroupLayout`/`HGridLayout`/`HCardLayout`/`HSplitView`/`HBitmap`/
   `HFile`/`HTranslatorRoster`/`HBitmapStream`/`HSymLink`/`HVolume`/
-  `HVolumeRoster`/`HQuery`, each a thin
+  `HVolumeRoster`/`HQuery`/`HLocker`/`HMenu`/`HMenuItem`/`HRoster`/
+  `HClipboard`/`HSocket`/`HNetworkAddress`/`HUrl`, each a thin
   `TYPE ... : handle AS ANY PTR : END TYPE` wrapper plus free functions.
   Every parameter is explicitly `BYVAL` - each is just an 8-byte handle,
   cheap to copy. `BSize`/`BAlignment` are likewise plain value structs
@@ -241,7 +315,11 @@ Matching `eb-cjson`'s own convention:
   `HNodeInfoGetType` return a raw, freshly-heap-allocated `ANY PTR`
   instead (freed via `HFreeString`), matching `eb-cjson`'s own
   `JsonStringify`/`JsonFreeString` fix for exactly the same issue.
-- No drag-and-drop, clipboard, or menu (`BMenuBar`/`BMenuItem`) support.
+- No drag-and-drop support.
+- **`ebpm`'s automatic linker-flag forwarding doesn't cover Translation
+  Kit or Network Kit functions** - a downstream program calling either
+  needs to pass `-l translation`/`-l bnetapi` itself; see this file's
+  own "Building" section for why and the exact flags.
 
 ## Building
 
@@ -262,15 +340,40 @@ ebpm build   # archives the .bas layer only - no linking needed
 ```
 
 A downstream program depending on this package via `ebpm` needs no
-extra linker flags - `ebpm`'s own `.libs`-sidecar mechanism forwards
-both `-l ebhaikushim` and `-l be` automatically (confirmed by building
-a real consumer package with a plain `[dependencies] eb-haiku = ...`
-entry - no manual `Lib`/`-l` configuration needed). To compile a
-program directly with `ebc` instead (without going through `ebpm`),
-link explicitly:
+extra linker flags for Phase 1/Interface/Layout/Storage Kit
+functionality - `ebpm`'s own `.libs`-sidecar mechanism forwards both
+`-l ebhaikushim` and `-l be` automatically (it records every distinct
+`Extern "C" Lib "name"` clause found anywhere in a package's own raw
+layer - see `raw/haiku_find_directory.bas`'s/`raw/haiku_fs_index.bas`'s
+own top comments for how `-l be`/`-l root` specifically got captured
+this way, by binding a real plain C function directly under that `Lib`
+name).
+
+**A real, structural limitation, confirmed directly (not assumed)**: a
+downstream program that calls **any Translation Kit or Network Kit
+function** needs to *also* pass `-l translation`/`-l bnetapi` itself -
+`ebpm`'s sidecar mechanism can't discover these automatically, because
+they're transitive link dependencies of the *compiled shim itself*
+(`shim_translation.cpp.o`/`shim_network.cpp.o` inside
+`libebhaikushim.a`), not something any `Extern "C" Lib` clause in this
+package's own `.bas` source captures - and unlike `find_directory`/
+`fs_create_index`, neither `libtranslation.so` nor `libbnetapi.so`
+exports a single plain (non-C++-mangled) symbol to hang the same fix
+on (confirmed via `nm -D --defined-only` on the real host - only
+`_init`/`_fini`). Reproduced directly: a real downstream package using
+only `[dependencies] eb-haiku = ...` and calling
+`HTranslatorRosterDefault`/`HNetworkAddressSetTo` fails to link with
+"undefined reference" errors from inside `libebhaikushim.a` until
+`-l translation -l bnetapi` are added explicitly. Code that never
+touches Translation/Network Kit functions is unaffected (their own
+object files inside the archive are never pulled into the link).
+
+To compile a program directly with `ebc` (without going through
+`ebpm`), link explicitly - include `-l translation -l bnetapi` too if
+your own code touches either Kit:
 
 ```sh
-ebc yourprogram.bas -o yourprogram -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be
+ebc yourprogram.bas -o yourprogram -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be -l translation -l bnetapi -l root
 ```
 
 ## Verifying
@@ -294,7 +397,7 @@ layout area).
 
 ```toml
 [dependencies]
-eb-haiku = "^0.5"
+eb-haiku = "^0.6"
 ```
 
 ```basic

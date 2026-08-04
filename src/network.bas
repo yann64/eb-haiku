@@ -1,0 +1,133 @@
+' Idiomatic layer: BSocket/BNetworkAddress (real TCP networking) +
+' BUrl (Support Kit's own URL-parsing value class, no I/O of its own -
+' parse a URL, then HSocketConnect to its own HUrlHost/HUrlPort).
+'
+' TCP only - no UDP or TLS in this first pass. Real Haiku's high-level
+' HTTP/URL-request API is private/unstable (confirmed on the real
+' host - one class is literally declared inside a BPrivate namespace,
+' the only libs are static/unversioned) and deliberately not bound.
+
+#include once "raw/haiku_shim_network.bas"
+
+TYPE HNetworkAddress
+    handle AS ANY PTR
+END TYPE
+
+FUNCTION HNetworkAddressCreateEmpty() AS HNetworkAddress
+    DIM a AS HNetworkAddress
+    a.handle = eb_haiku_network_address_create_empty()
+    HNetworkAddressCreateEmpty = a
+END FUNCTION
+
+''' Resolves `address` (a hostname or raw IP) + `port` - real DNS
+''' resolution happens here for a hostname. Returns a status code (0 =
+''' success).
+FUNCTION HNetworkAddressSetTo(BYVAL a AS HNetworkAddress, address AS ZSTRING, BYVAL port AS UINTEGER) AS INTEGER
+    HNetworkAddressSetTo = eb_haiku_network_address_set_to(a.handle, address, port)
+END FUNCTION
+
+FUNCTION HNetworkAddressInitCheck(BYVAL a AS HNetworkAddress) AS INTEGER
+    HNetworkAddressInitCheck = eb_haiku_network_address_init_check(a.handle)
+END FUNCTION
+
+FUNCTION HNetworkAddressPort(BYVAL a AS HNetworkAddress) AS INTEGER
+    HNetworkAddressPort = eb_haiku_network_address_port(a.handle)
+END FUNCTION
+
+''' Fills `outBuf` (caller-supplied, `bufSize` bytes) with the address's
+''' own real "host:port"-shaped text form - NOT null-terminated
+''' automatically, matching this package's own established buffer-out
+''' convention. Returns the real length in bytes (>= 0).
+FUNCTION HNetworkAddressToString(BYVAL a AS HNetworkAddress, BYVAL outBuf AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
+    HNetworkAddressToString = eb_haiku_network_address_to_string(a.handle, outBuf, bufSize)
+END FUNCTION
+
+''' Frees an HNetworkAddress - call exactly once.
+SUB HNetworkAddressFree(BYVAL a AS HNetworkAddress)
+    CALL eb_haiku_network_address_destroy(a.handle)
+END SUB
+
+TYPE HSocket
+    handle AS ANY PTR
+END TYPE
+
+FUNCTION HSocketCreate() AS HSocket
+    DIM s AS HSocket
+    s.handle = eb_haiku_socket_create()
+    HSocketCreate = s
+END FUNCTION
+
+''' Connects to `addr` (an HNetworkAddressSetTo result), giving up
+''' after `timeoutMicros` microseconds. Returns a status code (0 =
+''' success).
+FUNCTION HSocketConnect(BYVAL s AS HSocket, BYVAL addr AS HNetworkAddress, BYVAL timeoutMicros AS LONGINT) AS INTEGER
+    HSocketConnect = eb_haiku_socket_connect(s.handle, addr.handle, timeoutMicros)
+END FUNCTION
+
+FUNCTION HSocketIsConnected(BYVAL s AS HSocket) AS INTEGER
+    HSocketIsConnected = eb_haiku_socket_is_connected(s.handle)
+END FUNCTION
+
+''' Reads up to `size` bytes into `buffer` (a plain caller-owned byte
+''' buffer, e.g. `@someArray(0)`). Returns bytes read (>= 0, 0 at
+''' end-of-stream), or a negative status code.
+FUNCTION HSocketRead(BYVAL s AS HSocket, BYVAL buffer AS ANY PTR, BYVAL size AS INTEGER) AS INTEGER
+    HSocketRead = eb_haiku_socket_read(s.handle, buffer, size)
+END FUNCTION
+
+''' Writes `size` bytes from `buffer`. Returns bytes written (>= 0), or
+''' a negative status code.
+FUNCTION HSocketWrite(BYVAL s AS HSocket, BYVAL buffer AS ANY PTR, BYVAL size AS INTEGER) AS INTEGER
+    HSocketWrite = eb_haiku_socket_write(s.handle, buffer, size)
+END FUNCTION
+
+SUB HSocketDisconnect(BYVAL s AS HSocket)
+    CALL eb_haiku_socket_disconnect(s.handle)
+END SUB
+
+''' Frees an HSocket - call exactly once.
+SUB HSocketFree(BYVAL s AS HSocket)
+    CALL eb_haiku_socket_destroy(s.handle)
+END SUB
+
+TYPE HUrl
+    handle AS ANY PTR
+END TYPE
+
+''' Parses `url` (e.g. "http://example.com:8080/path") into its own
+''' fields - no I/O of its own, pair with HSocketConnect (via
+''' HUrlHost/HUrlPort) to actually connect.
+FUNCTION HUrlCreate(url AS ZSTRING) AS HUrl
+    DIM u AS HUrl
+    u.handle = eb_haiku_url_create(url)
+    HUrlCreate = u
+END FUNCTION
+
+FUNCTION HUrlIsValid(BYVAL u AS HUrl) AS INTEGER
+    HUrlIsValid = eb_haiku_url_is_valid(u.handle)
+END FUNCTION
+
+''' Each of HUrlProtocol/Host/Path fills `outBuf` (caller-supplied,
+''' `bufSize` bytes, NOT null-terminated automatically) and returns the
+''' real field's length in bytes (>= 0) - same buffer-out convention as
+''' HNetworkAddressToString.
+FUNCTION HUrlProtocol(BYVAL u AS HUrl, BYVAL outBuf AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
+    HUrlProtocol = eb_haiku_url_protocol(u.handle, outBuf, bufSize)
+END FUNCTION
+
+FUNCTION HUrlHost(BYVAL u AS HUrl, BYVAL outBuf AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
+    HUrlHost = eb_haiku_url_host(u.handle, outBuf, bufSize)
+END FUNCTION
+
+FUNCTION HUrlPath(BYVAL u AS HUrl, BYVAL outBuf AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
+    HUrlPath = eb_haiku_url_path(u.handle, outBuf, bufSize)
+END FUNCTION
+
+FUNCTION HUrlPort(BYVAL u AS HUrl) AS INTEGER
+    HUrlPort = eb_haiku_url_port(u.handle)
+END FUNCTION
+
+''' Frees an HUrl - call exactly once.
+SUB HUrlFree(BYVAL u AS HUrl)
+    CALL eb_haiku_url_destroy(u.handle)
+END SUB

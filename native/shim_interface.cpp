@@ -10,6 +10,9 @@
 #include <Layout.h>
 #include <LayoutItem.h>
 #include <Looper.h>
+#include <Menu.h>
+#include <MenuBar.h>
+#include <MenuItem.h>
 #include <Message.h>
 #include <Messenger.h>
 #include <Size.h>
@@ -452,6 +455,49 @@ void eb_haiku_view_draw_string(void* view, const char* text, float x, float y) {
 
 void eb_haiku_view_draw_bitmap(void* view, void* bitmap, float x, float y) {
     static_cast<BView*>(view)->DrawBitmap(static_cast<BBitmap*>(bitmap), BPoint(x, y));
+}
+
+// ---- BMenuBar/BMenu/BMenuItem ----
+
+void* eb_haiku_menu_bar_create(const char* name) { return new BMenuBar(name); }
+
+void* eb_haiku_menu_create(const char* name) { return new BMenu(name); }
+
+void* eb_haiku_menu_item_create(const char* label, void* message) {
+    return new BMenuItem(label, static_cast<BMessage*>(message));
+}
+
+void* eb_haiku_menu_item_create_submenu(void* submenu, void* message) {
+    return new BMenuItem(static_cast<BMenu*>(submenu), static_cast<BMessage*>(message));
+}
+
+int eb_haiku_menu_add_item(void* menu, void* item) {
+    return static_cast<BMenu*>(menu)->AddItem(static_cast<BMenuItem*>(item)) ? 1 : 0;
+}
+
+int eb_haiku_menu_add_submenu(void* menu, void* submenu) {
+    return static_cast<BMenu*>(menu)->AddItem(static_cast<BMenu*>(submenu)) ? 1 : 0;
+}
+
+int eb_haiku_menu_add_separator_item(void* menu) {
+    return static_cast<BMenu*>(menu)->AddSeparatorItem() ? 1 : 0;
+}
+
+void eb_haiku_menu_item_set_enabled(void* item, int enabled) {
+    static_cast<BMenuItem*>(item)->SetEnabled(enabled != 0);
+}
+
+void eb_haiku_menu_item_set_marked(void* item, int marked) {
+    static_cast<BMenuItem*>(item)->SetMarked(marked != 0);
+}
+
+void eb_haiku_menu_item_invoke_via_messenger(void* item) {
+    // Same reasoning/fix as eb_haiku_button_invoke above - BMenuItem is
+    // a BInvoker too, and calling Invoke() directly hit the same
+    // documented crash risk (confirmed by direct reproduction).
+    BMenuItem* menuItem = static_cast<BMenuItem*>(item);
+    BMessage* msg = menuItem->Message();
+    if (msg) menuItem->Messenger().SendMessage(msg);
 }
 
 } // extern "C"

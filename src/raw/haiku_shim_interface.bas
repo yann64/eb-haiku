@@ -143,4 +143,16 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_space_layout_item_create_glue() AS ANY PTR
     Declare Function eb_haiku_space_layout_item_create_horizontal_strut(BYVAL width AS SINGLE) AS ANY PTR
     Declare Function eb_haiku_space_layout_item_create_vertical_strut(BYVAL height AS SINGLE) AS ANY PTR
+
+    ' ---- BMenuBar/BMenu/BMenuItem ----
+    Declare Function eb_haiku_menu_bar_create(BYVAL name AS ZSTRING) AS ANY PTR
+    Declare Function eb_haiku_menu_create(BYVAL name AS ZSTRING) AS ANY PTR
+    Declare Function eb_haiku_menu_item_create(BYVAL label AS ZSTRING, BYVAL message AS ANY PTR) AS ANY PTR
+    Declare Function eb_haiku_menu_item_create_submenu(BYVAL submenu AS ANY PTR, BYVAL message AS ANY PTR) AS ANY PTR
+    Declare Function eb_haiku_menu_add_item(BYVAL menu AS ANY PTR, BYVAL item AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_menu_add_submenu(BYVAL menu AS ANY PTR, BYVAL submenu AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_menu_add_separator_item(BYVAL menu AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_menu_item_set_enabled(BYVAL item AS ANY PTR, BYVAL enabled AS INTEGER)
+    Declare Sub eb_haiku_menu_item_set_marked(BYVAL item AS ANY PTR, BYVAL marked AS INTEGER)
+    Declare Sub eb_haiku_menu_item_invoke_via_messenger(BYVAL item AS ANY PTR)
 End Extern

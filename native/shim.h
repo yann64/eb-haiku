@@ -168,6 +168,69 @@ const char* eb_haiku_message_find_string(void* msg, const char* name);
 int eb_haiku_message_find_int32(void* msg, const char* name);
 double eb_haiku_message_find_double(void* msg, const char* name);
 int eb_haiku_message_find_bool(void* msg, const char* name);
+// Generic raw-data field (any type_code - see raw/haiku_shim.bas's own
+// H_ATTR_TYPE_* constants), matching the existing typed-attribute raw
+// escape hatch from Storage Kit. Returns a status_t (0 = success).
+int eb_haiku_message_add_data(void* msg, const char* name, unsigned int type, const void* buffer,
+                               int size);
+// Returns the field's real byte size (>= 0) with `buffer` filled, or a
+// negative status_t if absent/wrong type.
+int eb_haiku_message_find_data(void* msg, const char* name, unsigned int type, void* buffer,
+                                int bufferSize);
+
+// ---- BLocker (support/Locker.h) - a real mutex/locking primitive.
+// bigtime_t (real 8-byte type, microseconds) confirmed via a compiled
+// probe, not assumed.
+void* eb_haiku_locker_create(void);
+int eb_haiku_locker_lock(void* locker);
+// Returns a status_t (0 = success, B_TIMED_OUT on timeout).
+int eb_haiku_locker_lock_with_timeout(void* locker, long long timeoutMicros);
+void eb_haiku_locker_unlock(void* locker);
+int eb_haiku_locker_is_locked(void* locker);
+int eb_haiku_locker_count_locks(void* locker);
+void eb_haiku_locker_destroy(void* locker);
+
+// ---- BRoster (app/Roster.h) - the shared be_roster singleton, exposed
+// the same way BTranslatorRoster::Default() already is. Never freed by
+// this package (owned by the Application Kit itself).
+void* eb_haiku_roster_default(void);
+int eb_haiku_roster_is_running(void* roster, const char* signature);
+// team_id (real 4-byte signed type) - 0/negative if not running.
+int eb_haiku_roster_team_for(void* roster, const char* signature);
+// Fills outTeam with the newly launched app's team_id. Returns a
+// status_t (0 = success).
+int eb_haiku_roster_launch(void* roster, const char* signature, int* outTeam);
+int eb_haiku_roster_activate_app(void* roster, int team);
+int eb_haiku_roster_broadcast(void* roster, void* message);
+
+// ---- BClipboard (app/Clipboard.h) - the shared be_clipboard
+// singleton, exposed the same way. Never freed by this package for the
+// default one; eb_haiku_clipboard_create's own custom instances should
+// still be destroyed once done.
+void* eb_haiku_clipboard_default(void);
+void* eb_haiku_clipboard_create(const char* name);
+int eb_haiku_clipboard_lock(void* clipboard);
+void eb_haiku_clipboard_unlock(void* clipboard);
+int eb_haiku_clipboard_clear(void* clipboard);
+int eb_haiku_clipboard_commit(void* clipboard);
+int eb_haiku_clipboard_revert(void* clipboard);
+// The clipboard's own payload BMessage - direct access for anything
+// beyond plain text (a custom MIME type) via eb_haiku_message_add_data/
+// find_data above.
+void* eb_haiku_clipboard_data(void* clipboard);
+void eb_haiku_clipboard_destroy(void* clipboard);
+
+// Convenience helpers for the common case - handle the full Lock/
+// Clear-or-read/write/Commit/Unlock sequence internally. Real Haiku's
+// own plain-text convention (confirmed via the real `clipboard`
+// command-line tool's own `-d`/debug dump, not assumed) is a raw
+// B_MIME_TYPE field named "text/plain" - NOT AddString/FindString, a
+// completely different field.
+int eb_haiku_clipboard_set_text(void* clipboard, const char* text);
+// Returns the real text length in bytes (>= 0) with outBuf filled (NOT
+// null-terminated automatically), or a negative status_t if there's no
+// plain text on the clipboard.
+int eb_haiku_clipboard_get_text(void* clipboard, char* outBuf, int bufSize);
 
 // ---- BApplication (app/Application.h) - lifecycle only, no subclass ----
 void* eb_haiku_application_create(const char* signature);
