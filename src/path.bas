@@ -4,6 +4,7 @@
 ' HPath must be freed exactly once via HPathFree.
 
 #include once "raw/haiku_shim.bas"
+#include once "raw/haiku_find_directory.bas"
 
 TYPE HPath
     handle AS ANY PTR
@@ -62,3 +63,20 @@ END FUNCTION
 SUB HPathFree(BYVAL p AS HPath)
     CALL eb_haiku_path_destroy(p.handle)
 END SUB
+
+''' Resolves a well-known system/user directory (H_USER_SETTINGS_
+''' DIRECTORY, H_USER_CONFIG_DIRECTORY, H_USER_DIRECTORY, ...) into
+''' `outBuf` (a caller-supplied buffer, e.g. `DIM buf(1023) AS BYTE`)
+''' via Haiku's own real find_directory() - not a shim wrapper, since
+''' find_directory is a genuine, plain extern "C" function (unlike
+''' every Haiku Kit class this package otherwise binds). Returns a
+''' status code (0 = success).
+'''
+''' DIM buf(1023) AS BYTE
+''' DIM p AS ANY PTR : p = @buf(0)
+''' PRINT HFindDirectory(H_USER_SETTINGS_DIRECTORY, p, 1024)
+''' DIM z AS ZSTRING : z = p
+''' DIM path AS STRING : path = z
+FUNCTION HFindDirectory(BYVAL which AS INTEGER, BYVAL outBuf AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
+    HFindDirectory = find_directory(which, -1, 0, outBuf, bufSize)
+END FUNCTION
