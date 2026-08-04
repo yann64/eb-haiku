@@ -149,9 +149,10 @@ const char* eb_haiku_textcontrol_get_text(void* view);
 // ---- BTextView (multi-line, plain-text editing - a concrete BView
 // subclass needing no shim subclass of its own, unlike BWindow/BView:
 // Text() returns a plain const char*, so it marshals exactly like
-// eb_haiku_stringview_get_text/textcontrol_get_text above). Styled
-// text (text_run_array) is deliberately not bound - plain-text editing
-// only.
+// eb_haiku_stringview_get_text/textcontrol_get_text above). Font
+// family/size/style changes are deliberately not bound - BFont itself
+// isn't bound anywhere in this package (a separate, larger future
+// addition); per-range *color* styling below doesn't need one.
 void* eb_haiku_textview_create(float left, float top, float right, float bottom,
                                 const char* name);
 void eb_haiku_textview_set_text(void* view, const char* text);
@@ -163,6 +164,27 @@ int eb_haiku_textview_text_length(void* view);
 void eb_haiku_textview_set_word_wrap(void* view, int wrap);
 void eb_haiku_textview_make_editable(void* view, int editable);
 void eb_haiku_textview_select(void* view, int start, int end);
+// IMPORTANT, confirmed by direct reproduction: real BTextView defaults
+// to IsStylable() = false, in which case SetFontAndColor's own color
+// change is NOT scoped to [start, end) at all - it silently applies to
+// the ENTIRE text instead. Call this with `stylable` != 0 before ever
+// calling eb_haiku_textview_set_color, or per-range coloring will
+// silently misbehave.
+void eb_haiku_textview_set_stylable(void* view, int stylable);
+int eb_haiku_textview_is_stylable(void* view);
+// Real per-character-range color styling - SetFontAndColor(start, end,
+// font, mode, color) takes a required (non-defaulted) font parameter,
+// but passing nullptr with mode=0 (no font-changing bits) is confirmed
+// safe via direct reproduction and only touches color, matching this
+// package's own decision not to bind BFont for this pass. Requires
+// eb_haiku_textview_set_stylable(view, 1) first - see its own comment.
+void eb_haiku_textview_set_color(void* view, int start, int end, unsigned char r,
+                                  unsigned char g, unsigned char b, unsigned char a);
+// Fills the real color in effect at `offset` (the start of a real
+// run - matches whatever HTextViewSetColor's own range last set there).
+void eb_haiku_textview_get_color(void* view, int offset, unsigned char* outR,
+                                  unsigned char* outG, unsigned char* outB,
+                                  unsigned char* outA);
 
 // ---- View-level layout attachment + per-view size/alignment
 // constraints. BSize (two floats) and BAlignment (two ints) are plain

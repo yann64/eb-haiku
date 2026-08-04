@@ -5,9 +5,12 @@
 ' already do). Add to a window/view via HWindowAddChild/HViewAddChild,
 ' passing `.handle` directly - a real BView under the hood.
 '
-' Styled text (text_run_array) is deliberately not bound - plain-text
-' editing only, matching this package's own "smallest useful slice
-' first" discipline.
+' Real per-character-range *color* styling is bound (HTextViewSetColor/
+' GetColor, v0.9.0) - font family/size/style changes are not: BFont
+' itself isn't bound anywhere in this package (a separate, larger
+' future addition), and SetFontAndColor's own font parameter is safe to
+' pass as nullptr with mode=0 (confirmed by direct reproduction), so
+' color-only styling needs no BFont handle at all.
 
 #include once "raw/haiku_shim_interface.bas"
 
@@ -51,4 +54,38 @@ END SUB
 ''' twice to just move the caret with no selection.
 SUB HTextViewSelect(BYVAL t AS HTextView, BYVAL start AS INTEGER, BYVAL end_ AS INTEGER)
     CALL eb_haiku_textview_select(t.handle, start, end_)
+END SUB
+
+''' Whether real per-range font/color styling (HTextViewSetColor below)
+''' actually takes effect - real Haiku default is false. IMPORTANT,
+''' confirmed by direct reproduction: with this off (the real default),
+''' HTextViewSetColor's own color change is NOT scoped to its given
+''' range at all - it silently applies to the ENTIRE text instead. Call
+''' HTextViewSetStylable(t, 1) before ever calling HTextViewSetColor.
+SUB HTextViewSetStylable(BYVAL t AS HTextView, BYVAL stylable AS INTEGER)
+    CALL eb_haiku_textview_set_stylable(t.handle, stylable)
+END SUB
+
+FUNCTION HTextViewIsStylable(BYVAL t AS HTextView) AS INTEGER
+    HTextViewIsStylable = eb_haiku_textview_is_stylable(t.handle)
+END FUNCTION
+
+''' Sets the real display color of the text range [start, end) to
+''' (r, g, b, a) - font/style unaffected (no BFont binding needed for
+''' this, see this file's own top comment). REQUIRES
+''' HTextViewSetStylable(t, 1) to have been called first - see its own
+''' doc comment for why.
+SUB HTextViewSetColor(BYVAL t AS HTextView, BYVAL start AS INTEGER, BYVAL end_ AS INTEGER, BYVAL r AS UBYTE, BYVAL g AS UBYTE, BYVAL b AS UBYTE, BYVAL a AS UBYTE)
+    CALL eb_haiku_textview_set_color(t.handle, start, end_, r, g, b, a)
+END SUB
+
+''' Fills the 4 BYREF out-params with the real color in effect at the
+''' start of the run containing `offset`.
+SUB HTextViewGetColor(BYVAL t AS HTextView, BYVAL offset AS INTEGER, BYREF outR AS UBYTE, BYREF outG AS UBYTE, BYREF outB AS UBYTE, BYREF outA AS UBYTE)
+    DIM buf(3) AS UBYTE
+    CALL eb_haiku_textview_get_color(t.handle, offset, @buf(0), @buf(1), @buf(2), @buf(3))
+    outR = buf(0)
+    outG = buf(1)
+    outB = buf(2)
+    outA = buf(3)
 END SUB

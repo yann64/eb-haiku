@@ -41,6 +41,44 @@ CALL HTextViewMakeEditable(tv, 0)
 CALL HTextViewSelect(tv, 0, 5)
 PRINT "SetWordWrap/MakeEditable/Select ran ok"
 
+' ---- Real per-range color styling - no BFont binding needed (see
+' textview.bas's own top comment). IMPORTANT, confirmed by direct
+' reproduction: HTextViewSetStylable(tv, 1) must be called first - real
+' BTextView defaults to IsStylable()=false, in which case the color
+' change below would silently apply to the ENTIRE text instead of just
+' [0, 5). ----
+
+IF HTextViewIsStylable(tv) <> 0 THEN
+    PRINT "FAIL: HTextViewIsStylable should default to false"
+    CALL ExitProcess(1)
+END IF
+CALL HTextViewSetStylable(tv, 1)
+IF HTextViewIsStylable(tv) <> 1 THEN
+    PRINT "FAIL: HTextViewIsStylable should be true after SetStylable(1)"
+    CALL ExitProcess(1)
+END IF
+
+CALL HTextViewSetColor(tv, 0, 5, 255, 0, 0, 255)
+DIM r AS UBYTE
+DIM g AS UBYTE
+DIM b AS UBYTE
+DIM a AS UBYTE
+CALL HTextViewGetColor(tv, 2, r, g, b, a)
+PRINT "color at offset 2=(", r, ",", g, ",", b, ",", a, ")"
+IF r <> 255 OR g <> 0 OR b <> 0 OR a <> 255 THEN
+    PRINT "FAIL: expected red (255,0,0,255) in the styled range"
+    CALL ExitProcess(1)
+END IF
+
+' A different range should still have the real default color, not red.
+CALL HTextViewGetColor(tv, 10, r, g, b, a)
+PRINT "color at offset 10=(", r, ",", g, ",", b, ",", a, ")"
+IF r = 255 AND g = 0 AND b = 0 THEN
+    PRINT "FAIL: offset 10 should not have been colored red"
+    CALL ExitProcess(1)
+END IF
+PRINT "SetColor/GetColor ok"
+
 CALL HWindowShow(w)
 CALL Sleep(500) ' visible for an external screenshot
 

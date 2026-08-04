@@ -5,6 +5,7 @@
 #include <Bitmap.h>
 #include <Button.h>
 #include <CardLayout.h>
+#include <Font.h>
 #include <GridLayout.h>
 #include <GroupLayout.h>
 #include <Layout.h>
@@ -336,6 +337,32 @@ void eb_haiku_textview_make_editable(void* view, int editable) {
 
 void eb_haiku_textview_select(void* view, int start, int end) {
     static_cast<BTextView*>(view)->Select(start, end);
+}
+
+void eb_haiku_textview_set_stylable(void* view, int stylable) {
+    static_cast<BTextView*>(view)->SetStylable(stylable != 0);
+}
+
+int eb_haiku_textview_is_stylable(void* view) {
+    return static_cast<BTextView*>(view)->IsStylable() ? 1 : 0;
+}
+
+void eb_haiku_textview_set_color(void* view, int start, int end, unsigned char r,
+                                  unsigned char g, unsigned char b, unsigned char a) {
+    rgb_color color = {r, g, b, a};
+    static_cast<BTextView*>(view)->SetFontAndColor(start, end, nullptr, 0, &color);
+}
+
+void eb_haiku_textview_get_color(void* view, int offset, unsigned char* outR,
+                                  unsigned char* outG, unsigned char* outB,
+                                  unsigned char* outA) {
+    BFont font;
+    rgb_color color;
+    static_cast<BTextView*>(view)->GetFontAndColor(offset, &font, &color);
+    *outR = color.red;
+    *outG = color.green;
+    *outB = color.blue;
+    *outA = color.alpha;
 }
 
 void* eb_haiku_group_layout_create(unsigned int orientation, float spacing) {
