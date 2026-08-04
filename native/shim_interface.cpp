@@ -511,6 +511,12 @@ void eb_haiku_view_draw_bitmap(void* view, void* bitmap, float x, float y) {
     static_cast<BView*>(view)->DrawBitmap(static_cast<BBitmap*>(bitmap), BPoint(x, y));
 }
 
+void eb_haiku_view_drag_message(void* view, void* message, float left, float top, float right,
+                                 float bottom) {
+    static_cast<BView*>(view)->DragMessage(static_cast<BMessage*>(message),
+                                            BRect(left, top, right, bottom));
+}
+
 // ---- BMenuBar/BMenu/BMenuItem ----
 
 void* eb_haiku_menu_bar_create(const char* name) { return new BMenuBar(name); }

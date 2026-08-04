@@ -193,6 +193,13 @@ const char* eb_haiku_message_find_string_at(void* msg, const char* name, int ind
 // Returns a status_t (0 = success).
 int eb_haiku_message_find_ref_at(void* msg, const char* name, int index, void* outPath);
 
+// Real drag-and-drop: a message delivered to a view's MessageReceived
+// callback as the result of a real eb_haiku_view_drag_message drop is
+// distinguished from an ordinary message via WasDropped(); DropPoint()
+// gives the real screen location it was dropped at.
+int eb_haiku_message_was_dropped(void* msg);
+void eb_haiku_message_drop_point(void* msg, float* outX, float* outY);
+
 // ---- BLocker (support/Locker.h) - a real mutex/locking primitive.
 // bigtime_t (real 8-byte type, microseconds) confirmed via a compiled
 // probe, not assumed.

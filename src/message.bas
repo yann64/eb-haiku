@@ -98,6 +98,22 @@ FUNCTION HMessageFindRefAt(BYVAL m AS HMessage, name AS ZSTRING, BYVAL index AS 
     HMessageFindRefAt = eb_haiku_message_find_ref_at(m.handle, name, index, outPath.handle)
 END FUNCTION
 
+''' Whether this message arrived as the result of a real drag-and-drop
+''' (see HViewDragMessage, view.bas) rather than an ordinary send.
+FUNCTION HMessageWasDropped(BYVAL m AS HMessage) AS INTEGER
+    HMessageWasDropped = eb_haiku_message_was_dropped(m.handle)
+END FUNCTION
+
+''' Fills the 2 BYREF out-params with the real screen point this
+''' message was dropped at - only meaningful if HMessageWasDropped is
+''' true.
+SUB HMessageDropPoint(BYVAL m AS HMessage, BYREF outX AS SINGLE, BYREF outY AS SINGLE)
+    DIM buf(1) AS SINGLE
+    CALL eb_haiku_message_drop_point(m.handle, @buf(0), @buf(1))
+    outX = buf(0)
+    outY = buf(1)
+END SUB
+
 ''' Frees an HMessage - call exactly once.
 SUB HMessageFree(BYVAL m AS HMessage)
     CALL eb_haiku_message_destroy(m.handle)

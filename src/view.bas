@@ -151,3 +151,26 @@ END SUB
 SUB HViewDrawBitmap(BYVAL view AS ANY PTR, BYVAL bitmap AS ANY PTR, BYVAL x AS SINGLE, BYVAL y AS SINGLE)
     CALL eb_haiku_view_draw_bitmap(view, bitmap, x, y)
 END SUB
+
+''' Initiates a real drag of `message` (an HMessage's own `.handle`),
+''' with `(left, top, right, bottom)` as the real drag-frame outline
+''' shown while dragging. Call this from inside an existing
+''' HViewSetMouseDownCallback/HShimViewSetMouseDownCallback handler - no
+''' separate callback is needed to start a drag. The dropped message
+''' later arrives at the drop target's own, already-existing
+''' MessageReceived callback (HWindowSetMessageReceivedCallback or
+''' similar) - distinguish it from an ordinary message via
+''' HMessageWasDropped/DropPoint (message.bas). The simplest, no-bitmap
+''' overload - real drag-visual bitmaps are a reasonable follow-on, not
+''' bound here.
+'''
+''' IMPORTANT, confirmed by direct reproduction: calling this outside a
+''' real MouseDown callback (i.e. without an actual mouse button
+''' currently held down) blocks indefinitely - the same "not
+''' triggerable over SSH" limitation already documented for
+''' HPrintJobConfigJob/HPopUpMenuGo. This package's own tests never
+''' call this headlessly - only a real, interactive desktop session can
+''' exercise a real drag end to end (see examples/drag_and_drop.bas).
+SUB HViewDragMessage(BYVAL view AS ANY PTR, BYVAL message AS ANY PTR, BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE)
+    CALL eb_haiku_view_drag_message(view, message, left, top, right, bottom)
+END SUB

@@ -460,6 +460,16 @@ int eb_haiku_message_find_ref_at(void* msg, const char* name, int index, void* o
     return static_cast<BPath*>(outPath)->SetTo(&ref);
 }
 
+int eb_haiku_message_was_dropped(void* msg) {
+    return static_cast<BMessage*>(msg)->WasDropped() ? 1 : 0;
+}
+
+void eb_haiku_message_drop_point(void* msg, float* outX, float* outY) {
+    BPoint p = static_cast<BMessage*>(msg)->DropPoint();
+    *outX = p.x;
+    *outY = p.y;
+}
+
 // ---- BLocker ----
 
 void* eb_haiku_locker_create(void) { return new BLocker(); }

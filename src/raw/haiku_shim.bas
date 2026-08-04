@@ -163,6 +163,8 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_message_count_items(BYVAL msg AS ANY PTR, BYVAL name AS ZSTRING, BYVAL msgType AS UINTEGER) AS INTEGER
     Declare Function eb_haiku_message_find_string_at(BYVAL msg AS ANY PTR, BYVAL name AS ZSTRING, BYVAL index AS INTEGER) AS ZSTRING
     Declare Function eb_haiku_message_find_ref_at(BYVAL msg AS ANY PTR, BYVAL name AS ZSTRING, BYVAL index AS INTEGER, BYVAL outPath AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_message_was_dropped(BYVAL msg AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_message_drop_point(BYVAL msg AS ANY PTR, BYVAL outX AS ANY PTR, BYVAL outY AS ANY PTR)
 
     ' ---- BLocker ----
     Declare Function eb_haiku_locker_create() AS ANY PTR

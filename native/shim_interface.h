@@ -93,6 +93,24 @@ void eb_haiku_view_draw_string(void* view, const char* text, float x, float y);
 // at (x, y), at its own native size (no scaling).
 void eb_haiku_view_draw_bitmap(void* view, void* bitmap, float x, float y);
 
+// Initiates a real drag - call from inside an existing MouseDown
+// callback (no new callback plumbing needed: DragMessage() is
+// synchronous, and the dropped message later arrives at the drop
+// target's own, already-existing MessageReceived callback, read via
+// eb_haiku_message_was_dropped/drop_point below). The simplest, no-
+// bitmap overload - real drag-visual bitmaps are a reasonable follow-on,
+// not bound here.
+//
+// IMPORTANT, confirmed by direct reproduction: calling this OUTSIDE a
+// real MouseDown callback while an actual mouse button is held down
+// blocks indefinitely - real Haiku's own mouse-tracking wait never
+// completes with no real button pressed - the same "not triggerable
+// over SSH" limitation already documented for BPrintJob::ConfigJob/
+// BPopUpMenu::Go. This package's own tests never call this headlessly;
+// only a real, interactive desktop session can exercise it end to end.
+void eb_haiku_view_drag_message(void* view, void* message, float left, float top, float right,
+                                 float bottom);
+
 // ---- Stock controls (BButton/BStringView/BTextControl - plain,
 // non-subclassed) ----
 //
