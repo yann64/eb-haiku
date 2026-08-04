@@ -1,6 +1,7 @@
 ' Idiomatic layer: BDirectory.
 
 #include once "raw/haiku_shim.bas"
+#include once "raw/haiku_shim_storage.bas"
 #include once "entry.bas"
 
 TYPE HDirectory
@@ -46,6 +47,14 @@ END FUNCTION
 ''' absolute) - returns a status code (0 = success).
 FUNCTION HDirectoryCreateDirectory(BYVAL d AS HDirectory, path AS ZSTRING) AS INTEGER
     HDirectoryCreateDirectory = eb_haiku_directory_create_directory(d.handle, path)
+END FUNCTION
+
+''' Creates a real symlink at `path` (relative to `d`, or absolute)
+''' pointing at `linkToPath` - returns a status code (0 = success). Open
+''' the resulting symlink itself via HSymLinkCreate (symlink.bas) if you
+''' need to read it back.
+FUNCTION HDirectoryCreateSymLink(BYVAL d AS HDirectory, path AS ZSTRING, linkToPath AS ZSTRING) AS INTEGER
+    HDirectoryCreateSymLink = eb_haiku_directory_create_symlink(d.handle, path, linkToPath)
 END FUNCTION
 
 ''' Frees an HDirectory - call exactly once.

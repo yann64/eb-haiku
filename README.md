@@ -35,6 +35,60 @@ bind to.
 lifecycle - see `src/path.bas`, `src/entry.bas`, `src/directory.bas`,
 `src/node.bas`, `src/message.bas`, `src/application.bas`.
 
+**Storage Kit extensions (v0.5.0, complete)** - see `src/entry.bas`/
+`node.bas` (extended), `src/symlink.bas`, `src/volume.bas`,
+`src/query.bas`:
+
+- **`BStatable`** (permissions/owner/group/size/modification+creation
+  time, `IsSymLink`, `GetVolume`) on `HEntry`/`HNode` - bound **per
+  concrete type** (not one generic `BStatable*`-accepting function),
+  each shim function `static_cast`-ing its own handle straight to its
+  own known concrete type - a real lesson from the Translation Kit's
+  `BFile` multiple-inheritance bug (see below): a `void*` handle can
+  only safely become a base-class pointer at a point where the
+  compiler still knows its real static type.
+- **`BNode` typed attributes** beyond the existing string pair -
+  `HNodeWriteAttrInt32`/`Int64`/`Bool`/`Double` + matching `Read*`
+  (found/not-found, not just a bare sentinel), a raw `B_RAW_TYPE`
+  escape hatch (`HNodeWriteAttrRaw`/`ReadAttrRaw`) for anything else,
+  and `HNodeGetAttrInfo` to introspect an unknown attribute's real
+  type/size (e.g. one written by another real Haiku app) before
+  reading it.
+- **`BSymLink`** (`HSymLinkCreate`/`ReadLink`/`IsAbsolute`) +
+  `HDirectoryCreateSymLink` - real symlinks, a real POSIX-ish feature
+  Haiku fully supports.
+- **`BVolume`/`BVolumeRoster`** (`HVolumeRosterGetNextVolume`/
+  `GetBootVolume`, `HVolumeCapacity`/`FreeBytes`/`GetName`/
+  `IsReadOnly`/... ) - real mounted-volume/disk info.
+- **`BQuery`** (`HQueryCreate`/`SetVolume`/`SetPredicate`/`Fetch`/
+  `GetNextEntry`) - Haiku's own live, attribute-based filesystem search,
+  with no POSIX equivalent, bound via the plain predicate-string API
+  (`SetPredicate`) rather than the `Push*`/`PushOp` reverse-polish
+  stack builder (identical expressiveness for one string parameter).
+  **A real, sharp BFS behavior, confirmed by direct reproduction**: a
+  query predicate only ever matches *indexed* attributes, and indexing
+  is **not retroactive** - an attribute value written *before* its
+  index existed is never picked up by that index, silently, no error
+  anywhere. `HCreateIndex` (a real, plain `extern "C"` kernel function,
+  `fs_create_index` - not a shim wrapper, like `find_directory`) must
+  run *before* the attribute is ever written, not just before the
+  query - see `HCreateIndex`'s own doc comment in `src/query.bas` and
+  `examples/query_files.bas`.
+- **Explicitly out of scope, with reasoning**: `BMimeType` (the
+  separate meta-mime-database class - icons, sniffer rules, supported-
+  apps registry; the common per-file case is already covered by
+  `BNodeInfo::GetType`/`SetType` from Phase 1), `BAppFileInfo`/
+  `BResources` (executable metadata/embedded resources - no current
+  eBasic packaging story), the Disk Device Kit (mount/unmount, raw
+  device path - a different Kit), `BQuery`'s `Push*`/`PushOp` stack
+  builder (a string predicate covers the same expressiveness),
+  live/watching variants (`BQuery::SetTarget`/`IsLive`,
+  `BVolumeRoster::StartWatching`/`StopWatching` - both need
+  `BMessenger`/message-loop integration, deferred together), typed
+  attributes beyond the practical scalar set (`B_MESSAGE_TYPE`/
+  `B_RECT_TYPE`/`B_POINT_TYPE`/`B_RGB_COLOR_TYPE` - the raw escape
+  hatch already covers these), and `BVolume::GetIcon`/`SetName`.
+
 **Phase 2 (GUI)**: real windows, custom drawing, and stock controls -
 `BWindow`/`BView` reached via real C++ shim subclasses (`ShimWindow`/
 `ShimView` in `native/shim_interface.cpp`) forwarding
@@ -170,7 +224,8 @@ Matching `eb-cjson`'s own convention:
   `HEntry`/`HDirectory`/`HNode`/`HNodeInfo`/`HMessage`/`HApplication`/
   `HWindow`/`HView`/`HShimView`/`HButton`/`HStringView`/`HTextControl`/
   `HGroupLayout`/`HGridLayout`/`HCardLayout`/`HSplitView`/`HBitmap`/
-  `HFile`/`HTranslatorRoster`/`HBitmapStream`, each a thin
+  `HFile`/`HTranslatorRoster`/`HBitmapStream`/`HSymLink`/`HVolume`/
+  `HVolumeRoster`/`HQuery`, each a thin
   `TYPE ... : handle AS ANY PTR : END TYPE` wrapper plus free functions.
   Every parameter is explicitly `BYVAL` - each is just an 8-byte handle,
   cheap to copy. `BSize`/`BAlignment` are likewise plain value structs
@@ -239,7 +294,7 @@ layout area).
 
 ```toml
 [dependencies]
-eb-haiku = "^0.4"
+eb-haiku = "^0.5"
 ```
 
 ```basic

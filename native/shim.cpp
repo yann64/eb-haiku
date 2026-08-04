@@ -7,7 +7,9 @@
 #include <NodeInfo.h>
 #include <Path.h>
 #include <TypeConstants.h>
+#include <Volume.h>
 #include <app/Application.h>
+#include <fs_attr.h>
 
 #include <cstring>
 
@@ -68,6 +70,78 @@ int eb_haiku_entry_rename(void* entry, const char* newPath, int clobber) {
 }
 
 void eb_haiku_entry_destroy(void* entry) { delete static_cast<BEntry*>(entry); }
+
+// ---- BEntry / BStatable ----
+
+int eb_haiku_entry_is_symlink(void* entry) {
+    return static_cast<BEntry*>(entry)->IsSymLink() ? 1 : 0;
+}
+
+int eb_haiku_entry_get_permissions(void* entry, unsigned int* outPermissions) {
+    mode_t mode;
+    status_t rc = static_cast<BEntry*>(entry)->GetPermissions(&mode);
+    *outPermissions = static_cast<unsigned int>(mode);
+    return rc;
+}
+
+int eb_haiku_entry_set_permissions(void* entry, unsigned int permissions) {
+    return static_cast<BEntry*>(entry)->SetPermissions(static_cast<mode_t>(permissions));
+}
+
+int eb_haiku_entry_get_owner(void* entry, unsigned int* outOwner) {
+    uid_t owner;
+    status_t rc = static_cast<BEntry*>(entry)->GetOwner(&owner);
+    *outOwner = static_cast<unsigned int>(owner);
+    return rc;
+}
+
+int eb_haiku_entry_set_owner(void* entry, unsigned int owner) {
+    return static_cast<BEntry*>(entry)->SetOwner(static_cast<uid_t>(owner));
+}
+
+int eb_haiku_entry_get_group(void* entry, unsigned int* outGroup) {
+    gid_t group;
+    status_t rc = static_cast<BEntry*>(entry)->GetGroup(&group);
+    *outGroup = static_cast<unsigned int>(group);
+    return rc;
+}
+
+int eb_haiku_entry_set_group(void* entry, unsigned int group) {
+    return static_cast<BEntry*>(entry)->SetGroup(static_cast<gid_t>(group));
+}
+
+int eb_haiku_entry_get_size(void* entry, long long* outSize) {
+    off_t size;
+    status_t rc = static_cast<BEntry*>(entry)->GetSize(&size);
+    *outSize = static_cast<long long>(size);
+    return rc;
+}
+
+int eb_haiku_entry_get_modification_time(void* entry, long long* outTime) {
+    time_t t;
+    status_t rc = static_cast<BEntry*>(entry)->GetModificationTime(&t);
+    *outTime = static_cast<long long>(t);
+    return rc;
+}
+
+int eb_haiku_entry_set_modification_time(void* entry, long long time) {
+    return static_cast<BEntry*>(entry)->SetModificationTime(static_cast<time_t>(time));
+}
+
+int eb_haiku_entry_get_creation_time(void* entry, long long* outTime) {
+    time_t t;
+    status_t rc = static_cast<BEntry*>(entry)->GetCreationTime(&t);
+    *outTime = static_cast<long long>(t);
+    return rc;
+}
+
+int eb_haiku_entry_set_creation_time(void* entry, long long time) {
+    return static_cast<BEntry*>(entry)->SetCreationTime(static_cast<time_t>(time));
+}
+
+int eb_haiku_entry_get_volume(void* entry, void* outVolume) {
+    return static_cast<BEntry*>(entry)->GetVolume(static_cast<BVolume*>(outVolume));
+}
 
 // ---- BDirectory ----
 
@@ -135,6 +209,148 @@ char* eb_haiku_node_get_next_attr_name(void* node) {
 
 int eb_haiku_node_rewind_attrs(void* node) { return static_cast<BNode*>(node)->RewindAttrs(); }
 void eb_haiku_node_destroy(void* node) { delete static_cast<BNode*>(node); }
+
+// ---- BNode / BStatable ----
+
+int eb_haiku_node_get_permissions(void* node, unsigned int* outPermissions) {
+    mode_t mode;
+    status_t rc = static_cast<BNode*>(node)->GetPermissions(&mode);
+    *outPermissions = static_cast<unsigned int>(mode);
+    return rc;
+}
+
+int eb_haiku_node_set_permissions(void* node, unsigned int permissions) {
+    return static_cast<BNode*>(node)->SetPermissions(static_cast<mode_t>(permissions));
+}
+
+int eb_haiku_node_get_owner(void* node, unsigned int* outOwner) {
+    uid_t owner;
+    status_t rc = static_cast<BNode*>(node)->GetOwner(&owner);
+    *outOwner = static_cast<unsigned int>(owner);
+    return rc;
+}
+
+int eb_haiku_node_set_owner(void* node, unsigned int owner) {
+    return static_cast<BNode*>(node)->SetOwner(static_cast<uid_t>(owner));
+}
+
+int eb_haiku_node_get_group(void* node, unsigned int* outGroup) {
+    gid_t group;
+    status_t rc = static_cast<BNode*>(node)->GetGroup(&group);
+    *outGroup = static_cast<unsigned int>(group);
+    return rc;
+}
+
+int eb_haiku_node_set_group(void* node, unsigned int group) {
+    return static_cast<BNode*>(node)->SetGroup(static_cast<gid_t>(group));
+}
+
+int eb_haiku_node_get_size(void* node, long long* outSize) {
+    off_t size;
+    status_t rc = static_cast<BNode*>(node)->GetSize(&size);
+    *outSize = static_cast<long long>(size);
+    return rc;
+}
+
+int eb_haiku_node_get_modification_time(void* node, long long* outTime) {
+    time_t t;
+    status_t rc = static_cast<BNode*>(node)->GetModificationTime(&t);
+    *outTime = static_cast<long long>(t);
+    return rc;
+}
+
+int eb_haiku_node_set_modification_time(void* node, long long time) {
+    return static_cast<BNode*>(node)->SetModificationTime(static_cast<time_t>(time));
+}
+
+int eb_haiku_node_get_creation_time(void* node, long long* outTime) {
+    time_t t;
+    status_t rc = static_cast<BNode*>(node)->GetCreationTime(&t);
+    *outTime = static_cast<long long>(t);
+    return rc;
+}
+
+int eb_haiku_node_set_creation_time(void* node, long long time) {
+    return static_cast<BNode*>(node)->SetCreationTime(static_cast<time_t>(time));
+}
+
+int eb_haiku_node_get_volume(void* node, void* outVolume) {
+    return static_cast<BNode*>(node)->GetVolume(static_cast<BVolume*>(outVolume));
+}
+
+// ---- BNode typed attributes ----
+
+int eb_haiku_node_write_attr_int32(void* node, const char* name, int value) {
+    int32 v = value;
+    return static_cast<int>(static_cast<BNode*>(node)->WriteAttr(name, B_INT32_TYPE, 0, &v, sizeof(v)));
+}
+
+int eb_haiku_node_read_attr_int32(void* node, const char* name, int* outValue) {
+    int32 v;
+    ssize_t n = static_cast<BNode*>(node)->ReadAttr(name, B_INT32_TYPE, 0, &v, sizeof(v));
+    if (n != sizeof(v)) return 0;
+    *outValue = v;
+    return 1;
+}
+
+int eb_haiku_node_write_attr_int64(void* node, const char* name, long long value) {
+    int64 v = value;
+    return static_cast<int>(static_cast<BNode*>(node)->WriteAttr(name, B_INT64_TYPE, 0, &v, sizeof(v)));
+}
+
+int eb_haiku_node_read_attr_int64(void* node, const char* name, long long* outValue) {
+    int64 v;
+    ssize_t n = static_cast<BNode*>(node)->ReadAttr(name, B_INT64_TYPE, 0, &v, sizeof(v));
+    if (n != sizeof(v)) return 0;
+    *outValue = v;
+    return 1;
+}
+
+int eb_haiku_node_write_attr_bool(void* node, const char* name, int value) {
+    bool v = value != 0;
+    return static_cast<int>(static_cast<BNode*>(node)->WriteAttr(name, B_BOOL_TYPE, 0, &v, sizeof(v)));
+}
+
+int eb_haiku_node_read_attr_bool(void* node, const char* name, int* outValue) {
+    bool v;
+    ssize_t n = static_cast<BNode*>(node)->ReadAttr(name, B_BOOL_TYPE, 0, &v, sizeof(v));
+    if (n != sizeof(v)) return 0;
+    *outValue = v ? 1 : 0;
+    return 1;
+}
+
+int eb_haiku_node_write_attr_double(void* node, const char* name, double value) {
+    return static_cast<int>(
+        static_cast<BNode*>(node)->WriteAttr(name, B_DOUBLE_TYPE, 0, &value, sizeof(value)));
+}
+
+int eb_haiku_node_read_attr_double(void* node, const char* name, double* outValue) {
+    double v;
+    ssize_t n = static_cast<BNode*>(node)->ReadAttr(name, B_DOUBLE_TYPE, 0, &v, sizeof(v));
+    if (n != sizeof(v)) return 0;
+    *outValue = v;
+    return 1;
+}
+
+int eb_haiku_node_write_attr_raw(void* node, const char* name, const void* buffer, int size) {
+    return static_cast<int>(
+        static_cast<BNode*>(node)->WriteAttr(name, B_RAW_TYPE, 0, buffer, static_cast<size_t>(size)));
+}
+
+int eb_haiku_node_read_attr_raw(void* node, const char* name, void* buffer, int bufferSize) {
+    return static_cast<int>(static_cast<BNode*>(node)->ReadAttr(name, B_RAW_TYPE, 0, buffer,
+                                                                  static_cast<size_t>(bufferSize)));
+}
+
+int eb_haiku_node_get_attr_info(void* node, const char* name, unsigned int* outType,
+                                 long long* outSize) {
+    attr_info info;
+    status_t rc = static_cast<BNode*>(node)->GetAttrInfo(name, &info);
+    if (rc != B_OK) return rc;
+    *outType = info.type;
+    *outSize = static_cast<long long>(info.size);
+    return rc;
+}
 
 // ---- BNodeInfo ----
 

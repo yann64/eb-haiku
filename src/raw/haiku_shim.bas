@@ -15,6 +15,19 @@
 ' own Is* functions for exactly the same reason: these are real C `int`
 ' return values from the shim, not eBasic BOOLEAN expressions.
 
+' Real Haiku type_code constants (support/TypeConstants.h) - FourCC-
+' style, NOT hand-derivable reliably (multichar-literal bit packing is
+' compiler/platform behavior) - confirmed by compiling and printing
+' each one on the real Haiku host, matching this package's own
+' "verify, don't assume" discipline. Used to interpret
+' eb_haiku_node_get_attr_info's own outType result.
+CONST H_ATTR_TYPE_INT32 = 1280265799
+CONST H_ATTR_TYPE_INT64 = 1280069191
+CONST H_ATTR_TYPE_BOOL = 1112493900
+CONST H_ATTR_TYPE_DOUBLE = 1145195589
+CONST H_ATTR_TYPE_STRING = 1129534546
+CONST H_ATTR_TYPE_RAW = 1380013908
+
 Extern "C" Lib "ebhaikushim"
     ' ---- BPath ----
     Declare Function eb_haiku_path_create(BYVAL pathStr AS ZSTRING) AS ANY PTR
@@ -40,6 +53,21 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_entry_rename(BYVAL entry AS ANY PTR, BYVAL newPath AS ZSTRING, BYVAL clobber AS INTEGER) AS INTEGER
     Declare Sub eb_haiku_entry_destroy(BYVAL entry AS ANY PTR)
 
+    ' ---- BEntry / BStatable (real stat info) ----
+    Declare Function eb_haiku_entry_is_symlink(BYVAL entry AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_entry_get_permissions(BYVAL entry AS ANY PTR, BYVAL outPermissions AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_entry_set_permissions(BYVAL entry AS ANY PTR, BYVAL permissions AS UINTEGER) AS INTEGER
+    Declare Function eb_haiku_entry_get_owner(BYVAL entry AS ANY PTR, BYVAL outOwner AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_entry_set_owner(BYVAL entry AS ANY PTR, BYVAL owner AS UINTEGER) AS INTEGER
+    Declare Function eb_haiku_entry_get_group(BYVAL entry AS ANY PTR, BYVAL outGroup AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_entry_set_group(BYVAL entry AS ANY PTR, BYVAL group AS UINTEGER) AS INTEGER
+    Declare Function eb_haiku_entry_get_size(BYVAL entry AS ANY PTR, BYVAL outSize AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_entry_get_modification_time(BYVAL entry AS ANY PTR, BYVAL outTime AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_entry_set_modification_time(BYVAL entry AS ANY PTR, BYVAL time AS LONGINT) AS INTEGER
+    Declare Function eb_haiku_entry_get_creation_time(BYVAL entry AS ANY PTR, BYVAL outTime AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_entry_set_creation_time(BYVAL entry AS ANY PTR, BYVAL time AS LONGINT) AS INTEGER
+    Declare Function eb_haiku_entry_get_volume(BYVAL entry AS ANY PTR, BYVAL outVolume AS ANY PTR) AS INTEGER
+
     ' ---- BDirectory ----
     Declare Function eb_haiku_directory_create(BYVAL path AS ZSTRING) AS ANY PTR
     Declare Function eb_haiku_directory_init_check(BYVAL dir AS ANY PTR) AS INTEGER
@@ -63,6 +91,33 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_node_get_next_attr_name(BYVAL node AS ANY PTR) AS ANY PTR
     Declare Function eb_haiku_node_rewind_attrs(BYVAL node AS ANY PTR) AS INTEGER
     Declare Sub eb_haiku_node_destroy(BYVAL node AS ANY PTR)
+
+    ' ---- BNode / BStatable (real stat info) ----
+    Declare Function eb_haiku_node_get_permissions(BYVAL node AS ANY PTR, BYVAL outPermissions AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_node_set_permissions(BYVAL node AS ANY PTR, BYVAL permissions AS UINTEGER) AS INTEGER
+    Declare Function eb_haiku_node_get_owner(BYVAL node AS ANY PTR, BYVAL outOwner AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_node_set_owner(BYVAL node AS ANY PTR, BYVAL owner AS UINTEGER) AS INTEGER
+    Declare Function eb_haiku_node_get_group(BYVAL node AS ANY PTR, BYVAL outGroup AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_node_set_group(BYVAL node AS ANY PTR, BYVAL group AS UINTEGER) AS INTEGER
+    Declare Function eb_haiku_node_get_size(BYVAL node AS ANY PTR, BYVAL outSize AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_node_get_modification_time(BYVAL node AS ANY PTR, BYVAL outTime AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_node_set_modification_time(BYVAL node AS ANY PTR, BYVAL time AS LONGINT) AS INTEGER
+    Declare Function eb_haiku_node_get_creation_time(BYVAL node AS ANY PTR, BYVAL outTime AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_node_set_creation_time(BYVAL node AS ANY PTR, BYVAL time AS LONGINT) AS INTEGER
+    Declare Function eb_haiku_node_get_volume(BYVAL node AS ANY PTR, BYVAL outVolume AS ANY PTR) AS INTEGER
+
+    ' ---- BNode typed attributes (beyond B_STRING_TYPE) ----
+    Declare Function eb_haiku_node_write_attr_int32(BYVAL node AS ANY PTR, BYVAL name AS ZSTRING, BYVAL value AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_node_read_attr_int32(BYVAL node AS ANY PTR, BYVAL name AS ZSTRING, BYVAL outValue AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_node_write_attr_int64(BYVAL node AS ANY PTR, BYVAL name AS ZSTRING, BYVAL value AS LONGINT) AS INTEGER
+    Declare Function eb_haiku_node_read_attr_int64(BYVAL node AS ANY PTR, BYVAL name AS ZSTRING, BYVAL outValue AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_node_write_attr_bool(BYVAL node AS ANY PTR, BYVAL name AS ZSTRING, BYVAL value AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_node_read_attr_bool(BYVAL node AS ANY PTR, BYVAL name AS ZSTRING, BYVAL outValue AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_node_write_attr_double(BYVAL node AS ANY PTR, BYVAL name AS ZSTRING, BYVAL value AS DOUBLE) AS INTEGER
+    Declare Function eb_haiku_node_read_attr_double(BYVAL node AS ANY PTR, BYVAL name AS ZSTRING, BYVAL outValue AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_node_write_attr_raw(BYVAL node AS ANY PTR, BYVAL name AS ZSTRING, BYVAL buffer AS ANY PTR, BYVAL size AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_node_read_attr_raw(BYVAL node AS ANY PTR, BYVAL name AS ZSTRING, BYVAL buffer AS ANY PTR, BYVAL bufferSize AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_node_get_attr_info(BYVAL node AS ANY PTR, BYVAL name AS ZSTRING, BYVAL outType AS ANY PTR, BYVAL outSize AS ANY PTR) AS INTEGER
 
     ' ---- BNodeInfo (MIME type) ----
     Declare Function eb_haiku_nodeinfo_create(BYVAL node AS ANY PTR) AS ANY PTR

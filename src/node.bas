@@ -84,6 +84,148 @@ SUB HNodeFree(BYVAL n AS HNode)
     CALL eb_haiku_node_destroy(n.handle)
 END SUB
 
+' ---- BStatable (real stat info) - same getter/setter convention as
+' HEntry's own (see entry.bas) - getters return the value directly,
+' setters return a status code.
+
+FUNCTION HNodeGetPermissions(BYVAL n AS HNode) AS UINTEGER
+    DIM v AS UINTEGER
+    CALL eb_haiku_node_get_permissions(n.handle, @v)
+    HNodeGetPermissions = v
+END FUNCTION
+
+FUNCTION HNodeSetPermissions(BYVAL n AS HNode, BYVAL permissions AS UINTEGER) AS INTEGER
+    HNodeSetPermissions = eb_haiku_node_set_permissions(n.handle, permissions)
+END FUNCTION
+
+FUNCTION HNodeGetOwner(BYVAL n AS HNode) AS UINTEGER
+    DIM v AS UINTEGER
+    CALL eb_haiku_node_get_owner(n.handle, @v)
+    HNodeGetOwner = v
+END FUNCTION
+
+FUNCTION HNodeSetOwner(BYVAL n AS HNode, BYVAL owner AS UINTEGER) AS INTEGER
+    HNodeSetOwner = eb_haiku_node_set_owner(n.handle, owner)
+END FUNCTION
+
+FUNCTION HNodeGetGroup(BYVAL n AS HNode) AS UINTEGER
+    DIM v AS UINTEGER
+    CALL eb_haiku_node_get_group(n.handle, @v)
+    HNodeGetGroup = v
+END FUNCTION
+
+FUNCTION HNodeSetGroup(BYVAL n AS HNode, BYVAL group AS UINTEGER) AS INTEGER
+    HNodeSetGroup = eb_haiku_node_set_group(n.handle, group)
+END FUNCTION
+
+FUNCTION HNodeGetSize(BYVAL n AS HNode) AS LONGINT
+    DIM v AS LONGINT
+    CALL eb_haiku_node_get_size(n.handle, @v)
+    HNodeGetSize = v
+END FUNCTION
+
+FUNCTION HNodeGetModificationTime(BYVAL n AS HNode) AS LONGINT
+    DIM v AS LONGINT
+    CALL eb_haiku_node_get_modification_time(n.handle, @v)
+    HNodeGetModificationTime = v
+END FUNCTION
+
+FUNCTION HNodeSetModificationTime(BYVAL n AS HNode, BYVAL time AS LONGINT) AS INTEGER
+    HNodeSetModificationTime = eb_haiku_node_set_modification_time(n.handle, time)
+END FUNCTION
+
+FUNCTION HNodeGetCreationTime(BYVAL n AS HNode) AS LONGINT
+    DIM v AS LONGINT
+    CALL eb_haiku_node_get_creation_time(n.handle, @v)
+    HNodeGetCreationTime = v
+END FUNCTION
+
+FUNCTION HNodeSetCreationTime(BYVAL n AS HNode, BYVAL time AS LONGINT) AS INTEGER
+    HNodeSetCreationTime = eb_haiku_node_set_creation_time(n.handle, time)
+END FUNCTION
+
+' ---- BNode typed attributes (beyond string, see HNodeWriteAttrString/
+' HNodeReadAttrString above) - each Write* returns bytes written (>= 0)
+' or a negative status code, matching HNodeWriteAttrString. Each Read*
+' returns 1 (found, `outValue` filled) or 0 (absent/wrong type) -
+' distinguishable from a valid zero value, unlike a bare sentinel.
+
+FUNCTION HNodeWriteAttrInt32(BYVAL n AS HNode, name AS ZSTRING, BYVAL value AS INTEGER) AS INTEGER
+    HNodeWriteAttrInt32 = eb_haiku_node_write_attr_int32(n.handle, name, value)
+END FUNCTION
+
+FUNCTION HNodeReadAttrInt32(BYVAL n AS HNode, name AS ZSTRING, BYREF outValue AS INTEGER) AS INTEGER
+    DIM v AS INTEGER
+    DIM found AS INTEGER
+    found = eb_haiku_node_read_attr_int32(n.handle, name, @v)
+    outValue = v
+    HNodeReadAttrInt32 = found
+END FUNCTION
+
+FUNCTION HNodeWriteAttrInt64(BYVAL n AS HNode, name AS ZSTRING, BYVAL value AS LONGINT) AS INTEGER
+    HNodeWriteAttrInt64 = eb_haiku_node_write_attr_int64(n.handle, name, value)
+END FUNCTION
+
+FUNCTION HNodeReadAttrInt64(BYVAL n AS HNode, name AS ZSTRING, BYREF outValue AS LONGINT) AS INTEGER
+    DIM v AS LONGINT
+    DIM found AS INTEGER
+    found = eb_haiku_node_read_attr_int64(n.handle, name, @v)
+    outValue = v
+    HNodeReadAttrInt64 = found
+END FUNCTION
+
+FUNCTION HNodeWriteAttrBool(BYVAL n AS HNode, name AS ZSTRING, BYVAL value AS INTEGER) AS INTEGER
+    HNodeWriteAttrBool = eb_haiku_node_write_attr_bool(n.handle, name, value)
+END FUNCTION
+
+FUNCTION HNodeReadAttrBool(BYVAL n AS HNode, name AS ZSTRING, BYREF outValue AS INTEGER) AS INTEGER
+    DIM v AS INTEGER
+    DIM found AS INTEGER
+    found = eb_haiku_node_read_attr_bool(n.handle, name, @v)
+    outValue = v
+    HNodeReadAttrBool = found
+END FUNCTION
+
+FUNCTION HNodeWriteAttrDouble(BYVAL n AS HNode, name AS ZSTRING, BYVAL value AS DOUBLE) AS INTEGER
+    HNodeWriteAttrDouble = eb_haiku_node_write_attr_double(n.handle, name, value)
+END FUNCTION
+
+FUNCTION HNodeReadAttrDouble(BYVAL n AS HNode, name AS ZSTRING, BYREF outValue AS DOUBLE) AS INTEGER
+    DIM v AS DOUBLE
+    DIM found AS INTEGER
+    found = eb_haiku_node_read_attr_double(n.handle, name, @v)
+    outValue = v
+    HNodeReadAttrDouble = found
+END FUNCTION
+
+''' Low-level escape hatch (B_RAW_TYPE) for any attribute type not
+''' covered by the typed variants above - `buffer`/`size` are a plain
+''' caller-owned byte buffer (e.g. `@someArray(0)`), matching this
+''' package's own established out-buffer convention. Returns bytes
+''' written/read (>= 0), or a negative status code.
+FUNCTION HNodeWriteAttrRaw(BYVAL n AS HNode, name AS ZSTRING, BYVAL buffer AS ANY PTR, BYVAL size AS INTEGER) AS INTEGER
+    HNodeWriteAttrRaw = eb_haiku_node_write_attr_raw(n.handle, name, buffer, size)
+END FUNCTION
+
+FUNCTION HNodeReadAttrRaw(BYVAL n AS HNode, name AS ZSTRING, BYVAL buffer AS ANY PTR, BYVAL bufferSize AS INTEGER) AS INTEGER
+    HNodeReadAttrRaw = eb_haiku_node_read_attr_raw(n.handle, name, buffer, bufferSize)
+END FUNCTION
+
+''' Fills `outType`/`outSize` with an existing attribute's own real
+''' type_code (one of the H_ATTR_TYPE_* constants in
+''' raw/haiku_shim.bas) and size in bytes - use before HNodeReadAttrRaw
+''' on an attribute of unknown shape (e.g. written by another real
+''' Haiku app). Returns a status code (0 = success).
+FUNCTION HNodeGetAttrInfo(BYVAL n AS HNode, name AS ZSTRING, BYREF outType AS UINTEGER, BYREF outSize AS LONGINT) AS INTEGER
+    DIM t AS UINTEGER
+    DIM s AS LONGINT
+    DIM rc AS INTEGER
+    rc = eb_haiku_node_get_attr_info(n.handle, name, @t, @s)
+    outType = t
+    outSize = s
+    HNodeGetAttrInfo = rc
+END FUNCTION
+
 TYPE HNodeInfo
     handle AS ANY PTR
 END TYPE

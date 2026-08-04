@@ -66,3 +66,71 @@ END FUNCTION
 SUB HEntryFree(BYVAL e AS HEntry)
     CALL eb_haiku_entry_destroy(e.handle)
 END SUB
+
+' ---- BStatable (real stat info) - getters return the value directly
+' (0/default on failure, matching HEntryName/HDirectoryCountEntries'
+' own established convention); setters return a status code (0 =
+' success), matching HEntryRemove/HEntryRename.
+
+FUNCTION HEntryIsSymLink(BYVAL e AS HEntry) AS INTEGER
+    HEntryIsSymLink = eb_haiku_entry_is_symlink(e.handle)
+END FUNCTION
+
+''' Real POSIX file permission bits (e.g. &O644).
+FUNCTION HEntryGetPermissions(BYVAL e AS HEntry) AS UINTEGER
+    DIM v AS UINTEGER
+    CALL eb_haiku_entry_get_permissions(e.handle, @v)
+    HEntryGetPermissions = v
+END FUNCTION
+
+FUNCTION HEntrySetPermissions(BYVAL e AS HEntry, BYVAL permissions AS UINTEGER) AS INTEGER
+    HEntrySetPermissions = eb_haiku_entry_set_permissions(e.handle, permissions)
+END FUNCTION
+
+FUNCTION HEntryGetOwner(BYVAL e AS HEntry) AS UINTEGER
+    DIM v AS UINTEGER
+    CALL eb_haiku_entry_get_owner(e.handle, @v)
+    HEntryGetOwner = v
+END FUNCTION
+
+FUNCTION HEntrySetOwner(BYVAL e AS HEntry, BYVAL owner AS UINTEGER) AS INTEGER
+    HEntrySetOwner = eb_haiku_entry_set_owner(e.handle, owner)
+END FUNCTION
+
+FUNCTION HEntryGetGroup(BYVAL e AS HEntry) AS UINTEGER
+    DIM v AS UINTEGER
+    CALL eb_haiku_entry_get_group(e.handle, @v)
+    HEntryGetGroup = v
+END FUNCTION
+
+FUNCTION HEntrySetGroup(BYVAL e AS HEntry, BYVAL group AS UINTEGER) AS INTEGER
+    HEntrySetGroup = eb_haiku_entry_set_group(e.handle, group)
+END FUNCTION
+
+''' The real file size in bytes.
+FUNCTION HEntryGetSize(BYVAL e AS HEntry) AS LONGINT
+    DIM v AS LONGINT
+    CALL eb_haiku_entry_get_size(e.handle, @v)
+    HEntryGetSize = v
+END FUNCTION
+
+''' A Unix timestamp (seconds since 1970-01-01 UTC).
+FUNCTION HEntryGetModificationTime(BYVAL e AS HEntry) AS LONGINT
+    DIM v AS LONGINT
+    CALL eb_haiku_entry_get_modification_time(e.handle, @v)
+    HEntryGetModificationTime = v
+END FUNCTION
+
+FUNCTION HEntrySetModificationTime(BYVAL e AS HEntry, BYVAL time AS LONGINT) AS INTEGER
+    HEntrySetModificationTime = eb_haiku_entry_set_modification_time(e.handle, time)
+END FUNCTION
+
+FUNCTION HEntryGetCreationTime(BYVAL e AS HEntry) AS LONGINT
+    DIM v AS LONGINT
+    CALL eb_haiku_entry_get_creation_time(e.handle, @v)
+    HEntryGetCreationTime = v
+END FUNCTION
+
+FUNCTION HEntrySetCreationTime(BYVAL e AS HEntry, BYVAL time AS LONGINT) AS INTEGER
+    HEntrySetCreationTime = eb_haiku_entry_set_creation_time(e.handle, time)
+END FUNCTION

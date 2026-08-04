@@ -39,6 +39,32 @@ int eb_haiku_entry_remove(void* entry);
 int eb_haiku_entry_rename(void* entry, const char* newPath, int clobber);
 void eb_haiku_entry_destroy(void* entry);
 
+// ---- BEntry / BStatable (storage/Statable.h) - real stat info, bound
+// per concrete type (not a generic BStatable*-accepting function) to
+// avoid any multiple-inheritance pointer-adjustment risk - see this
+// package's own README on the real MI bug found and fixed for BFile in
+// the Translation Kit. Every getter returns a status_t (0 = success)
+// and writes through an out-param; every setter takes the value
+// directly. mode_t/uid_t/gid_t are real 4-byte types on Haiku
+// (confirmed via a compiled probe, not assumed) - passed as
+// `unsigned int`. off_t/time_t are real 8-byte types - passed as
+// `long long`.
+int eb_haiku_entry_is_symlink(void* entry);
+int eb_haiku_entry_get_permissions(void* entry, unsigned int* outPermissions);
+int eb_haiku_entry_set_permissions(void* entry, unsigned int permissions);
+int eb_haiku_entry_get_owner(void* entry, unsigned int* outOwner);
+int eb_haiku_entry_set_owner(void* entry, unsigned int owner);
+int eb_haiku_entry_get_group(void* entry, unsigned int* outGroup);
+int eb_haiku_entry_set_group(void* entry, unsigned int group);
+int eb_haiku_entry_get_size(void* entry, long long* outSize);
+int eb_haiku_entry_get_modification_time(void* entry, long long* outTime);
+int eb_haiku_entry_set_modification_time(void* entry, long long time);
+int eb_haiku_entry_get_creation_time(void* entry, long long* outTime);
+int eb_haiku_entry_set_creation_time(void* entry, long long time);
+// Fills `outVolume` (from eb_haiku_volume_create_empty, shim_storage.h)
+// with the volume this entry lives on. Returns a status_t.
+int eb_haiku_entry_get_volume(void* entry, void* outVolume);
+
 // ---- BDirectory (storage/Directory.h) ----
 void* eb_haiku_directory_create(const char* path);
 int eb_haiku_directory_init_check(void* dir);
@@ -72,6 +98,48 @@ int eb_haiku_node_remove_attr(void* node, const char* name);
 char* eb_haiku_node_get_next_attr_name(void* node);
 int eb_haiku_node_rewind_attrs(void* node);
 void eb_haiku_node_destroy(void* node);
+
+// ---- BNode / BStatable - same real stat surface as BEntry above (see
+// its own comment - bound per concrete type, no generic BStatable*).
+// No IsSymLink here - BNode doesn't need it, use HSymLink directly.
+int eb_haiku_node_get_permissions(void* node, unsigned int* outPermissions);
+int eb_haiku_node_set_permissions(void* node, unsigned int permissions);
+int eb_haiku_node_get_owner(void* node, unsigned int* outOwner);
+int eb_haiku_node_set_owner(void* node, unsigned int owner);
+int eb_haiku_node_get_group(void* node, unsigned int* outGroup);
+int eb_haiku_node_set_group(void* node, unsigned int group);
+int eb_haiku_node_get_size(void* node, long long* outSize);
+int eb_haiku_node_get_modification_time(void* node, long long* outTime);
+int eb_haiku_node_set_modification_time(void* node, long long time);
+int eb_haiku_node_get_creation_time(void* node, long long* outTime);
+int eb_haiku_node_set_creation_time(void* node, long long time);
+// Same as eb_haiku_entry_get_volume above.
+int eb_haiku_node_get_volume(void* node, void* outVolume);
+
+// ---- BNode typed attributes (storage/Node.h WriteAttr/ReadAttr,
+// support/TypeConstants.h) - beyond the B_STRING_TYPE convenience pair
+// above. Same "returns bytes written/read (>=0), or a negative
+// status_t" convention as eb_haiku_node_write_attr_string.
+int eb_haiku_node_write_attr_int32(void* node, const char* name, int value);
+// Returns 0 (not found/wrong size) or 1, writing through outValue -
+// distinguishable from a valid 0 value, unlike a bare sentinel return.
+int eb_haiku_node_read_attr_int32(void* node, const char* name, int* outValue);
+int eb_haiku_node_write_attr_int64(void* node, const char* name, long long value);
+int eb_haiku_node_read_attr_int64(void* node, const char* name, long long* outValue);
+int eb_haiku_node_write_attr_bool(void* node, const char* name, int value);
+int eb_haiku_node_read_attr_bool(void* node, const char* name, int* outValue);
+int eb_haiku_node_write_attr_double(void* node, const char* name, double value);
+int eb_haiku_node_read_attr_double(void* node, const char* name, double* outValue);
+// Raw escape hatch (B_RAW_TYPE) for anything not covered above -
+// returns bytes written/read (>=0), or a negative status_t, exactly
+// like the string/typed variants.
+int eb_haiku_node_write_attr_raw(void* node, const char* name, const void* buffer, int size);
+int eb_haiku_node_read_attr_raw(void* node, const char* name, void* buffer, int bufferSize);
+// Fills outType/outSize with the real attribute's own type_code/size -
+// returns a status_t (0 = success). Use before eb_haiku_node_read_attr_raw
+// on an attribute of unknown type/size (e.g. written by another app).
+int eb_haiku_node_get_attr_info(void* node, const char* name, unsigned int* outType,
+                                 long long* outSize);
 
 // ---- BNodeInfo (storage/NodeInfo.h) - MIME type only for Phase 1 ----
 // Does not take ownership of `node` - the caller keeps its own
