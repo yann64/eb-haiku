@@ -10,6 +10,7 @@
 #include once "../src/lib.bas"
 
 CONST TRACKER_SIGNATURE = "application/x-vnd.Be-TRAK"
+CONST STYLED_EDIT_SIGNATURE = "application/x-vnd.Haiku-StyledEdit"
 
 DIM app AS HApplication
 app = HApplicationCreate("application/x-vnd.EbHaiku-RosterClipboardTest")
@@ -22,6 +23,36 @@ SUB OnClipboardWatcherMessage(userData AS ANY PTR, messageHandle AS ANY PTR)
     msg.handle = messageHandle
     IF HMessageWhat(msg) = H_CLIPBOARD_CHANGED THEN
         gGotClipboardChanged = 1
+    END IF
+END SUB
+
+DIM gGotAppLaunched AS INTEGER
+DIM gGotAppQuit AS INTEGER
+gGotAppLaunched = 0
+gGotAppQuit = 0
+
+' IMPORTANT, confirmed by direct reproduction: real B_SOME_APP_LAUNCHED/
+' QUIT notifications are only actually delivered while this program's
+' own message loop (HApplicationRun) is pumping - a background thread
+' must trigger the launch/quit AFTER Run() has started, not before.
+SUB OnRosterWatcherMessage(userData AS ANY PTR, messageHandle AS ANY PTR)
+    DIM msg AS HMessage
+    msg.handle = messageHandle
+    DIM what AS UINTEGER
+    what = HMessageWhat(msg)
+    IF what = H_SOME_APP_LAUNCHED THEN
+        DIM sig AS STRING
+        sig = HMessageFindString(msg, "be:signature")
+        IF sig = STYLED_EDIT_SIGNATURE THEN
+            gGotAppLaunched = 1
+        END IF
+    END IF
+    IF what = H_SOME_APP_QUIT THEN
+        DIM quitSig AS STRING
+        quitSig = HMessageFindString(msg, "be:signature")
+        IF quitSig = STYLED_EDIT_SIGNATURE THEN
+            gGotAppQuit = 1
+        END IF
     END IF
 END SUB
 
@@ -102,6 +133,49 @@ IF rc <> 0 THEN
 END IF
 PRINT "FindApp(text/plain) ok, path=", HPathGet(foundAppPath)
 CALL HPathFree(foundAppPath)
+
+' ---- entry_ref-based overloads (by executable path, not signature) ----
+
+IF HRosterIsRunningForPath(roster, "/boot/system/Tracker") <> 1 THEN
+    PRINT "FAIL: IsRunningForPath should be true for the real running Tracker executable"
+    CALL ExitProcess(1)
+END IF
+PRINT "IsRunningForPath ok"
+
+DIM teamForPath AS INTEGER
+teamForPath = HRosterTeamForPath(roster, "/boot/system/Tracker")
+IF teamForPath <> trackerTeam THEN
+    PRINT "FAIL: TeamForPath mismatch, expected ", trackerTeam, " got ", teamForPath
+    CALL ExitProcess(1)
+END IF
+PRINT "TeamForPath ok"
+
+DIM pathInfoTeam AS INTEGER
+DIM pathInfoThread AS INTEGER
+DIM pathInfoFlags AS UINTEGER
+DIM pathInfoPath AS HPath
+pathInfoPath = HPathCreateEmpty()
+rc = HRosterGetAppInfoForPath(roster, "/boot/system/Tracker", pathInfoTeam, pathInfoThread, pathInfoFlags, pathInfoPath)
+IF rc <> 0 OR pathInfoTeam <> trackerTeam THEN
+    PRINT "FAIL: HRosterGetAppInfoForPath returned rc=", rc, " team=", pathInfoTeam
+    CALL ExitProcess(1)
+END IF
+PRINT "GetAppInfoForPath ok, path=", HPathGet(pathInfoPath)
+CALL HPathFree(pathInfoPath)
+
+CONST FIND_APP_TEST_PATH = "/boot/home/eb-haiku-findapp-test.txt"
+CALL Kill(FIND_APP_TEST_PATH)
+CALL WriteFile(FIND_APP_TEST_PATH, "real file for FindApp(entry_ref*, entry_ref*)")
+DIM foundAppForPath AS HPath
+foundAppForPath = HPathCreateEmpty()
+rc = HRosterFindAppForPath(roster, FIND_APP_TEST_PATH, foundAppForPath)
+IF rc <> 0 THEN
+    PRINT "FAIL: HRosterFindAppForPath returned ", rc
+    CALL ExitProcess(1)
+END IF
+PRINT "FindAppForPath ok, path=", HPathGet(foundAppForPath)
+CALL Kill(FIND_APP_TEST_PATH)
+CALL HPathFree(foundAppForPath)
 
 ' ---- Recent documents/folders/apps - real, system-wide history; not
 ' asserted to any specific content (depends on this desktop's own real
@@ -197,9 +271,28 @@ IF rc <> 0 THEN
     CALL ExitProcess(1)
 END IF
 
+' ---- BRoster::StartWatching - a real self-triggered test alongside the
+' clipboard one above: launch and quit StyledEdit from the same
+' background thread (already proven to be pumping against a live
+' Run() loop), confirming both B_SOME_APP_LAUNCHED/QUIT notifications
+' actually arrive at OnRosterWatcherMessage ----
+
+DIM rosterWatcher AS HWatcher
+rosterWatcher = HWatcherCreate()
+CALL HWatcherSetMessageReceivedCallback(rosterWatcher, @OnRosterWatcherMessage, 0)
+rc = HRosterStartWatching(roster, rosterWatcher, H_REQUEST_LAUNCHED OR H_REQUEST_QUIT)
+IF rc <> 0 THEN
+    PRINT "FAIL: HRosterStartWatching returned ", rc
+    CALL ExitProcess(1)
+END IF
+
 FUNCTION ClipboardWriterThreadFunc(data AS ANY PTR) AS INTEGER
+    DIM styledEditTeam AS INTEGER
     CALL HSnooze(300000)
     CALL HClipboardSetText(clip, "eb-haiku clipboard watch trigger")
+    CALL HRosterLaunch(roster, STYLED_EDIT_SIGNATURE, styledEditTeam)
+    CALL HSnooze(500000)
+    CALL Shell("quit " & STYLED_EDIT_SIGNATURE)
     CALL HSnooze(500000)
     CALL HApplicationQuit(app)
     ClipboardWriterThreadFunc = 0
@@ -215,11 +308,13 @@ DIM wrv AS INTEGER
 CALL HWaitForThread(wt, wrv)
 
 ' IMPORTANT: free anything referencing be_app (HClipboardStopWatching/
-' HWatcherFree) BEFORE HApplicationFree - see HWatcherFree's own doc
-' comment (confirmed by direct reproduction: freeing the BApplication
-' first leaves be_app dangling).
+' HRosterStopWatching/HWatcherFree) BEFORE HApplicationFree - see
+' HWatcherFree's own doc comment (confirmed by direct reproduction:
+' freeing the BApplication first leaves be_app dangling).
 CALL HClipboardStopWatching(clip, watcher)
 CALL HWatcherFree(watcher)
+CALL HRosterStopWatching(roster, rosterWatcher)
+CALL HWatcherFree(rosterWatcher)
 CALL HApplicationFree(app)
 
 IF gGotClipboardChanged <> 1 THEN
@@ -227,5 +322,15 @@ IF gGotClipboardChanged <> 1 THEN
     CALL ExitProcess(1)
 END IF
 PRINT "clipboard watching ok"
+
+IF gGotAppLaunched <> 1 THEN
+    PRINT "FAIL: never received a real B_SOME_APP_LAUNCHED notification for StyledEdit"
+    CALL ExitProcess(1)
+END IF
+IF gGotAppQuit <> 1 THEN
+    PRINT "FAIL: never received a real B_SOME_APP_QUIT notification for StyledEdit"
+    CALL ExitProcess(1)
+END IF
+PRINT "roster watching ok"
 
 PRINT "roster/clipboard basics test ok"

@@ -263,6 +263,26 @@ void eb_haiku_roster_get_recent_documents(void* roster, void* outMessage, int ma
 void eb_haiku_roster_get_recent_folders(void* roster, void* outMessage, int maxCount,
                                          const char* signature);
 void eb_haiku_roster_get_recent_apps(void* roster, void* outMessage, int maxCount);
+// `watcher` is an eb_haiku_watcher_create result (shim.h) - real
+// B_SOME_APP_LAUNCHED/B_SOME_APP_QUIT messages (raw/haiku_shim.bas's
+// own constants) are delivered to its own registered callback as apps
+// launch/quit system-wide. `eventMask` is H_REQUEST_LAUNCHED/
+// H_REQUEST_QUIT/H_REQUEST_ACTIVATED (combine with OR).
+int eb_haiku_roster_start_watching(void* roster, void* watcher, unsigned int eventMask);
+int eb_haiku_roster_stop_watching(void* roster, void* watcher);
+// entry_ref-based overloads, taking a plain file path at this
+// package's own idiomatic layer - the shim constructs the real
+// entry_ref internally via BEntry(path).GetRef(&ref) (matching the
+// established "don't expose a new type unless it's genuinely
+// reusable" pattern already used for play_sound's own path-to-
+// entry_ref conversion in Media Kit).
+int eb_haiku_roster_is_running_for_path(void* roster, const char* path);
+// team_id (real 4-byte signed type) - 0/negative if not running.
+int eb_haiku_roster_team_for_path(void* roster, const char* path);
+int eb_haiku_roster_get_app_info_for_path(void* roster, const char* path, int* outTeam,
+                                           int* outThread, unsigned int* outFlags,
+                                           void* outPath);
+int eb_haiku_roster_find_app_for_path(void* roster, const char* path, void* outPath);
 
 // ---- BClipboard (app/Clipboard.h) - the shared be_clipboard
 // singleton, exposed the same way. Never freed by this package for the

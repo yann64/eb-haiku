@@ -6,6 +6,7 @@
 #include once "raw/haiku_shim.bas"
 #include once "message.bas"
 #include once "path.bas"
+#include once "watcher.bas"
 
 TYPE HRoster
     handle AS ANY PTR
@@ -109,3 +110,51 @@ END SUB
 SUB HRosterGetRecentApps(BYVAL r AS HRoster, BYVAL outMessage AS HMessage, BYVAL maxCount AS INTEGER)
     CALL eb_haiku_roster_get_recent_apps(r.handle, outMessage.handle, maxCount)
 END SUB
+
+''' Makes `watcher` a real live target for app launch/quit
+''' notifications - real H_SOME_APP_LAUNCHED/H_SOME_APP_QUIT messages
+''' (raw/haiku_shim.bas) are delivered to its own registered callback
+''' as apps launch/quit system-wide. `eventMask` is H_REQUEST_LAUNCHED/
+''' H_REQUEST_QUIT/H_REQUEST_ACTIVATED (combine with OR). Returns a
+''' status code (0 = success).
+FUNCTION HRosterStartWatching(BYVAL r AS HRoster, BYVAL watcher AS HWatcher, BYVAL eventMask AS UINTEGER) AS INTEGER
+    HRosterStartWatching = eb_haiku_roster_start_watching(r.handle, watcher.handle, eventMask)
+END FUNCTION
+
+FUNCTION HRosterStopWatching(BYVAL r AS HRoster, BYVAL watcher AS HWatcher) AS INTEGER
+    HRosterStopWatching = eb_haiku_roster_stop_watching(r.handle, watcher.handle)
+END FUNCTION
+
+''' Like HRosterIsRunning, but identifies the app by an already-running
+''' instance's own executable `path` instead of its MIME signature -
+''' constructs the real entry_ref internally.
+FUNCTION HRosterIsRunningForPath(BYVAL r AS HRoster, path AS ZSTRING) AS INTEGER
+    HRosterIsRunningForPath = eb_haiku_roster_is_running_for_path(r.handle, path)
+END FUNCTION
+
+''' Like HRosterTeamFor, but by executable `path` instead of signature.
+FUNCTION HRosterTeamForPath(BYVAL r AS HRoster, path AS ZSTRING) AS INTEGER
+    HRosterTeamForPath = eb_haiku_roster_team_for_path(r.handle, path)
+END FUNCTION
+
+''' Like HRosterGetAppInfo, but by executable `path` instead of
+''' signature.
+FUNCTION HRosterGetAppInfoForPath(BYVAL r AS HRoster, path AS ZSTRING, BYREF outTeam AS INTEGER, BYREF outThread AS INTEGER, BYREF outFlags AS UINTEGER, BYVAL outPath AS HPath) AS INTEGER
+    DIM team AS INTEGER
+    DIM thread AS INTEGER
+    DIM flags AS UINTEGER
+    DIM rc AS INTEGER
+    rc = eb_haiku_roster_get_app_info_for_path(r.handle, path, @team, @thread, @flags, outPath.handle)
+    outTeam = team
+    outThread = thread
+    outFlags = flags
+    HRosterGetAppInfoForPath = rc
+END FUNCTION
+
+''' Like HRosterFindApp, but finds the app registered to open the real
+''' file at `path` (e.g. a document) instead of looking up by MIME
+''' type directly - real Haiku's own FindApp(entry_ref*, entry_ref*)
+''' overload.
+FUNCTION HRosterFindAppForPath(BYVAL r AS HRoster, path AS ZSTRING, BYVAL outPath AS HPath) AS INTEGER
+    HRosterFindAppForPath = eb_haiku_roster_find_app_for_path(r.handle, path, outPath.handle)
+END FUNCTION

@@ -47,6 +47,20 @@ CONST H_LAUNCH_MASK = 3
 CONST H_BACKGROUND_APP = 4
 CONST H_ARGV_ONLY = 8
 
+' Real watching_request_flags (app/Roster.h) - used by
+' HRosterStartWatching (roster.bas). Plain OR-able bit values,
+' confirmed via the real header.
+CONST H_REQUEST_LAUNCHED = 1
+CONST H_REQUEST_QUIT = 2
+CONST H_REQUEST_ACTIVATED = 4
+
+' Real message `what` values delivered by HRosterStartWatching (app/
+' AppDefs.h/Roster.h's own B_SOME_APP_LAUNCHED/B_SOME_APP_QUIT) -
+' confirmed via a compiled probe, not hand-derived (packed 4-character
+' codes).
+CONST H_SOME_APP_LAUNCHED = 1112686931
+CONST H_SOME_APP_QUIT = 1112686929
+
 Extern "C" Lib "ebhaikushim"
     ' ---- BPath ----
     Declare Function eb_haiku_path_create(BYVAL pathStr AS ZSTRING) AS ANY PTR
@@ -193,6 +207,12 @@ Extern "C" Lib "ebhaikushim"
     Declare Sub eb_haiku_roster_get_recent_documents(BYVAL roster AS ANY PTR, BYVAL outMessage AS ANY PTR, BYVAL maxCount AS INTEGER, BYVAL fileType AS ZSTRING, BYVAL signature AS ZSTRING)
     Declare Sub eb_haiku_roster_get_recent_folders(BYVAL roster AS ANY PTR, BYVAL outMessage AS ANY PTR, BYVAL maxCount AS INTEGER, BYVAL signature AS ZSTRING)
     Declare Sub eb_haiku_roster_get_recent_apps(BYVAL roster AS ANY PTR, BYVAL outMessage AS ANY PTR, BYVAL maxCount AS INTEGER)
+    Declare Function eb_haiku_roster_start_watching(BYVAL roster AS ANY PTR, BYVAL watcher AS ANY PTR, BYVAL eventMask AS UINTEGER) AS INTEGER
+    Declare Function eb_haiku_roster_stop_watching(BYVAL roster AS ANY PTR, BYVAL watcher AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_roster_is_running_for_path(BYVAL roster AS ANY PTR, BYVAL path AS ZSTRING) AS INTEGER
+    Declare Function eb_haiku_roster_team_for_path(BYVAL roster AS ANY PTR, BYVAL path AS ZSTRING) AS INTEGER
+    Declare Function eb_haiku_roster_get_app_info_for_path(BYVAL roster AS ANY PTR, BYVAL path AS ZSTRING, BYVAL outTeam AS ANY PTR, BYVAL outThread AS ANY PTR, BYVAL outFlags AS ANY PTR, BYVAL outPath AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_roster_find_app_for_path(BYVAL roster AS ANY PTR, BYVAL path AS ZSTRING, BYVAL outPath AS ANY PTR) AS INTEGER
 
     ' ---- BClipboard ----
     Declare Function eb_haiku_clipboard_default() AS ANY PTR

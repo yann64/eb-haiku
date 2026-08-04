@@ -627,6 +627,56 @@ void eb_haiku_roster_get_recent_apps(void* roster, void* outMessage, int maxCoun
     static_cast<BRoster*>(roster)->GetRecentApps(static_cast<BMessage*>(outMessage), maxCount);
 }
 
+int eb_haiku_roster_start_watching(void* roster, void* watcher, unsigned int eventMask) {
+    return static_cast<BRoster*>(roster)->StartWatching(
+        BMessenger(static_cast<BHandler*>(watcher)), eventMask);
+}
+
+int eb_haiku_roster_stop_watching(void* roster, void* watcher) {
+    return static_cast<BRoster*>(roster)->StopWatching(
+        BMessenger(static_cast<BHandler*>(watcher)));
+}
+
+namespace {
+bool refForPath(const char* path, entry_ref* outRef) {
+    BEntry entry(path);
+    return entry.InitCheck() == B_OK && entry.GetRef(outRef) == B_OK;
+}
+} // namespace
+
+int eb_haiku_roster_is_running_for_path(void* roster, const char* path) {
+    entry_ref ref;
+    if (!refForPath(path, &ref)) return 0;
+    return static_cast<BRoster*>(roster)->IsRunning(&ref) ? 1 : 0;
+}
+
+int eb_haiku_roster_team_for_path(void* roster, const char* path) {
+    entry_ref ref;
+    if (!refForPath(path, &ref)) return B_ENTRY_NOT_FOUND;
+    return static_cast<BRoster*>(roster)->TeamFor(&ref);
+}
+
+int eb_haiku_roster_get_app_info_for_path(void* roster, const char* path, int* outTeam,
+                                           int* outThread, unsigned int* outFlags,
+                                           void* outPath) {
+    entry_ref ref;
+    if (!refForPath(path, &ref)) return B_ENTRY_NOT_FOUND;
+    app_info info;
+    status_t rc = static_cast<BRoster*>(roster)->GetAppInfo(&ref, &info);
+    if (rc != B_OK) return rc;
+    *outTeam = info.team;
+    return fillAppInfoOut(info, outThread, outFlags, outPath);
+}
+
+int eb_haiku_roster_find_app_for_path(void* roster, const char* path, void* outPath) {
+    entry_ref ref;
+    if (!refForPath(path, &ref)) return B_ENTRY_NOT_FOUND;
+    entry_ref appRef;
+    status_t rc = static_cast<BRoster*>(roster)->FindApp(&ref, &appRef);
+    if (rc != B_OK) return rc;
+    return static_cast<BPath*>(outPath)->SetTo(&appRef);
+}
+
 // ---- BClipboard ----
 
 void* eb_haiku_clipboard_default(void) { return be_clipboard; }
