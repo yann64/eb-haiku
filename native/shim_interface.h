@@ -233,4 +233,44 @@ void eb_haiku_menu_item_set_marked(void* item, int marked);
 // message to its own established target via Messenger().
 void eb_haiku_menu_item_invoke_via_messenger(void* item);
 
+// ---- BPrintJob (interface/PrintJob.h) - real printing, via a real
+// ShimPrintJob subclass (the only way to reach the virtual DrawView()
+// from eBasic, same reason as ShimWindow/ShimView above).
+//
+// IMPORTANT, confirmed by direct reproduction: ConfigJob()/ConfigPage()
+// show a real, interactive Page Setup/Print dialog and block until a
+// human clicks through it - not triggerable over SSH (the same real
+// limitation already documented for mouse clicks throughout this
+// package), so this package's own tests/examples can't drive them
+// headlessly. The rest of the real API (BeginJob/SpoolPage/CommitJob/
+// CanContinue/PaperRect/PrintableRect/PrinterType/GetResolution) is
+// still bound and real for interactive use.
+
+typedef void (*EbHaikuPrintDrawViewCallback)(void* userData, void* view, float rectLeft,
+                                              float rectTop, float rectRight, float rectBottom,
+                                              float whereX, float whereY);
+
+void* eb_haiku_print_job_create(const char* name);
+void eb_haiku_print_job_set_draw_view_callback(void* job, EbHaikuPrintDrawViewCallback cb,
+                                                void* userData);
+void eb_haiku_print_job_begin_job(void* job);
+void eb_haiku_print_job_commit_job(void* job);
+// Shows a real, interactive dialog - see this section's own top comment.
+int eb_haiku_print_job_config_job(void* job);
+void eb_haiku_print_job_cancel_job(void* job);
+// Shows a real, interactive dialog - see this section's own top comment.
+int eb_haiku_print_job_config_page(void* job);
+// Triggers a real DrawView() call via the registered callback above.
+void eb_haiku_print_job_spool_page(void* job);
+int eb_haiku_print_job_can_continue(void* job);
+void eb_haiku_print_job_paper_rect(void* job, float* outLeft, float* outTop, float* outRight,
+                                    float* outBottom);
+void eb_haiku_print_job_printable_rect(void* job, float* outLeft, float* outTop, float* outRight,
+                                        float* outBottom);
+void eb_haiku_print_job_get_resolution(void* job, int* outXDPI, int* outYDPI);
+int eb_haiku_print_job_first_page(void* job);
+int eb_haiku_print_job_last_page(void* job);
+int eb_haiku_print_job_printer_type(void* job);
+void eb_haiku_print_job_destroy(void* job);
+
 } // extern "C"

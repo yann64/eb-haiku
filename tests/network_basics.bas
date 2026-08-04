@@ -38,17 +38,17 @@ PRINT "DNS resolution ok"
 
 ' ---- BSocket: write path - send real data to a throwaway nc listener ----
 
-CONST WRITE_PORT = 8901
+CONST TCP_WRITE_PORT = 8901
 CONST WRITE_OUT_FILE = "/boot/home/eb-haiku-net-write-test.txt"
 CONST WRITE_TEXT = "hello from eb-haiku BSocket"
 
 CALL Kill(WRITE_OUT_FILE)
-CALL Shell("nc -l -p " & Str(WRITE_PORT) & " > " & WRITE_OUT_FILE & " &")
+CALL Shell("nc -l -p " & Str(TCP_WRITE_PORT) & " > " & WRITE_OUT_FILE & " &")
 CALL Sleep(500) ' let nc start listening
 
 DIM writeAddr AS HNetworkAddress
 writeAddr = HNetworkAddressCreateEmpty()
-CALL HNetworkAddressSetTo(writeAddr, "127.0.0.1", WRITE_PORT)
+CALL HNetworkAddressSetTo(writeAddr, "127.0.0.1", TCP_WRITE_PORT)
 
 DIM writeSock AS HSocket
 writeSock = HSocketCreate()
@@ -98,15 +98,15 @@ PRINT "socket write path ok"
 
 ' ---- BSocket: read path - receive real data from a throwaway nc sender ----
 
-CONST READ_PORT = 8902
+CONST TCP_READ_PORT = 8902
 CONST READ_TEXT = "hello from nc"
 
-CALL Shell("(echo '" & READ_TEXT & "' | nc -l -p " & Str(READ_PORT) & ") &")
+CALL Shell("(echo '" & READ_TEXT & "' | nc -l -p " & Str(TCP_READ_PORT) & ") &")
 CALL Sleep(500) ' let nc start listening
 
 DIM readAddr AS HNetworkAddress
 readAddr = HNetworkAddressCreateEmpty()
-CALL HNetworkAddressSetTo(readAddr, "127.0.0.1", READ_PORT)
+CALL HNetworkAddressSetTo(readAddr, "127.0.0.1", TCP_READ_PORT)
 
 DIM readSock AS HSocket
 readSock = HSocketCreate()

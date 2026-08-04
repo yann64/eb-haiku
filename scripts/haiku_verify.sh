@@ -69,9 +69,11 @@ for test_name in integration window_basics controls_basics drawing_basics layout
                  space_layout_item_basics translation_basics translation_get_bitmap \
                  translation_draw_bitmap translation_convert translation_identify \
                  translation_introspection stat_attrs_basics symlink_basics volume_basics \
-                 query_basics locker_basics menu_basics roster_clipboard_basics network_basics; do
+                 query_basics locker_basics menu_basics roster_clipboard_basics network_basics \
+                 locale_basics thread_basics serial_basics package_basics media_basics \
+                 printjob_basics; do
     echo "==> Compiling+running tests/$test_name.bas..."
-    if ssh "$HOST" "cd ~/$REMOTE_DIR && ebc tests/$test_name.bas -o /tmp/eb_haiku_${test_name}_test -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be -l translation -l root -l bnetapi && /tmp/eb_haiku_${test_name}_test"; then
+    if ssh "$HOST" "cd ~/$REMOTE_DIR && ebc tests/$test_name.bas -o /tmp/eb_haiku_${test_name}_test -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be -l translation -l root -l bnetapi -l device -l package -l media && /tmp/eb_haiku_${test_name}_test"; then
         echo "    PASS: $test_name"
     else
         echo "    FAIL: $test_name"

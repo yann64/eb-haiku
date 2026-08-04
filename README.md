@@ -241,6 +241,106 @@ handling - a good separate future phase), `BDatagramSocket`/UDP
 own interfaces - a diagnostics feature, not core to "connect to a
 server").
 
+**Locale Kit (v0.7.0, complete)** - see `src/locale.bas`: locale-aware
+formatting and comparison, ICU-backed, living directly in `libbe.so`
+(no new link dependency) - `HDateFormat`/`HTimeFormat` (`Format` into a
+plain `char*`/`maxSize` buffer, no `BString` involved at all),
+`HNumberFormat` (`FormatDouble`/`FormatInt32`/`FormatMonetary`/
+`FormatPercent`), `HCollator` (`Compare`/locale-aware string sorting -
+a real gap eBasic's own comparison operators don't fill). **Not
+bound**: `BCatalog` (`.catkeys` translation catalogs - a separate,
+larger localization workflow), per-locale customization beyond
+`BLocale::Default()`, `Parse` methods (formatting is the common case).
+
+**Kernel Kit concurrency (v0.7.0, complete)** - see `src/thread.bas`:
+real preemptive threads/semaphores/ports/shared-memory areas, bound
+directly under `Lib "root"` (plain `extern "C"` functions, like
+`find_directory`/`fs_create_index` - no shim needed at all).
+`HSpawnThread`/`ResumeThread`/`WaitForThread`/`KillThread`/`Snooze`,
+`HSemaphoreCreate`/`Acquire`/`Release`/`Delete`, `HPortCreate`/`Write`/
+`Read`/`Delete`, `HAreaCreate`/`Delete`. Verified with real concurrency
+correctness (a semaphore genuinely blocking a second thread until
+released, a port read genuinely blocking until a writer thread sends -
+`tests/thread_basics.bas`), not just "the calls don't crash." A
+different kind of addition than the rest of this package - real,
+language-level concurrency, not an "OS Kit" wrapper. **Not bound**: the
+`_etc` timeout/flag variants, `clone_area`/`resize_area`/`find_area`/
+`area_for`.
+
+**Device Kit basics (v0.7.0, complete)** - see `src/serial.bas`:
+`BSerialPort` - `HSerialPortOpen`/`Read`/`Write`/`SetBlocking`/
+`SetTimeout`, real configuration (`SetDataRate`/`SetDataBits`/
+`SetStopBits`/`SetParityMode` - **real enum values are small sequential
+indices, NOT the literal baud rate etc.**, e.g. `H_9600_BPS` is `13`,
+confirmed via a compiled probe, not assumed), enumeration
+(`CountDevices`/`GetDeviceName`). **A real, confirmed detail**:
+`HSerialPortOpen` returns a non-negative value (not necessarily `0`) on
+success - check `>= 0`, unlike almost every other status-code-returning
+function in this package. **Not bound**: modem control lines
+(`SetDTR`/`SetRTS`/`IsCTS`/etc.) and `SetFlowControl` - exotic/rarely-
+needed serial details.
+
+**Package Kit basics (v0.7.0, complete)** - see `src/package.bas`:
+`BPackageRoster` - `HPackageRosterIsRebootNeeded`, real repository
+cache/config paths (reusing the existing `HPath` type directly), and
+`HPackageRosterGetActivePackages` + `HPackageInfoSet`/`Iterator` to
+list real installed packages by name/version (confirmed against 726
+real packages on the development host, including `haiku` itself). **Not
+bound**: the full `Solver`/`.hpkg` install/write machinery (package-
+manager-authoring territory), `VisitCommonRepositoryConfigs`/
+`StartWatching` (visitor-pattern/live-notification APIs).
+
+**Media Kit basics (v0.7.0, complete) - a real, important deviation
+from this package's own original plan** - see `src/media.bas`: real
+Haiku's plain free-function `play_sound`/`stop_sound`/`wait_for_sound`
+API (`media/PlaySound.h`) - originally intended as the simplest
+possible path - is a **literal `UNIMPLEMENTED` stub** on real Haiku,
+confirmed by direct reproduction (it logs `UNIMPLEMENTED` and does
+nothing). This package binds the real, fully functional path instead:
+`HSoundCreate` (loads a whole file via `BSound(entry_ref*)`) +
+`HSoundPlayerCreate`/`Start`/`StartPlaying`/`IsPlaying`/`Stop` (a real
+`BSoundPlayer`), verified via real wall-clock playback (confirmed audio
+duration/timing against a real WAV file, not a mock). **Not bound**:
+real-time buffer-callback synthesis (`BufferPlayerFunc`) and
+`BSound`-adjacent classes beyond loading a whole file - suited to a
+native multimedia app, not "play this sound file" scripting glue.
+
+**`BPrintJob` (v0.7.0, complete - Interface Kit addition, not a new
+Kit)** - see `src/printjob.bas`: real printing via a `ShimPrintJob`
+subclass forwarding the virtual `DrawView()` to an eBasic callback,
+which draws using this package's own already-bound view-drawing
+primitives (`HViewSetHighColor`/`FillRect`/`DrawString`/`DrawBitmap`) -
+a real, satisfying close of the loop between Interface Kit's two
+previously-separate parts. `HPrintJobBeginJob`/`CommitJob`/`SpoolPage`/
+`CanContinue`/`CancelJob`, `PaperRect`/`PrintableRect`/`GetResolution`
+(`BRect`/plain ints, no new handle type). **Not bound**: `Settings`/
+`SetSettings`/`IsSettingsMessageValid` (raw print-settings `BMessage`
+manipulation - a real print dialog already handles this).
+
+### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
+
+**A real, new category of gotcha, confirmed by direct reproduction**:
+`HSoundPlayer`/`HSound` are opaque heap handles, not C++ RAII objects -
+nothing destructs them automatically. `ExitProcess` (this project's own
+core Process Library function) only calls `std::exit()`, which runs
+static-storage-duration destructors but **not** a live thread's own
+cleanup - if the process reaches `ExitProcess` (including on an error/
+`FAIL` path, not just the success path) while an `HSoundPlayer` is still
+active, its background thread (talking to `media_server`) can hang the
+whole process instead of exiting. **Always call `HSoundPlayerStop` +
+`HSoundPlayerFree` (and `HSoundRelease`) before the program exits by
+any path** - see `media.bas`'s own doc comment and
+`tests/media_basics.bas` for the pattern (every `FAIL` branch cleans up
+first).
+
+**Separately, confirmed by direct reproduction**: `HPrintJobConfigJob`/
+`ConfigPage` show a real, interactive Page Setup/Print dialog and block
+indefinitely waiting for a human to click through it - not triggerable
+over SSH, the same real limitation already documented below for mouse
+clicks. This package's own tests/examples deliberately never call
+them headlessly; run `examples/print.bas` from a real Haiku desktop
+session instead.
+
 ### `BClipboard`/Translation Kit/`BRoster` - read this before calling any of them standalone
 
 **A real, recurring gotcha, confirmed twice independently** (see
@@ -299,7 +399,10 @@ Matching `eb-cjson`'s own convention:
   `HGroupLayout`/`HGridLayout`/`HCardLayout`/`HSplitView`/`HBitmap`/
   `HFile`/`HTranslatorRoster`/`HBitmapStream`/`HSymLink`/`HVolume`/
   `HVolumeRoster`/`HQuery`/`HLocker`/`HMenu`/`HMenuItem`/`HRoster`/
-  `HClipboard`/`HSocket`/`HNetworkAddress`/`HUrl`, each a thin
+  `HClipboard`/`HSocket`/`HNetworkAddress`/`HUrl`/`HDateFormat`/
+  `HTimeFormat`/`HNumberFormat`/`HCollator`/`HSerialPort`/
+  `HPackageRoster`/`HPackageInfoSet`/`HPackageInfoIterator`/`HSound`/
+  `HSoundPlayer`/`HPrintJob`, each a thin
   `TYPE ... : handle AS ANY PTR : END TYPE` wrapper plus free functions.
   Every parameter is explicitly `BYVAL` - each is just an 8-byte handle,
   cheap to copy. `BSize`/`BAlignment` are likewise plain value structs
@@ -317,9 +420,11 @@ Matching `eb-cjson`'s own convention:
   `JsonStringify`/`JsonFreeString` fix for exactly the same issue.
 - No drag-and-drop support.
 - **`ebpm`'s automatic linker-flag forwarding doesn't cover Translation
-  Kit or Network Kit functions** - a downstream program calling either
-  needs to pass `-l translation`/`-l bnetapi` itself; see this file's
-  own "Building" section for why and the exact flags.
+  Kit, Network Kit, Device Kit, Package Kit, or Media Kit functions** -
+  a downstream program calling any of these needs to pass
+  `-l translation`/`-l bnetapi`/`-l device`/`-l package`/`-l media`
+  itself; see this file's own "Building" section for why and the exact
+  flags.
 
 ## Building
 
@@ -350,30 +455,37 @@ this way, by binding a real plain C function directly under that `Lib`
 name).
 
 **A real, structural limitation, confirmed directly (not assumed)**: a
-downstream program that calls **any Translation Kit or Network Kit
-function** needs to *also* pass `-l translation`/`-l bnetapi` itself -
-`ebpm`'s sidecar mechanism can't discover these automatically, because
-they're transitive link dependencies of the *compiled shim itself*
-(`shim_translation.cpp.o`/`shim_network.cpp.o` inside
+downstream program that calls **any Translation Kit, Network Kit,
+Device Kit, Package Kit, or Media Kit function** needs to *also* pass
+`-l translation`/`-l bnetapi`/`-l device`/`-l package`/`-l media`
+itself - `ebpm`'s sidecar mechanism can't discover these automatically,
+because they're transitive link dependencies of the *compiled shim
+itself* (`shim_translation.cpp.o`/`shim_network.cpp.o`/
+`shim_device.cpp.o`/`shim_package.cpp.o`/`shim_media.cpp.o` inside
 `libebhaikushim.a`), not something any `Extern "C" Lib` clause in this
 package's own `.bas` source captures - and unlike `find_directory`/
-`fs_create_index`, neither `libtranslation.so` nor `libbnetapi.so`
-exports a single plain (non-C++-mangled) symbol to hang the same fix
-on (confirmed via `nm -D --defined-only` on the real host - only
-`_init`/`_fini`). Reproduced directly: a real downstream package using
-only `[dependencies] eb-haiku = ...` and calling
+`fs_create_index`/the Kernel Kit concurrency primitives, none of
+`libtranslation.so`/`libbnetapi.so`/`libdevice.so`/`libpackage.so`/
+`libmedia.so` export a single plain (non-C++-mangled) symbol to hang
+the same fix on (confirmed via `nm -D --defined-only` on the real
+host - only `_init`/`_fini`). Reproduced directly: a real downstream
+package using only `[dependencies] eb-haiku = ...` and calling
 `HTranslatorRosterDefault`/`HNetworkAddressSetTo` fails to link with
 "undefined reference" errors from inside `libebhaikushim.a` until
 `-l translation -l bnetapi` are added explicitly. Code that never
-touches Translation/Network Kit functions is unaffected (their own
-object files inside the archive are never pulled into the link).
+touches these Kits' own functions is unaffected (their own object
+files inside the archive are never pulled into the link). Locale Kit
+and the Kernel Kit concurrency primitives need no extra flags at all -
+the former lives directly in `libbe.so`, the latter are plain
+`Lib "root"` functions like `find_directory`.
 
 To compile a program directly with `ebc` (without going through
-`ebpm`), link explicitly - include `-l translation -l bnetapi` too if
-your own code touches either Kit:
+`ebpm`), link explicitly - include whichever of `-l translation
+-l bnetapi -l device -l package -l media` your own code actually
+touches:
 
 ```sh
-ebc yourprogram.bas -o yourprogram -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be -l translation -l bnetapi -l root
+ebc yourprogram.bas -o yourprogram -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be -l translation -l bnetapi -l device -l package -l media -l root
 ```
 
 ## Verifying
@@ -391,13 +503,17 @@ equivalent - there's no way to check "did it draw the right pixels" or
 looking at it; each GUI example/test in this package was verified by
 hand via Haiku's own `screenshot -s` utility during development (see
 `examples/` for what was actually checked - one example per Kit/GUI/
-layout area).
+layout area). `BPrintJob`'s own `ConfigJob`/`ConfigPage` show a real,
+interactive dialog with the same limitation (see this file's own Media
+Kit/`BPrintJob` gotcha section above) - `tests/printjob_basics.bas`
+deliberately never calls them, verifying everything else headlessly
+instead.
 
 ## Using as a dependency
 
 ```toml
 [dependencies]
-eb-haiku = "^0.6"
+eb-haiku = "^0.7"
 ```
 
 ```basic

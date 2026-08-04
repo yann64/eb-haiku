@@ -15,6 +15,7 @@
 #include <MenuItem.h>
 #include <Message.h>
 #include <Messenger.h>
+#include <PrintJob.h>
 #include <Size.h>
 #include <SpaceLayoutItem.h>
 #include <SplitView.h>
@@ -159,6 +160,27 @@ public:
 private:
     BLooper* fLooper;
     bool fLocked;
+};
+
+class ShimPrintJob : public BPrintJob {
+public:
+    explicit ShimPrintJob(const char* name) : BPrintJob(name) {}
+
+    void SetDrawViewCallback(EbHaikuPrintDrawViewCallback cb, void* userData) {
+        fDrawViewCallback = cb;
+        fDrawViewUserData = userData;
+    }
+
+    void DrawView(BView* view, BRect rect, BPoint where) override {
+        if (fDrawViewCallback) {
+            fDrawViewCallback(fDrawViewUserData, view, rect.left, rect.top, rect.right,
+                               rect.bottom, where.x, where.y);
+        }
+    }
+
+private:
+    EbHaikuPrintDrawViewCallback fDrawViewCallback = nullptr;
+    void* fDrawViewUserData = nullptr;
 };
 
 } // namespace
@@ -499,5 +521,67 @@ void eb_haiku_menu_item_invoke_via_messenger(void* item) {
     BMessage* msg = menuItem->Message();
     if (msg) menuItem->Messenger().SendMessage(msg);
 }
+
+// ---- BPrintJob ----
+
+void* eb_haiku_print_job_create(const char* name) { return new ShimPrintJob(name); }
+
+void eb_haiku_print_job_set_draw_view_callback(void* job, EbHaikuPrintDrawViewCallback cb,
+                                                void* userData) {
+    static_cast<ShimPrintJob*>(job)->SetDrawViewCallback(cb, userData);
+}
+
+void eb_haiku_print_job_begin_job(void* job) { static_cast<ShimPrintJob*>(job)->BeginJob(); }
+
+void eb_haiku_print_job_commit_job(void* job) { static_cast<ShimPrintJob*>(job)->CommitJob(); }
+
+int eb_haiku_print_job_config_job(void* job) { return static_cast<ShimPrintJob*>(job)->ConfigJob(); }
+
+void eb_haiku_print_job_cancel_job(void* job) { static_cast<ShimPrintJob*>(job)->CancelJob(); }
+
+int eb_haiku_print_job_config_page(void* job) {
+    return static_cast<ShimPrintJob*>(job)->ConfigPage();
+}
+
+void eb_haiku_print_job_spool_page(void* job) { static_cast<ShimPrintJob*>(job)->SpoolPage(); }
+
+int eb_haiku_print_job_can_continue(void* job) {
+    return static_cast<ShimPrintJob*>(job)->CanContinue() ? 1 : 0;
+}
+
+void eb_haiku_print_job_paper_rect(void* job, float* outLeft, float* outTop, float* outRight,
+                                    float* outBottom) {
+    BRect r = static_cast<ShimPrintJob*>(job)->PaperRect();
+    *outLeft = r.left;
+    *outTop = r.top;
+    *outRight = r.right;
+    *outBottom = r.bottom;
+}
+
+void eb_haiku_print_job_printable_rect(void* job, float* outLeft, float* outTop, float* outRight,
+                                        float* outBottom) {
+    BRect r = static_cast<ShimPrintJob*>(job)->PrintableRect();
+    *outLeft = r.left;
+    *outTop = r.top;
+    *outRight = r.right;
+    *outBottom = r.bottom;
+}
+
+void eb_haiku_print_job_get_resolution(void* job, int* outXDPI, int* outYDPI) {
+    int32 x = 0, y = 0;
+    static_cast<ShimPrintJob*>(job)->GetResolution(&x, &y);
+    *outXDPI = x;
+    *outYDPI = y;
+}
+
+int eb_haiku_print_job_first_page(void* job) { return static_cast<ShimPrintJob*>(job)->FirstPage(); }
+
+int eb_haiku_print_job_last_page(void* job) { return static_cast<ShimPrintJob*>(job)->LastPage(); }
+
+int eb_haiku_print_job_printer_type(void* job) {
+    return static_cast<ShimPrintJob*>(job)->PrinterType();
+}
+
+void eb_haiku_print_job_destroy(void* job) { delete static_cast<ShimPrintJob*>(job); }
 
 } // extern "C"

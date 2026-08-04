@@ -155,4 +155,22 @@ Extern "C" Lib "ebhaikushim"
     Declare Sub eb_haiku_menu_item_set_enabled(BYVAL item AS ANY PTR, BYVAL enabled AS INTEGER)
     Declare Sub eb_haiku_menu_item_set_marked(BYVAL item AS ANY PTR, BYVAL marked AS INTEGER)
     Declare Sub eb_haiku_menu_item_invoke_via_messenger(BYVAL item AS ANY PTR)
+
+    ' ---- BPrintJob ----
+    Declare Function eb_haiku_print_job_create(BYVAL name AS ZSTRING) AS ANY PTR
+    Declare Sub eb_haiku_print_job_set_draw_view_callback(BYVAL job AS ANY PTR, BYVAL cb AS ANY PTR, BYVAL userData AS ANY PTR)
+    Declare Sub eb_haiku_print_job_begin_job(BYVAL job AS ANY PTR)
+    Declare Sub eb_haiku_print_job_commit_job(BYVAL job AS ANY PTR)
+    Declare Function eb_haiku_print_job_config_job(BYVAL job AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_print_job_cancel_job(BYVAL job AS ANY PTR)
+    Declare Function eb_haiku_print_job_config_page(BYVAL job AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_print_job_spool_page(BYVAL job AS ANY PTR)
+    Declare Function eb_haiku_print_job_can_continue(BYVAL job AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_print_job_paper_rect(BYVAL job AS ANY PTR, BYVAL outLeft AS ANY PTR, BYVAL outTop AS ANY PTR, BYVAL outRight AS ANY PTR, BYVAL outBottom AS ANY PTR)
+    Declare Sub eb_haiku_print_job_printable_rect(BYVAL job AS ANY PTR, BYVAL outLeft AS ANY PTR, BYVAL outTop AS ANY PTR, BYVAL outRight AS ANY PTR, BYVAL outBottom AS ANY PTR)
+    Declare Sub eb_haiku_print_job_get_resolution(BYVAL job AS ANY PTR, BYVAL outXDPI AS ANY PTR, BYVAL outYDPI AS ANY PTR)
+    Declare Function eb_haiku_print_job_first_page(BYVAL job AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_print_job_last_page(BYVAL job AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_print_job_printer_type(BYVAL job AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_print_job_destroy(BYVAL job AS ANY PTR)
 End Extern
