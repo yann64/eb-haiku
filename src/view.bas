@@ -33,6 +33,43 @@ SUB HViewFree(BYVAL v AS HView)
     CALL eb_haiku_view_destroy(v.handle)
 END SUB
 
+' ---- View-level layout attachment + size/alignment constraints - take
+' a plain ANY PTR handle (not HView specifically) so they work
+' uniformly on any view/control (HView/HButton/HStringView/
+' HTextControl/HShimView, all via their own `.handle`).
+
+''' Attaches `layout` (an HGroupLayout/HGridLayout/HCardLayout's own
+''' `.handle`) to `view` - lets a layout live nested inside an ordinary
+''' view, itself added to a parent layout/window, instead of only ever
+''' at the top (window) level.
+SUB HViewSetLayout(BYVAL view AS ANY PTR, BYVAL layout AS ANY PTR)
+    CALL eb_haiku_view_set_layout(view, layout)
+END SUB
+
+SUB HViewSetExplicitMinSize(BYVAL view AS ANY PTR, BYVAL width AS SINGLE, BYVAL height AS SINGLE)
+    CALL eb_haiku_view_set_explicit_min_size(view, width, height)
+END SUB
+
+SUB HViewSetExplicitMaxSize(BYVAL view AS ANY PTR, BYVAL width AS SINGLE, BYVAL height AS SINGLE)
+    CALL eb_haiku_view_set_explicit_max_size(view, width, height)
+END SUB
+
+SUB HViewSetExplicitPreferredSize(BYVAL view AS ANY PTR, BYVAL width AS SINGLE, BYVAL height AS SINGLE)
+    CALL eb_haiku_view_set_explicit_preferred_size(view, width, height)
+END SUB
+
+''' Sets min, max, and preferred size all at once (Haiku's own
+''' convenience for "pin this view to exactly this size").
+SUB HViewSetExplicitSize(BYVAL view AS ANY PTR, BYVAL width AS SINGLE, BYVAL height AS SINGLE)
+    CALL eb_haiku_view_set_explicit_size(view, width, height)
+END SUB
+
+''' `horizontalAlign` is `H_ALIGN_LEFT`/`RIGHT`/`CENTER`; `verticalAlign`
+''' is `H_ALIGN_TOP`/`BOTTOM`/`MIDDLE`.
+SUB HViewSetExplicitAlignment(BYVAL view AS ANY PTR, BYVAL horizontalAlign AS INTEGER, BYVAL verticalAlign AS INTEGER)
+    CALL eb_haiku_view_set_explicit_alignment(view, horizontalAlign, verticalAlign)
+END SUB
+
 ' ---- Custom drawing/input (via the shim's own ShimView subclass - the
 ' only way to reach Draw/MouseDown/MouseUp/KeyDown from eBasic, same
 ' reason as HWindow's own callbacks) ----

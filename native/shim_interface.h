@@ -124,10 +124,80 @@ void* eb_haiku_textcontrol_create(float left, float top, float right, float bott
 void eb_haiku_textcontrol_set_text(void* view, const char* text);
 const char* eb_haiku_textcontrol_get_text(void* view);
 
+// ---- View-level layout attachment + per-view size/alignment
+// constraints. BSize (two floats) and BAlignment (two ints) are plain
+// value structs in real Haiku - passed here as separate parameters,
+// exactly like BRect, never needing their own opaque handle. Works on
+// any view/control handle (BView already implements these directly -
+// confirmed in View.h - not just something BLayoutItem adds).
+
+void eb_haiku_view_set_layout(void* view, void* layout);
+void eb_haiku_view_set_explicit_min_size(void* view, float width, float height);
+void eb_haiku_view_set_explicit_max_size(void* view, float width, float height);
+void eb_haiku_view_set_explicit_preferred_size(void* view, float width, float height);
+void eb_haiku_view_set_explicit_size(void* view, float width, float height);
+// horizontalAlign: H_ALIGN_LEFT/RIGHT/CENTER; verticalAlign:
+// H_ALIGN_TOP/BOTTOM/MIDDLE (real Haiku enum values - see
+// raw/haiku_shim_interface.bas's own constants).
+void eb_haiku_view_set_explicit_alignment(void* view, int horizontalAlign, int verticalAlign);
+
 // ---- BGroupLayout ----
 // orientation: 0 = B_HORIZONTAL, 1 = B_VERTICAL (Haiku's own real enum
 // values - see raw/haiku_shim_interface.bas's own constants).
 void* eb_haiku_group_layout_create(unsigned int orientation, float spacing);
-void eb_haiku_group_layout_add_view(void* layout, void* view);
+void eb_haiku_group_layout_set_orientation(void* layout, unsigned int orientation);
+void eb_haiku_group_layout_set_spacing(void* layout, float spacing);
+float eb_haiku_group_layout_item_weight(void* layout, int index);
+void eb_haiku_group_layout_set_item_weight(void* layout, int index, float weight);
+
+// ---- Generic BLayout operations - BGroupLayout/BGridLayout/
+// BCardLayout all share this common base with a *virtual* AddView/
+// AddItem, so one pair of functions correctly dispatches to whichever
+// concrete layout is actually passed in, via ordinary C++ virtual
+// dispatch (confirmed directly against Layout.h/GridLayout.h/
+// CardLayout.h - no need for one near-duplicate AddView per type).
+void eb_haiku_layout_add_view(void* layout, void* view);
+void eb_haiku_layout_add_item(void* layout, void* item);
+// SetInsets is on the shared BTwoDimensionalLayout base of Group *and*
+// Grid specifically (not Card, which has no insets of its own).
+void eb_haiku_two_dimensional_layout_set_insets(void* layout, float left, float top, float right,
+                                                 float bottom);
+
+// ---- BGridLayout ----
+void* eb_haiku_grid_layout_create(float horizontalSpacing, float verticalSpacing);
+void eb_haiku_grid_layout_add_view_at(void* layout, void* view, int column, int row,
+                                       int columnCount, int rowCount);
+void eb_haiku_grid_layout_set_spacing(void* layout, float horizontalSpacing,
+                                       float verticalSpacing);
+void eb_haiku_grid_layout_set_column_weight(void* layout, int column, float weight);
+void eb_haiku_grid_layout_set_row_weight(void* layout, int row, float weight);
+void eb_haiku_grid_layout_set_min_column_width(void* layout, int column, float width);
+void eb_haiku_grid_layout_set_max_column_width(void* layout, int column, float width);
+void eb_haiku_grid_layout_set_min_row_height(void* layout, int row, float height);
+void eb_haiku_grid_layout_set_max_row_height(void* layout, int row, float height);
+
+// ---- BCardLayout - shows exactly one child at a time (wizard pages,
+// tabbed-without-tabs content). Add children via the generic
+// eb_haiku_layout_add_view above. ----
+void* eb_haiku_card_layout_create(void);
+void eb_haiku_card_layout_set_visible_item(void* layout, int index);
+int eb_haiku_card_layout_visible_index(void* layout);
+
+// ---- BSplitView - a real BView subclass providing resizable split
+// panes directly (not a BLayout - confirmed the public class is
+// BSplitView; BSplitLayout is a private implementation detail, never
+// meant to be used directly). ----
+void* eb_haiku_split_view_create(unsigned int orientation, float spacing);
+void eb_haiku_split_view_add_child(void* splitView, void* view, float weight);
+void eb_haiku_split_view_set_collapsible(void* splitView, int collapsible);
+void eb_haiku_split_view_set_insets(void* splitView, float left, float top, float right,
+                                     float bottom);
+void eb_haiku_split_view_set_splitter_size(void* splitView, float size);
+
+// ---- BSpaceLayoutItem - real, commonly-used spacer items, added to
+// any layout via the generic eb_haiku_layout_add_item above. ----
+void* eb_haiku_space_layout_item_create_glue(void);
+void* eb_haiku_space_layout_item_create_horizontal_strut(float width);
+void* eb_haiku_space_layout_item_create_vertical_strut(float height);
 
 } // extern "C"

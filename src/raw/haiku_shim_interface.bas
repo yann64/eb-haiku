@@ -24,6 +24,20 @@ CONST H_FOLLOW_ALL = 4660
 CONST H_HORIZONTAL = 0
 CONST H_VERTICAL = 1
 
+' Real Haiku alignment enum values (interface/InterfaceDefs.h) - NOT a
+' plain sequential enum (B_ALIGN_TOP is 16, not 2) - confirmed by
+' compiling and printing each one on the real Haiku host.
+CONST H_ALIGN_LEFT = 0
+CONST H_ALIGN_RIGHT = 1
+CONST H_ALIGN_CENTER = 2
+CONST H_ALIGN_TOP = 16
+CONST H_ALIGN_BOTTOM = 48
+CONST H_ALIGN_MIDDLE = 32
+
+' A real Haiku sentinel value (interface/Layout.h) meaning "use this
+' layout's own default spacing" - confirmed on the real Haiku host.
+CONST H_USE_DEFAULT_SPACING = -1002
+
 Extern "C" Lib "ebhaikushim"
     ' ---- BWindow (via ShimWindow) ----
     Declare Function eb_haiku_window_create(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, BYVAL title AS ZSTRING, BYVAL flags AS UINTEGER) AS ANY PTR
@@ -40,6 +54,15 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_view_create(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, BYVAL name AS ZSTRING, BYVAL resizingMode AS UINTEGER, BYVAL flags AS UINTEGER) AS ANY PTR
     Declare Sub eb_haiku_view_add_child(BYVAL view AS ANY PTR, BYVAL child AS ANY PTR)
     Declare Sub eb_haiku_view_destroy(BYVAL view AS ANY PTR)
+
+    ' ---- View-level layout attachment + per-view size/alignment
+    ' constraints - works on any view/control handle.
+    Declare Sub eb_haiku_view_set_layout(BYVAL view AS ANY PTR, BYVAL layout AS ANY PTR)
+    Declare Sub eb_haiku_view_set_explicit_min_size(BYVAL view AS ANY PTR, BYVAL width AS SINGLE, BYVAL height AS SINGLE)
+    Declare Sub eb_haiku_view_set_explicit_max_size(BYVAL view AS ANY PTR, BYVAL width AS SINGLE, BYVAL height AS SINGLE)
+    Declare Sub eb_haiku_view_set_explicit_preferred_size(BYVAL view AS ANY PTR, BYVAL width AS SINGLE, BYVAL height AS SINGLE)
+    Declare Sub eb_haiku_view_set_explicit_size(BYVAL view AS ANY PTR, BYVAL width AS SINGLE, BYVAL height AS SINGLE)
+    Declare Sub eb_haiku_view_set_explicit_alignment(BYVAL view AS ANY PTR, BYVAL horizontalAlign AS INTEGER, BYVAL verticalAlign AS INTEGER)
 
     ' ---- Stock controls - no callback machinery of their own, see
     ' shim_interface.h's own note: a click's "what" message reaches the
@@ -75,4 +98,48 @@ Extern "C" Lib "ebhaikushim"
     ' ---- BGroupLayout ----
     Declare Function eb_haiku_group_layout_create(BYVAL layoutOrientation AS UINTEGER, BYVAL spacing AS SINGLE) AS ANY PTR
     Declare Sub eb_haiku_group_layout_add_view(BYVAL layout AS ANY PTR, BYVAL view AS ANY PTR)
+    Declare Sub eb_haiku_group_layout_set_orientation(BYVAL layout AS ANY PTR, BYVAL layoutOrientation AS UINTEGER)
+    Declare Sub eb_haiku_group_layout_set_spacing(BYVAL layout AS ANY PTR, BYVAL spacing AS SINGLE)
+    Declare Function eb_haiku_group_layout_item_weight(BYVAL layout AS ANY PTR, BYVAL index AS INTEGER) AS SINGLE
+    Declare Sub eb_haiku_group_layout_set_item_weight(BYVAL layout AS ANY PTR, BYVAL index AS INTEGER, BYVAL weight AS SINGLE)
+
+    ' ---- Generic BLayout operations - BGroupLayout/BGridLayout/
+    ' BCardLayout all share this common base with a *virtual*
+    ' AddView/AddItem, so these two functions work correctly no matter
+    ' which concrete layout handle is actually passed in.
+    Declare Sub eb_haiku_layout_add_view(BYVAL layout AS ANY PTR, BYVAL view AS ANY PTR)
+    Declare Sub eb_haiku_layout_add_item(BYVAL layout AS ANY PTR, BYVAL item AS ANY PTR)
+    ' SetInsets is on the shared base of Group *and* Grid specifically
+    ' (not Card, which has no insets of its own).
+    Declare Sub eb_haiku_two_dimensional_layout_set_insets(BYVAL layout AS ANY PTR, BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE)
+
+    ' ---- BGridLayout ----
+    Declare Function eb_haiku_grid_layout_create(BYVAL horizontalSpacing AS SINGLE, BYVAL verticalSpacing AS SINGLE) AS ANY PTR
+    Declare Sub eb_haiku_grid_layout_add_view_at(BYVAL layout AS ANY PTR, BYVAL view AS ANY PTR, BYVAL column AS INTEGER, BYVAL row AS INTEGER, BYVAL columnCount AS INTEGER, BYVAL rowCount AS INTEGER)
+    Declare Sub eb_haiku_grid_layout_set_spacing(BYVAL layout AS ANY PTR, BYVAL horizontalSpacing AS SINGLE, BYVAL verticalSpacing AS SINGLE)
+    Declare Sub eb_haiku_grid_layout_set_column_weight(BYVAL layout AS ANY PTR, BYVAL column AS INTEGER, BYVAL weight AS SINGLE)
+    Declare Sub eb_haiku_grid_layout_set_row_weight(BYVAL layout AS ANY PTR, BYVAL row AS INTEGER, BYVAL weight AS SINGLE)
+    Declare Sub eb_haiku_grid_layout_set_min_column_width(BYVAL layout AS ANY PTR, BYVAL column AS INTEGER, BYVAL width AS SINGLE)
+    Declare Sub eb_haiku_grid_layout_set_max_column_width(BYVAL layout AS ANY PTR, BYVAL column AS INTEGER, BYVAL width AS SINGLE)
+    Declare Sub eb_haiku_grid_layout_set_min_row_height(BYVAL layout AS ANY PTR, BYVAL row AS INTEGER, BYVAL height AS SINGLE)
+    Declare Sub eb_haiku_grid_layout_set_max_row_height(BYVAL layout AS ANY PTR, BYVAL row AS INTEGER, BYVAL height AS SINGLE)
+
+    ' ---- BCardLayout - shows exactly one child at a time. Add children
+    ' via the generic eb_haiku_layout_add_view above.
+    Declare Function eb_haiku_card_layout_create() AS ANY PTR
+    Declare Sub eb_haiku_card_layout_set_visible_item(BYVAL layout AS ANY PTR, BYVAL index AS INTEGER)
+    Declare Function eb_haiku_card_layout_visible_index(BYVAL layout AS ANY PTR) AS INTEGER
+
+    ' ---- BSplitView - a real BView subclass, not a BLayout ----
+    Declare Function eb_haiku_split_view_create(BYVAL splitOrientation AS UINTEGER, BYVAL spacing AS SINGLE) AS ANY PTR
+    Declare Sub eb_haiku_split_view_add_child(BYVAL splitView AS ANY PTR, BYVAL view AS ANY PTR, BYVAL weight AS SINGLE)
+    Declare Sub eb_haiku_split_view_set_collapsible(BYVAL splitView AS ANY PTR, BYVAL collapsible AS INTEGER)
+    Declare Sub eb_haiku_split_view_set_insets(BYVAL splitView AS ANY PTR, BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE)
+    Declare Sub eb_haiku_split_view_set_splitter_size(BYVAL splitView AS ANY PTR, BYVAL size AS SINGLE)
+
+    ' ---- BSpaceLayoutItem - real spacer items, added via the generic
+    ' eb_haiku_layout_add_item above.
+    Declare Function eb_haiku_space_layout_item_create_glue() AS ANY PTR
+    Declare Function eb_haiku_space_layout_item_create_horizontal_strut(BYVAL width AS SINGLE) AS ANY PTR
+    Declare Function eb_haiku_space_layout_item_create_vertical_strut(BYVAL height AS SINGLE) AS ANY PTR
 End Extern

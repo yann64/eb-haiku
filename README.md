@@ -45,13 +45,35 @@ lifecycle - see `src/path.bas`, `src/entry.bas`, `src/directory.bas`,
 Haiku's own `BControl`/`BInvoker` already posts a control's own `what`
 message to its target (the window it's attached to, once shown), so a
 button click arrives at the *window's* `MessageReceived` callback, not
-a separate per-control one. `BGroupLayout` (`src/layout.bas`) arranges
-children automatically instead of manual frame positioning.
+a separate per-control one.
+
+**Layout Kit (v0.3.0, complete)** - see `src/layout.bas`, `src/view.bas`:
+
+- `BGroupLayout` (row/column), `BGridLayout` (rows+columns, with
+  spanning/per-column-row weight and min/max width/height),
+  `BCardLayout` (shows exactly one child at a time), `BSplitView`
+  (resizable panes with a draggable splitter - a real `BView`, not a
+  `BLayout`), `BSpaceLayoutItem` (glue/struts).
+- Attachable at the **window or view level** (`HWindowSetLayout`/
+  `HViewSetLayout`) - a layout can be nested inside an ordinary view,
+  itself added to a parent layout, not only ever at the top.
+- Per-view explicit size/alignment constraints
+  (`HViewSetExplicitMinSize`/`MaxSize`/`PreferredSize`/`Size`/
+  `Alignment`) - work on any view/control handle.
+- `BGroupLayout`/`BGridLayout`/`BCardLayout` all share Haiku's own real
+  `BLayout` base with a *virtual* `AddView`/`AddItem` - `HLayoutAddView`/
+  `HLayoutAddItem` work uniformly on any of the three via ordinary C++
+  virtual dispatch, no per-type duplication needed.
+- **Not bound, deliberately** (not a gap - already fully covered):
+  `BLayoutBuilder` (a pure templated C++ convenience API with no stable
+  ABI - it only ever calls the same methods already bound directly) and
+  `BGroupView`/`BGridView`/`BCardView` (convenience `BView`-with-
+  built-in-layout subclasses - already achievable in two calls via
+  `HViewCreate` + `HViewSetLayout`).
 
 **Explicitly out of scope**: overriding `BView`/`BWindow` methods
 beyond the specific set above (e.g. `AttachedToWindow`, drag-and-drop),
-and any layout besides `BGroupLayout` (`BLayoutBuilder`'s templated API
-is a possible future addition).
+and menus (`BMenuBar`/`BMenuItem`).
 
 ### Threading - read this before writing a GUI program
 
@@ -95,9 +117,13 @@ Matching `eb-cjson`'s own convention:
 - **Idiomatic layer** (`src/*.bas`, excluding `raw/`) - `HPath`/
   `HEntry`/`HDirectory`/`HNode`/`HNodeInfo`/`HMessage`/`HApplication`/
   `HWindow`/`HView`/`HShimView`/`HButton`/`HStringView`/`HTextControl`/
-  `HGroupLayout`, each a thin `TYPE ... : handle AS ANY PTR : END TYPE`
-  wrapper plus free functions. Every parameter is explicitly `BYVAL` -
-  each is just an 8-byte handle, cheap to copy.
+  `HGroupLayout`/`HGridLayout`/`HCardLayout`/`HSplitView`, each a thin
+  `TYPE ... : handle AS ANY PTR : END TYPE` wrapper plus free functions.
+  Every parameter is explicitly `BYVAL` - each is just an 8-byte handle,
+  cheap to copy. `BSize`/`BAlignment` are likewise plain value structs
+  in real Haiku (two `float`s / two `int`s) - passed as separate
+  parameters throughout, exactly like `BRect`, never needing their own
+  handle/`TYPE`.
 
 ## Known gaps
 
@@ -107,7 +133,6 @@ Matching `eb-cjson`'s own convention:
   `HNodeInfoGetType` return a raw, freshly-heap-allocated `ANY PTR`
   instead (freed via `HFreeString`), matching `eb-cjson`'s own
   `JsonStringify`/`JsonFreeString` fix for exactly the same issue.
-- No layout beyond `BGroupLayout` (see Status above).
 - No drag-and-drop, clipboard, or menu (`BMenuBar`/`BMenuItem`) support.
 
 ## Building
@@ -146,21 +171,21 @@ ebc yourprogram.bas -o yourprogram -L /boot/system/non-packaged/develop/lib -l e
 scripts/haiku_verify.sh [ssh-host]   # default host: haiku
 ```
 
-Builds the shim, runs `ebpm build`, then compiles and runs
-`tests/integration.bas` (every Phase 1 function, against real
-filesystem state) on the given SSH host - mirroring eBasic's own
-`scripts/haiku_verify.sh`. GUI behavior (Phase 2) has no automated
-equivalent - there's no way to check "did it draw the right pixels" or
-"did the window really appear" other than looking at it; each GUI
-example/test in this package was verified by hand via Haiku's own
-`screenshot -s` utility during development (see `examples/`'s own
-window/button/drawing/layout examples for what was actually checked).
+Builds the shim, runs `ebpm build`, then compiles and runs every
+`tests/*.bas` file on the given SSH host - mirroring eBasic's own
+`scripts/haiku_verify.sh`. GUI behavior (Phase 2/Layout Kit) has no
+automated visual equivalent - there's no way to check "did it draw the
+right pixels" or "did the grid/split/card layout actually look right"
+other than looking at it; each GUI example/test in this package was
+verified by hand via Haiku's own `screenshot -s` utility during
+development (see `examples/` for what was actually checked - one
+example per Kit/GUI/layout area).
 
 ## Using as a dependency
 
 ```toml
 [dependencies]
-eb-haiku = "^0.2"
+eb-haiku = "^0.3"
 ```
 
 ```basic
@@ -184,18 +209,18 @@ CALL HApplicationRun(app)   ' blocks until the window closes - see Threading abo
 CALL HApplicationFree(app)
 ```
 
-## Layout
+## Repository layout
 
 - `native/` - the hand-written C++ shim (see above); its own standalone
   `CMakeLists.txt`, not driven by `ebpm`.
 - `src/raw/` - the raw FFI layer.
 - `src/*.bas` (excluding `raw/`) - the idiomatic layer; `src/lib.bas` is
   the package's `#include` aggregator (its own `[lib]` entry point).
-- `examples/` - one small, focused example per Kit/GUI area, each run
-  for real on Haiku hardware (screenshotted where visual).
+- `examples/` - one small, focused example per Kit/GUI/layout area,
+  each run for real on Haiku hardware (screenshotted where visual).
 - `tests/integration.bas` - a comprehensive Phase 1 test against real
   filesystem/attribute/message state; `tests/*_basics.bas` - one
-  focused Phase 2 test per GUI area, each verified by hand (see
+  focused test per Phase 2/Layout Kit area, each verified by hand (see
   Verifying above). Run via `scripts/haiku_verify.sh`, not `ebpm test` -
   a real, shown `BWindow` needs a live desktop session, not a plain
   headless "build and run" check.

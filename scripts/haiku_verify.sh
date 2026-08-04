@@ -12,12 +12,11 @@
 # project's own script - since this package has no CI to match against).
 #
 # Each test's own exit code and final "... ok" print are checked
-# automatically, but GUI behavior (Phase 2's window/button/drawing/
-# layout tests) has no automated visual check - there's no way to
-# script "did it draw the right pixels" or "did the window really
-# appear". Each one was verified by hand via Haiku's own `screenshot
-# -s` utility during development; this script only re-confirms they
-# still run without crashing.
+# automatically, but GUI/layout behavior has no automated visual check -
+# there's no way to script "did it draw the right pixels" or "did the
+# grid/split/card layout actually look right". Each one was verified by
+# hand via Haiku's own `screenshot -s` utility during development; this
+# script only re-confirms they still run without crashing.
 #
 # `tests/*.bas` are compiled directly via `ebc` with explicit `-l
 # ebhaikushim -l be` flags (they're standalone test programs, not a
@@ -65,7 +64,9 @@ if ! ssh "$HOST" "cd ~/$REMOTE_DIR && ebpm build"; then
     exit 1
 fi
 
-for test_name in integration window_basics controls_basics drawing_basics layout_basics; do
+for test_name in integration window_basics controls_basics drawing_basics layout_basics \
+                 nested_layout_basics grid_layout_basics card_layout_basics split_view_basics \
+                 space_layout_item_basics; do
     echo "==> Compiling+running tests/$test_name.bas..."
     if ssh "$HOST" "cd ~/$REMOTE_DIR && ebc tests/$test_name.bas -o /tmp/eb_haiku_${test_name}_test -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be && /tmp/eb_haiku_${test_name}_test"; then
         echo "    PASS: $test_name"

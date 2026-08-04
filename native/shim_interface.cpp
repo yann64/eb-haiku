@@ -1,14 +1,22 @@
 #include "shim_interface.h"
 
 #include <AppDefs.h>
+#include <Alignment.h>
 #include <Button.h>
+#include <CardLayout.h>
+#include <GridLayout.h>
 #include <GroupLayout.h>
 #include <Layout.h>
+#include <LayoutItem.h>
 #include <Looper.h>
 #include <Message.h>
 #include <Messenger.h>
+#include <Size.h>
+#include <SpaceLayoutItem.h>
+#include <SplitView.h>
 #include <StringView.h>
 #include <TextControl.h>
+#include <TwoDimensionalLayout.h>
 #include <View.h>
 #include <Window.h>
 
@@ -200,6 +208,32 @@ void eb_haiku_view_add_child(void* view, void* child) {
 
 void eb_haiku_view_destroy(void* view) { delete static_cast<BView*>(view); }
 
+void eb_haiku_view_set_layout(void* view, void* layout) {
+    static_cast<BView*>(view)->SetLayout(static_cast<BLayout*>(layout));
+}
+
+void eb_haiku_view_set_explicit_min_size(void* view, float width, float height) {
+    static_cast<BView*>(view)->SetExplicitMinSize(BSize(width, height));
+}
+
+void eb_haiku_view_set_explicit_max_size(void* view, float width, float height) {
+    static_cast<BView*>(view)->SetExplicitMaxSize(BSize(width, height));
+}
+
+void eb_haiku_view_set_explicit_preferred_size(void* view, float width, float height) {
+    static_cast<BView*>(view)->SetExplicitPreferredSize(BSize(width, height));
+}
+
+void eb_haiku_view_set_explicit_size(void* view, float width, float height) {
+    static_cast<BView*>(view)->SetExplicitSize(BSize(width, height));
+}
+
+void eb_haiku_view_set_explicit_alignment(void* view, int horizontalAlign, int verticalAlign) {
+    static_cast<BView*>(view)->SetExplicitAlignment(
+        BAlignment(static_cast<alignment>(horizontalAlign),
+                   static_cast<vertical_alignment>(verticalAlign)));
+}
+
 void* eb_haiku_button_create(float left, float top, float right, float bottom, const char* name,
                               const char* label, unsigned int what) {
     return new BButton(BRect(left, top, right, bottom), name, label, new BMessage(what));
@@ -252,6 +286,115 @@ void* eb_haiku_group_layout_create(unsigned int orientation, float spacing) {
 
 void eb_haiku_group_layout_add_view(void* layout, void* view) {
     static_cast<BGroupLayout*>(layout)->AddView(static_cast<BView*>(view));
+}
+
+void eb_haiku_group_layout_set_orientation(void* layout, unsigned int orientation) {
+    static_cast<BGroupLayout*>(layout)->SetOrientation(static_cast<::orientation>(orientation));
+}
+
+void eb_haiku_group_layout_set_spacing(void* layout, float spacing) {
+    static_cast<BGroupLayout*>(layout)->SetSpacing(spacing);
+}
+
+float eb_haiku_group_layout_item_weight(void* layout, int index) {
+    return static_cast<BGroupLayout*>(layout)->ItemWeight(index);
+}
+
+void eb_haiku_group_layout_set_item_weight(void* layout, int index, float weight) {
+    static_cast<BGroupLayout*>(layout)->SetItemWeight(index, weight);
+}
+
+void eb_haiku_layout_add_view(void* layout, void* view) {
+    static_cast<BLayout*>(layout)->AddView(static_cast<BView*>(view));
+}
+
+void eb_haiku_layout_add_item(void* layout, void* item) {
+    static_cast<BLayout*>(layout)->AddItem(static_cast<BLayoutItem*>(item));
+}
+
+void eb_haiku_two_dimensional_layout_set_insets(void* layout, float left, float top, float right,
+                                                 float bottom) {
+    static_cast<BTwoDimensionalLayout*>(layout)->SetInsets(left, top, right, bottom);
+}
+
+void* eb_haiku_grid_layout_create(float horizontalSpacing, float verticalSpacing) {
+    return new BGridLayout(horizontalSpacing, verticalSpacing);
+}
+
+void eb_haiku_grid_layout_add_view_at(void* layout, void* view, int column, int row,
+                                       int columnCount, int rowCount) {
+    static_cast<BGridLayout*>(layout)->AddView(static_cast<BView*>(view), column, row,
+                                                columnCount, rowCount);
+}
+
+void eb_haiku_grid_layout_set_spacing(void* layout, float horizontalSpacing,
+                                       float verticalSpacing) {
+    static_cast<BGridLayout*>(layout)->SetSpacing(horizontalSpacing, verticalSpacing);
+}
+
+void eb_haiku_grid_layout_set_column_weight(void* layout, int column, float weight) {
+    static_cast<BGridLayout*>(layout)->SetColumnWeight(column, weight);
+}
+
+void eb_haiku_grid_layout_set_row_weight(void* layout, int row, float weight) {
+    static_cast<BGridLayout*>(layout)->SetRowWeight(row, weight);
+}
+
+void eb_haiku_grid_layout_set_min_column_width(void* layout, int column, float width) {
+    static_cast<BGridLayout*>(layout)->SetMinColumnWidth(column, width);
+}
+
+void eb_haiku_grid_layout_set_max_column_width(void* layout, int column, float width) {
+    static_cast<BGridLayout*>(layout)->SetMaxColumnWidth(column, width);
+}
+
+void eb_haiku_grid_layout_set_min_row_height(void* layout, int row, float height) {
+    static_cast<BGridLayout*>(layout)->SetMinRowHeight(row, height);
+}
+
+void eb_haiku_grid_layout_set_max_row_height(void* layout, int row, float height) {
+    static_cast<BGridLayout*>(layout)->SetMaxRowHeight(row, height);
+}
+
+void* eb_haiku_card_layout_create(void) { return new BCardLayout(); }
+
+void eb_haiku_card_layout_set_visible_item(void* layout, int index) {
+    static_cast<BCardLayout*>(layout)->SetVisibleItem(index);
+}
+
+int eb_haiku_card_layout_visible_index(void* layout) {
+    return static_cast<BCardLayout*>(layout)->VisibleIndex();
+}
+
+void* eb_haiku_split_view_create(unsigned int orientation, float spacing) {
+    return new BSplitView(static_cast<::orientation>(orientation), spacing);
+}
+
+void eb_haiku_split_view_add_child(void* splitView, void* view, float weight) {
+    static_cast<BSplitView*>(splitView)->AddChild(static_cast<BView*>(view), weight);
+}
+
+void eb_haiku_split_view_set_collapsible(void* splitView, int collapsible) {
+    static_cast<BSplitView*>(splitView)->SetCollapsible(collapsible != 0);
+}
+
+void eb_haiku_split_view_set_insets(void* splitView, float left, float top, float right,
+                                     float bottom) {
+    static_cast<BSplitView*>(splitView)->SetInsets(left, top, right, bottom);
+}
+
+void eb_haiku_split_view_set_splitter_size(void* splitView, float size) {
+    static_cast<BSplitView*>(splitView)->SetSplitterSize(size);
+}
+
+void* eb_haiku_space_layout_item_create_glue(void) { return BSpaceLayoutItem::CreateGlue(); }
+
+void* eb_haiku_space_layout_item_create_horizontal_strut(float width) {
+    return BSpaceLayoutItem::CreateHorizontalStrut(width);
+}
+
+void* eb_haiku_space_layout_item_create_vertical_strut(float height) {
+    return BSpaceLayoutItem::CreateVerticalStrut(height);
 }
 
 void* eb_haiku_shim_view_create(float left, float top, float right, float bottom,
