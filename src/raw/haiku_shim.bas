@@ -37,6 +37,16 @@ CONST H_ATTR_TYPE_MIME = 1296649541
 ' probe, not hand-derived (a packed 4-character code).
 CONST H_CLIPBOARD_CHANGED = 1129071432
 
+' Real app-flags bits (app/AppDefs.h) - used by HAppFileInfoGetAppFlags/
+' SetAppFlags (appfileinfo.bas). Plain sequential/OR-able bit values,
+' confirmed via the real header, not FourCC-packed.
+CONST H_SINGLE_LAUNCH = 0
+CONST H_MULTIPLE_LAUNCH = 1
+CONST H_EXCLUSIVE_LAUNCH = 2
+CONST H_LAUNCH_MASK = 3
+CONST H_BACKGROUND_APP = 4
+CONST H_ARGV_ONLY = 8
+
 Extern "C" Lib "ebhaikushim"
     ' ---- BPath ----
     Declare Function eb_haiku_path_create(BYVAL pathStr AS ZSTRING) AS ANY PTR

@@ -98,4 +98,17 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_mime_type_guess_mime_type(BYVAL path AS ZSTRING, BYVAL outMime AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_mime_type_get_installed_types(BYVAL outMessage AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_mime_type_get_installed_supertypes(BYVAL outMessage AS ANY PTR) AS INTEGER
+
+    ' ---- BAppFileInfo ----
+    Declare Function eb_haiku_app_file_info_create() AS ANY PTR
+    Declare Function eb_haiku_app_file_info_set_to(BYVAL info AS ANY PTR, BYVAL file AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_app_file_info_get_signature(BYVAL info AS ANY PTR, BYVAL outBuf AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_app_file_info_set_signature(BYVAL info AS ANY PTR, BYVAL signature AS ZSTRING) AS INTEGER
+    Declare Function eb_haiku_app_file_info_get_app_flags(BYVAL info AS ANY PTR, BYVAL outFlags AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_app_file_info_set_app_flags(BYVAL info AS ANY PTR, BYVAL flags AS UINTEGER) AS INTEGER
+    Declare Function eb_haiku_app_file_info_remove_app_flags(BYVAL info AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_app_file_info_get_supported_types(BYVAL info AS ANY PTR, BYVAL outMessage AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_app_file_info_set_supported_types(BYVAL info AS ANY PTR, BYVAL typesMessage AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_app_file_info_is_supported_type(BYVAL info AS ANY PTR, BYVAL forType AS ZSTRING) AS INTEGER
+    Declare Sub eb_haiku_app_file_info_destroy(BYVAL info AS ANY PTR)
 End Extern

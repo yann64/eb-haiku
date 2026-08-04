@@ -1,8 +1,11 @@
 #include "shim_storage.h"
 
+#include <AppFileInfo.h>
 #include <Bitmap.h>
+#include <DataIO.h>
 #include <Directory.h>
 #include <Entry.h>
+#include <File.h>
 #include <Handler.h>
 #include <Messenger.h>
 #include <MimeType.h>
@@ -274,5 +277,65 @@ int eb_haiku_mime_type_get_installed_types(void* outMessage) {
 int eb_haiku_mime_type_get_installed_supertypes(void* outMessage) {
     return BMimeType::GetInstalledSupertypes(static_cast<BMessage*>(outMessage));
 }
+
+// ---- BAppFileInfo ----
+
+void* eb_haiku_app_file_info_create(void) { return new BAppFileInfo(); }
+
+int eb_haiku_app_file_info_set_to(void* info, void* file) {
+    // IMPORTANT: `file` is an eb_haiku_file_create result (shim_translation.cpp),
+    // which erases its own real BFile* to BPositionIO* at creation time
+    // (BFile : public BNode, public BPositionIO - BPositionIO is the
+    // *second* base, non-zero offset). A blind static_cast<BFile*> on
+    // this handle would use the wrong address - recover the correct
+    // BPositionIO* first (matching how it was actually erased), then
+    // dynamic_cast back to BFile* (safe/correct across the MI offset,
+    // confirmed via direct reproduction - see
+    // project_haiku_mi_pointer_adjustment's own established fix for
+    // this exact class, first hit in v0.4.0's own Translation Kit work).
+    BFile* bfile = dynamic_cast<BFile*>(static_cast<BPositionIO*>(file));
+    return static_cast<BAppFileInfo*>(info)->SetTo(bfile);
+}
+
+int eb_haiku_app_file_info_get_signature(void* info, char* outBuf, int bufSize) {
+    char local[1024] = {0};
+    status_t rc = static_cast<BAppFileInfo*>(info)->GetSignature(local);
+    if (rc != B_OK) return rc;
+    return copyCStringToBuffer(local, outBuf, bufSize);
+}
+
+int eb_haiku_app_file_info_set_signature(void* info, const char* signature) {
+    return static_cast<BAppFileInfo*>(info)->SetSignature(signature);
+}
+
+int eb_haiku_app_file_info_get_app_flags(void* info, unsigned int* outFlags) {
+    uint32 flags = 0;
+    status_t rc = static_cast<BAppFileInfo*>(info)->GetAppFlags(&flags);
+    *outFlags = flags;
+    return rc;
+}
+
+int eb_haiku_app_file_info_set_app_flags(void* info, unsigned int flags) {
+    return static_cast<BAppFileInfo*>(info)->SetAppFlags(static_cast<uint32>(flags));
+}
+
+int eb_haiku_app_file_info_remove_app_flags(void* info) {
+    return static_cast<BAppFileInfo*>(info)->RemoveAppFlags();
+}
+
+int eb_haiku_app_file_info_get_supported_types(void* info, void* outMessage) {
+    return static_cast<BAppFileInfo*>(info)->GetSupportedTypes(static_cast<BMessage*>(outMessage));
+}
+
+int eb_haiku_app_file_info_set_supported_types(void* info, void* typesMessage) {
+    return static_cast<BAppFileInfo*>(info)->SetSupportedTypes(
+        static_cast<const BMessage*>(typesMessage));
+}
+
+int eb_haiku_app_file_info_is_supported_type(void* info, const char* type) {
+    return static_cast<BAppFileInfo*>(info)->IsSupportedType(type) ? 1 : 0;
+}
+
+void eb_haiku_app_file_info_destroy(void* info) { delete static_cast<BAppFileInfo*>(info); }
 
 } // extern "C"

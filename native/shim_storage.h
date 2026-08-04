@@ -160,4 +160,38 @@ int eb_haiku_mime_type_get_installed_types(void* outMessage);
 // inconsistency in Haiku's own API, not guessed.
 int eb_haiku_mime_type_get_installed_supertypes(void* outMessage);
 
+// ---- BAppFileInfo (storage/AppFileInfo.h) - real executable metadata
+// (signature/app-flags/supported-types), IS-A BNodeInfo (single
+// inheritance, already bound in Phase 1). `GetIcon`/`SetIcon`,
+// `GetCatalogEntry`/`SetCatalogEntry`, and `BResources` are
+// deliberately not bound (icon get/set is a cheap, obvious follow-on
+// via the same HBitmap-reuse pattern as BMimeType's own if ever
+// wanted; catalog entries tie into the still-out-of-scope BCatalog;
+// BResources is a separate, larger class for embedded resource *data*,
+// not metadata).
+
+void* eb_haiku_app_file_info_create(void);
+// `file` is an existing eb_haiku_file_create result (shim_translation.h) -
+// reuses the existing HFile type directly. IMPORTANT: that handle is
+// stored as a BPositionIO* (BFile's second base, non-zero offset) -
+// the implementation recovers BFile* via dynamic_cast, never a blind
+// static_cast (see project_haiku_mi_pointer_adjustment's own second,
+// independently-hit occurrence of this bug class).
+int eb_haiku_app_file_info_set_to(void* info, void* file);
+// Real GetSignature/SetSignature take no buffer-size parameter of
+// their own - same generous-internal-buffer-then-copy convention as
+// eb_haiku_mime_type_get_short_description.
+int eb_haiku_app_file_info_get_signature(void* info, char* outBuf, int bufSize);
+int eb_haiku_app_file_info_set_signature(void* info, const char* signature);
+int eb_haiku_app_file_info_get_app_flags(void* info, unsigned int* outFlags);
+int eb_haiku_app_file_info_set_app_flags(void* info, unsigned int flags);
+int eb_haiku_app_file_info_remove_app_flags(void* info);
+// Fills `outMessage` (an existing eb_haiku_message_create result,
+// shim.h) with a real repeated-string field ("types") - read via
+// eb_haiku_message_count_items/find_string_at.
+int eb_haiku_app_file_info_get_supported_types(void* info, void* outMessage);
+int eb_haiku_app_file_info_set_supported_types(void* info, void* typesMessage);
+int eb_haiku_app_file_info_is_supported_type(void* info, const char* type);
+void eb_haiku_app_file_info_destroy(void* info);
+
 } // extern "C"

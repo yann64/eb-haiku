@@ -32,6 +32,7 @@
 #include once "watcher.bas"
 #include once "volume.bas"
 #include once "mimetype.bas"
+#include once "appfileinfo.bas"
 #include once "query.bas"
 #include once "locker.bas"
 #include once "menu.bas"
