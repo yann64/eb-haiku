@@ -145,6 +145,9 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_message_find_bool(BYVAL msg AS ANY PTR, BYVAL name AS ZSTRING) AS INTEGER
     Declare Function eb_haiku_message_add_data(BYVAL msg AS ANY PTR, BYVAL name AS ZSTRING, BYVAL msgType AS UINTEGER, BYVAL buffer AS ANY PTR, BYVAL size AS INTEGER) AS INTEGER
     Declare Function eb_haiku_message_find_data(BYVAL msg AS ANY PTR, BYVAL name AS ZSTRING, BYVAL msgType AS UINTEGER, BYVAL buffer AS ANY PTR, BYVAL bufferSize AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_message_count_items(BYVAL msg AS ANY PTR, BYVAL name AS ZSTRING, BYVAL msgType AS UINTEGER) AS INTEGER
+    Declare Function eb_haiku_message_find_string_at(BYVAL msg AS ANY PTR, BYVAL name AS ZSTRING, BYVAL index AS INTEGER) AS ZSTRING
+    Declare Function eb_haiku_message_find_ref_at(BYVAL msg AS ANY PTR, BYVAL name AS ZSTRING, BYVAL index AS INTEGER, BYVAL outPath AS ANY PTR) AS INTEGER
 
     ' ---- BLocker ----
     Declare Function eb_haiku_locker_create() AS ANY PTR

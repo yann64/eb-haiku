@@ -44,4 +44,27 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_query_rewind(BYVAL query AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_query_count_entries(BYVAL query AS ANY PTR) AS INTEGER
     Declare Sub eb_haiku_query_destroy(BYVAL query AS ANY PTR)
+
+    ' ---- BMimeType ----
+    Declare Function eb_haiku_mime_type_create(BYVAL mimeType AS ZSTRING) AS ANY PTR
+    Declare Function eb_haiku_mime_type_set_to(BYVAL mime AS ANY PTR, BYVAL mimeType AS ZSTRING) AS INTEGER
+    Declare Function eb_haiku_mime_type_init_check(BYVAL mime AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_mime_type_is_valid(BYVAL mime AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_mime_type_is_installed(BYVAL mime AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_mime_type_install(BYVAL mime AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_mime_type_delete(BYVAL mime AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_mime_type_type(BYVAL mime AS ANY PTR) AS ZSTRING
+    Declare Function eb_haiku_mime_type_get_short_description(BYVAL mime AS ANY PTR, BYVAL outBuf AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_mime_type_set_short_description(BYVAL mime AS ANY PTR, BYVAL description AS ZSTRING) AS INTEGER
+    Declare Function eb_haiku_mime_type_get_long_description(BYVAL mime AS ANY PTR, BYVAL outBuf AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_mime_type_set_long_description(BYVAL mime AS ANY PTR, BYVAL description AS ZSTRING) AS INTEGER
+    Declare Function eb_haiku_mime_type_get_preferred_app(BYVAL mime AS ANY PTR, BYVAL outBuf AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_mime_type_set_preferred_app(BYVAL mime AS ANY PTR, BYVAL signature AS ZSTRING) AS INTEGER
+    Declare Function eb_haiku_mime_type_get_file_extensions(BYVAL mime AS ANY PTR, BYVAL outMessage AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_mime_type_set_file_extensions(BYVAL mime AS ANY PTR, BYVAL extensionsMessage AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_mime_type_get_supporting_apps(BYVAL mime AS ANY PTR, BYVAL outMessage AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_mime_type_destroy(BYVAL mime AS ANY PTR)
+    Declare Function eb_haiku_mime_type_guess_mime_type(BYVAL path AS ZSTRING, BYVAL outMime AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_mime_type_get_installed_types(BYVAL outMessage AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_mime_type_get_installed_supertypes(BYVAL outMessage AS ANY PTR) AS INTEGER
 End Extern

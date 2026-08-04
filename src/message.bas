@@ -3,6 +3,7 @@
 ' any future GUI/messaging work would build on).
 
 #include once "raw/haiku_shim.bas"
+#include once "path.bas"
 
 TYPE HMessage
     handle AS ANY PTR
@@ -69,6 +70,32 @@ END FUNCTION
 ''' a negative status code if absent/wrong type.
 FUNCTION HMessageFindData(BYVAL m AS HMessage, name AS ZSTRING, BYVAL msgType AS UINTEGER, BYVAL buffer AS ANY PTR, BYVAL bufferSize AS INTEGER) AS INTEGER
     HMessageFindData = eb_haiku_message_find_data(m.handle, name, msgType, buffer, bufferSize)
+END FUNCTION
+
+''' Real BMessage fields support multiple values under one name (an
+''' array field, e.g. BMimeType's own GetInstalledTypes/
+''' GetFileExtensions, or BRoster's GetRecentDocuments/Folders/Apps).
+''' Returns the real item count (>= 0), or a negative status code if
+''' `name` isn't present at all. `msgType` is one of the H_ATTR_TYPE_*
+''' constants (raw/haiku_shim.bas) - currently unused by the real
+''' implementation (BMessage::GetInfo reports a field's own real type
+''' regardless), kept for a future type-checked variant.
+FUNCTION HMessageCountItems(BYVAL m AS HMessage, name AS ZSTRING, BYVAL msgType AS UINTEGER) AS INTEGER
+    HMessageCountItems = eb_haiku_message_count_items(m.handle, name, msgType)
+END FUNCTION
+
+''' The `index`-th string value under `name` (see HMessageCountItems) -
+''' "" if `name`/`index` isn't present.
+FUNCTION HMessageFindStringAt(BYVAL m AS HMessage, name AS ZSTRING, BYVAL index AS INTEGER) AS ZSTRING
+    HMessageFindStringAt = eb_haiku_message_find_string_at(m.handle, name, index)
+END FUNCTION
+
+''' Fills `outPath` (from HPathCreateEmpty) with the `index`-th
+''' entry_ref value under `name` - the real field shape BRoster's own
+''' GetRecentDocuments/Folders/Apps use (field name "refs"). Returns a
+''' status code (0 = success).
+FUNCTION HMessageFindRefAt(BYVAL m AS HMessage, name AS ZSTRING, BYVAL index AS INTEGER, BYVAL outPath AS HPath) AS INTEGER
+    HMessageFindRefAt = eb_haiku_message_find_ref_at(m.handle, name, index, outPath.handle)
 END FUNCTION
 
 ''' Frees an HMessage - call exactly once.

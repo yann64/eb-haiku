@@ -30,6 +30,7 @@
 #include once "translation.bas"
 #include once "symlink.bas"
 #include once "volume.bas"
+#include once "mimetype.bas"
 #include once "query.bas"
 #include once "locker.bas"
 #include once "menu.bas"

@@ -435,6 +435,28 @@ int eb_haiku_message_find_data(void* msg, const char* name, unsigned int type, v
     return static_cast<int>(numBytes);
 }
 
+int eb_haiku_message_count_items(void* msg, const char* name, unsigned int type) {
+    (void)type;
+    type_code typeFound = 0;
+    int32 count = 0;
+    status_t rc = static_cast<BMessage*>(msg)->GetInfo(name, &typeFound, &count);
+    if (rc != B_OK) return rc;
+    return count;
+}
+
+const char* eb_haiku_message_find_string_at(void* msg, const char* name, int index) {
+    const char* result = nullptr;
+    status_t rc = static_cast<BMessage*>(msg)->FindString(name, index, &result);
+    return (rc == B_OK && result) ? result : "";
+}
+
+int eb_haiku_message_find_ref_at(void* msg, const char* name, int index, void* outPath) {
+    entry_ref ref;
+    status_t rc = static_cast<BMessage*>(msg)->FindRef(name, index, &ref);
+    if (rc != B_OK) return rc;
+    return static_cast<BPath*>(outPath)->SetTo(&ref);
+}
+
 // ---- BLocker ----
 
 void* eb_haiku_locker_create(void) { return new BLocker(); }

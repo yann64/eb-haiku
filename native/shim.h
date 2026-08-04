@@ -178,6 +178,21 @@ int eb_haiku_message_add_data(void* msg, const char* name, unsigned int type, co
 int eb_haiku_message_find_data(void* msg, const char* name, unsigned int type, void* buffer,
                                 int bufferSize);
 
+// Real BMessage fields support multiple values under one name (an
+// array field) - GetInfo/FindString(name, index, ...) reach them.
+// Returns the real item count (>= 0), or a negative status_t if `name`
+// isn't present at all.
+int eb_haiku_message_count_items(void* msg, const char* name, unsigned int type);
+// Returns "" (an empty, non-null string) if `name`/`index` isn't
+// present - same convention as eb_haiku_message_find_string above.
+const char* eb_haiku_message_find_string_at(void* msg, const char* name, int index);
+// entry_ref-flavored sibling of the above, for BRoster's own recent-
+// document/folder/app lists (real Haiku fills a BMessage with a
+// repeated "refs" field of this type) - fills `outPath` (an existing,
+// real BPath* handle, e.g. from eb_haiku_path_create_empty) in place.
+// Returns a status_t (0 = success).
+int eb_haiku_message_find_ref_at(void* msg, const char* name, int index, void* outPath);
+
 // ---- BLocker (support/Locker.h) - a real mutex/locking primitive.
 // bigtime_t (real 8-byte type, microseconds) confirmed via a compiled
 // probe, not assumed.

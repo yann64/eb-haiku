@@ -82,4 +82,52 @@ int eb_haiku_query_rewind(void* query);
 int eb_haiku_query_count_entries(void* query);
 void eb_haiku_query_destroy(void* query);
 
+// ---- BMimeType (storage/MimeType.h) - the per-file BNodeInfo type is
+// already covered (shim.h, Phase 1); this is the separate meta-mime
+// database. Icon get/set and sniffer-rule get/set/check are
+// deliberately not bound (real added complexity for modest value).
+
+void* eb_haiku_mime_type_create(const char* mimeType);
+int eb_haiku_mime_type_set_to(void* mime, const char* mimeType);
+int eb_haiku_mime_type_init_check(void* mime);
+int eb_haiku_mime_type_is_valid(void* mime);
+int eb_haiku_mime_type_is_installed(void* mime);
+int eb_haiku_mime_type_install(void* mime);
+int eb_haiku_mime_type_delete(void* mime);
+// Borrowed from the real BMimeType's own long-lived storage - no heap
+// allocation, no matching free needed (same convention as
+// eb_haiku_stringview_get_text).
+const char* eb_haiku_mime_type_type(void* mime);
+// Real GetShortDescription/GetLongDescription/GetPreferredApp take no
+// buffer-size parameter of their own - the shim writes into a generous
+// internal buffer first, then copies up to `bufSize` into `outBuf`
+// (same truncation convention as this package's own copyBStringToBuffer
+// helper elsewhere), returning the real full length (>= 0) or a
+// negative status_t.
+int eb_haiku_mime_type_get_short_description(void* mime, char* outBuf, int bufSize);
+int eb_haiku_mime_type_set_short_description(void* mime, const char* description);
+int eb_haiku_mime_type_get_long_description(void* mime, char* outBuf, int bufSize);
+int eb_haiku_mime_type_set_long_description(void* mime, const char* description);
+int eb_haiku_mime_type_get_preferred_app(void* mime, char* outBuf, int bufSize);
+int eb_haiku_mime_type_set_preferred_app(void* mime, const char* signature);
+// Fills `outMessage` (an existing eb_haiku_message_create result,
+// shim.h) with a real repeated-string field ("extensions") - read it
+// via eb_haiku_message_count_items/find_string_at (shim.h).
+int eb_haiku_mime_type_get_file_extensions(void* mime, void* outMessage);
+int eb_haiku_mime_type_set_file_extensions(void* mime, void* extensionsMessage);
+// Fills `outMessage` with a real repeated-string field ("applications").
+int eb_haiku_mime_type_get_supporting_apps(void* mime, void* outMessage);
+void eb_haiku_mime_type_destroy(void* mime);
+
+// Static methods - `outMime`/`outMessage` are existing handles the
+// caller already created (matching this package's own established
+// fill-in-place convention, e.g. eb_haiku_volume_roster_get_next_volume).
+int eb_haiku_mime_type_guess_mime_type(const char* path, void* outMime);
+// Fills `outMessage` with a real repeated-string field ("types").
+int eb_haiku_mime_type_get_installed_types(void* outMessage);
+// IMPORTANT, confirmed by direct reproduction: the real field name
+// here is "super_types", NOT "types" like the function above - a real
+// inconsistency in Haiku's own API, not guessed.
+int eb_haiku_mime_type_get_installed_supertypes(void* outMessage);
+
 } // extern "C"

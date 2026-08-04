@@ -2,10 +2,13 @@
 
 #include <Directory.h>
 #include <Entry.h>
+#include <MimeType.h>
 #include <Query.h>
 #include <SymLink.h>
 #include <Volume.h>
 #include <VolumeRoster.h>
+
+#include <cstring>
 
 extern "C" {
 
@@ -133,5 +136,103 @@ int eb_haiku_query_count_entries(void* query) {
 }
 
 void eb_haiku_query_destroy(void* query) { delete static_cast<BQuery*>(query); }
+
+namespace {
+int copyCStringToBuffer(const char* s, char* outBuf, int bufSize) {
+    int len = static_cast<int>(std::strlen(s));
+    int toCopy = len < bufSize ? len : bufSize;
+    std::memcpy(outBuf, s, static_cast<size_t>(toCopy));
+    return len;
+}
+} // namespace
+
+// ---- BMimeType ----
+
+void* eb_haiku_mime_type_create(const char* mimeType) { return new BMimeType(mimeType); }
+
+int eb_haiku_mime_type_set_to(void* mime, const char* mimeType) {
+    return static_cast<BMimeType*>(mime)->SetTo(mimeType);
+}
+
+int eb_haiku_mime_type_init_check(void* mime) {
+    return static_cast<BMimeType*>(mime)->InitCheck();
+}
+
+int eb_haiku_mime_type_is_valid(void* mime) {
+    return static_cast<BMimeType*>(mime)->IsValid() ? 1 : 0;
+}
+
+int eb_haiku_mime_type_is_installed(void* mime) {
+    return static_cast<BMimeType*>(mime)->IsInstalled() ? 1 : 0;
+}
+
+int eb_haiku_mime_type_install(void* mime) { return static_cast<BMimeType*>(mime)->Install(); }
+
+int eb_haiku_mime_type_delete(void* mime) { return static_cast<BMimeType*>(mime)->Delete(); }
+
+const char* eb_haiku_mime_type_type(void* mime) {
+    const char* result = static_cast<BMimeType*>(mime)->Type();
+    return result ? result : "";
+}
+
+int eb_haiku_mime_type_get_short_description(void* mime, char* outBuf, int bufSize) {
+    char local[1024] = {0};
+    status_t rc = static_cast<BMimeType*>(mime)->GetShortDescription(local);
+    if (rc != B_OK) return rc;
+    return copyCStringToBuffer(local, outBuf, bufSize);
+}
+
+int eb_haiku_mime_type_set_short_description(void* mime, const char* description) {
+    return static_cast<BMimeType*>(mime)->SetShortDescription(description);
+}
+
+int eb_haiku_mime_type_get_long_description(void* mime, char* outBuf, int bufSize) {
+    char local[1024] = {0};
+    status_t rc = static_cast<BMimeType*>(mime)->GetLongDescription(local);
+    if (rc != B_OK) return rc;
+    return copyCStringToBuffer(local, outBuf, bufSize);
+}
+
+int eb_haiku_mime_type_set_long_description(void* mime, const char* description) {
+    return static_cast<BMimeType*>(mime)->SetLongDescription(description);
+}
+
+int eb_haiku_mime_type_get_preferred_app(void* mime, char* outBuf, int bufSize) {
+    char local[1024] = {0};
+    status_t rc = static_cast<BMimeType*>(mime)->GetPreferredApp(local);
+    if (rc != B_OK) return rc;
+    return copyCStringToBuffer(local, outBuf, bufSize);
+}
+
+int eb_haiku_mime_type_set_preferred_app(void* mime, const char* signature) {
+    return static_cast<BMimeType*>(mime)->SetPreferredApp(signature);
+}
+
+int eb_haiku_mime_type_get_file_extensions(void* mime, void* outMessage) {
+    return static_cast<BMimeType*>(mime)->GetFileExtensions(static_cast<BMessage*>(outMessage));
+}
+
+int eb_haiku_mime_type_set_file_extensions(void* mime, void* extensionsMessage) {
+    return static_cast<BMimeType*>(mime)->SetFileExtensions(
+        static_cast<const BMessage*>(extensionsMessage));
+}
+
+int eb_haiku_mime_type_get_supporting_apps(void* mime, void* outMessage) {
+    return static_cast<BMimeType*>(mime)->GetSupportingApps(static_cast<BMessage*>(outMessage));
+}
+
+void eb_haiku_mime_type_destroy(void* mime) { delete static_cast<BMimeType*>(mime); }
+
+int eb_haiku_mime_type_guess_mime_type(const char* path, void* outMime) {
+    return BMimeType::GuessMimeType(path, static_cast<BMimeType*>(outMime));
+}
+
+int eb_haiku_mime_type_get_installed_types(void* outMessage) {
+    return BMimeType::GetInstalledTypes(static_cast<BMessage*>(outMessage));
+}
+
+int eb_haiku_mime_type_get_installed_supertypes(void* outMessage) {
+    return BMimeType::GetInstalledSupertypes(static_cast<BMessage*>(outMessage));
+}
 
 } // extern "C"
