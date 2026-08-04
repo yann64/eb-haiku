@@ -12,9 +12,11 @@
 #include <Looper.h>
 #include <Menu.h>
 #include <MenuBar.h>
+#include <MenuField.h>
 #include <MenuItem.h>
 #include <Message.h>
 #include <Messenger.h>
+#include <PopUpMenu.h>
 #include <PrintJob.h>
 #include <Size.h>
 #include <SpaceLayoutItem.h>
@@ -550,6 +552,24 @@ void eb_haiku_menu_item_invoke_via_messenger(void* item) {
     BMenuItem* menuItem = static_cast<BMenuItem*>(item);
     BMessage* msg = menuItem->Message();
     if (msg) menuItem->Messenger().SendMessage(msg);
+}
+
+void* eb_haiku_popup_menu_create(const char* name) { return new BPopUpMenu(name); }
+
+void* eb_haiku_popup_menu_go(void* popup, float x, float y, int autoInvoke, int keepOpen,
+                              int async) {
+    return static_cast<BPopUpMenu*>(popup)->Go(BPoint(x, y), autoInvoke != 0, keepOpen != 0,
+                                                async != 0);
+}
+
+void* eb_haiku_menu_field_create(float left, float top, float right, float bottom,
+                                  const char* name, const char* label, void* menu) {
+    return new BMenuField(BRect(left, top, right, bottom), name, label,
+                           static_cast<BMenu*>(menu));
+}
+
+void* eb_haiku_menu_field_menu(void* menuField) {
+    return static_cast<BMenuField*>(menuField)->Menu();
 }
 
 // ---- BPrintJob ----

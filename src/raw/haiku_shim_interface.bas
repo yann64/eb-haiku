@@ -165,6 +165,15 @@ Extern "C" Lib "ebhaikushim"
     Declare Sub eb_haiku_menu_item_set_marked(BYVAL item AS ANY PTR, BYVAL marked AS INTEGER)
     Declare Sub eb_haiku_menu_item_invoke_via_messenger(BYVAL item AS ANY PTR)
 
+    ' ---- BPopUpMenu (IS-A BMenu - reuses BMenu's own add_item/
+    ' add_submenu/add_separator_item declares above) ----
+    Declare Function eb_haiku_popup_menu_create(BYVAL name AS ZSTRING) AS ANY PTR
+    Declare Function eb_haiku_popup_menu_go(BYVAL popup AS ANY PTR, BYVAL x AS SINGLE, BYVAL y AS SINGLE, BYVAL autoInvoke AS INTEGER, BYVAL keepOpen AS INTEGER, BYVAL async AS INTEGER) AS ANY PTR
+
+    ' ---- BMenuField ----
+    Declare Function eb_haiku_menu_field_create(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, BYVAL name AS ZSTRING, BYVAL label AS ZSTRING, BYVAL menu AS ANY PTR) AS ANY PTR
+    Declare Function eb_haiku_menu_field_menu(BYVAL menuField AS ANY PTR) AS ANY PTR
+
     ' ---- BPrintJob ----
     Declare Function eb_haiku_print_job_create(BYVAL name AS ZSTRING) AS ANY PTR
     Declare Sub eb_haiku_print_job_set_draw_view_callback(BYVAL job AS ANY PTR, BYVAL cb AS ANY PTR, BYVAL userData AS ANY PTR)

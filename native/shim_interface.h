@@ -251,6 +251,30 @@ void eb_haiku_menu_item_set_marked(void* item, int marked);
 // message to its own established target via Messenger().
 void eb_haiku_menu_item_invoke_via_messenger(void* item);
 
+// ---- BPopUpMenu - IS-A BMenu (like BMenuBar already is), reuses the
+// same opaque handle everywhere a BMenu* is expected (add items via
+// the existing eb_haiku_menu_add_item/add_submenu/add_separator_item
+// above). IMPORTANT, confirmed by direct reproduction: real interactive
+// item *selection* needs a human mouse click - not triggerable over
+// SSH (the same real limitation as BPrintJob::ConfigJob) - Go() itself
+// is safe to call (returns promptly with async=true), but this
+// package's own tests can't drive a real selection headlessly.
+void* eb_haiku_popup_menu_create(const char* name);
+// Returns the picked BMenuItem* (0 if none/still open, e.g. with
+// async=true).
+void* eb_haiku_popup_menu_go(void* popup, float x, float y, int autoInvoke, int keepOpen,
+                              int async);
+
+// ---- BMenuField - a real BView combining a label + a BMenuBar-styled
+// clickable field wrapping an existing BMenu. Once shown, Haiku itself
+// owns/destroys both the field and the menu it was given - matching
+// the existing stock-controls convention (no destroy function here).
+void* eb_haiku_menu_field_create(float left, float top, float right, float bottom,
+                                  const char* name, const char* label, void* menu);
+// The BMenu this field wraps - useful to add items to it after
+// creation (e.g. built up incrementally rather than fully upfront).
+void* eb_haiku_menu_field_menu(void* menuField);
+
 // ---- BPrintJob (interface/PrintJob.h) - real printing, via a real
 // ShimPrintJob subclass (the only way to reach the virtual DrawView()
 // from eBasic, same reason as ShimWindow/ShimView above).

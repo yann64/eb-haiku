@@ -93,3 +93,49 @@ END SUB
 SUB HMenuItemInvokeViaMessenger(BYVAL item AS HMenuItem)
     CALL eb_haiku_menu_item_invoke_via_messenger(item.handle)
 END SUB
+
+''' A context (right-click-style) menu - IS-A BMenu (like HMenuBarCreate's
+''' own result), reuses the plain HMenu type directly: add items to it
+''' via HMenuAddItem/AddSubmenu/AddSeparatorItem exactly like any other
+''' menu, then show it via HPopUpMenuGo.
+FUNCTION HPopUpMenuCreate(name AS ZSTRING) AS HMenu
+    DIM m AS HMenu
+    m.handle = eb_haiku_popup_menu_create(name)
+    HPopUpMenuCreate = m
+END FUNCTION
+
+''' Shows `popup` at screen point (x, y). With `async` = 0 (the common
+''' case), blocks the calling thread until the user picks an item or
+''' dismisses the menu, returning the picked HMenuItem (a null handle if
+''' dismissed). With `async` <> 0, returns immediately with a null
+''' handle - the picked item (if any) is delivered as a real message to
+''' its own established target instead, same as a menu bar item.
+''' IMPORTANT, confirmed by direct reproduction: real interactive item
+''' *selection* needs a human mouse click - not triggerable over SSH
+''' (the same real limitation as HPrintJobConfigJob) - only `async` = 1
+''' is safe to drive headlessly in an automated test.
+FUNCTION HPopUpMenuGo(BYVAL popup AS HMenu, BYVAL x AS SINGLE, BYVAL y AS SINGLE, BYVAL autoInvoke AS INTEGER, BYVAL keepOpen AS INTEGER, BYVAL async AS INTEGER) AS HMenuItem
+    DIM picked AS HMenuItem
+    picked.handle = eb_haiku_popup_menu_go(popup.handle, x, y, autoInvoke, keepOpen, async)
+    HPopUpMenuGo = picked
+END FUNCTION
+
+TYPE HMenuField
+    handle AS ANY PTR
+END TYPE
+
+''' A labeled, clickable field wrapping an existing menu (build `menu`'s
+''' own items first via HMenuAddItem/AddSubmenu, then pass it here).
+FUNCTION HMenuFieldCreate(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, name AS ZSTRING, label AS ZSTRING, BYVAL menu AS HMenu) AS HMenuField
+    DIM f AS HMenuField
+    f.handle = eb_haiku_menu_field_create(left, top, right, bottom, name, label, menu.handle)
+    HMenuFieldCreate = f
+END FUNCTION
+
+''' The HMenu this field wraps - add items to it after creation via the
+''' usual HMenuAddItem/AddSubmenu/AddSeparatorItem.
+FUNCTION HMenuFieldMenu(BYVAL f AS HMenuField) AS HMenu
+    DIM m AS HMenu
+    m.handle = eb_haiku_menu_field_menu(f.handle)
+    HMenuFieldMenu = m
+END FUNCTION
