@@ -10,6 +10,14 @@
 ' destroys it automatically - matching this package's own existing
 ' stock-controls convention (no HMenuFree/HMenuItemFree, exactly like
 ' HButtonCreate has no HButtonFree).
+'
+' IMPORTANT, confirmed by direct reproduction: constructing a new
+' HMenu/HMenuItem (a real BView/BHandler) AFTER HApplicationFree has
+' already destroyed the owning HApplication hangs indefinitely - the
+' same "needs a live BApplication" gotcha family as Translation Kit's
+' GetBitmap/BClipboard::Lock, but here needing one to still exist
+' rather than merely have existed once. Do all menu/item construction
+' before HApplicationFree, never after.
 
 #include once "raw/haiku_shim_interface.bas"
 #include once "message.bas"
@@ -84,6 +92,10 @@ SUB HMenuItemSetMarked(BYVAL item AS HMenuItem, BYVAL marked AS INTEGER)
     CALL eb_haiku_menu_item_set_marked(item.handle, marked)
 END SUB
 
+FUNCTION HMenuItemIsMarked(BYVAL item AS HMenuItem) AS INTEGER
+    HMenuItemIsMarked = eb_haiku_menu_item_is_marked(item.handle)
+END FUNCTION
+
 ''' Triggers `item` exactly as a real click would - not implemented via
 ''' BInvoker::Invoke() itself, which crashes when called from outside
 ''' the window's own thread (the same documented risk as
@@ -92,6 +104,24 @@ END SUB
 ''' test-only hack.
 SUB HMenuItemInvokeViaMessenger(BYVAL item AS HMenuItem)
     CALL eb_haiku_menu_item_invoke_via_messenger(item.handle)
+END SUB
+
+''' Turns radio-mode grouping on/off for `menu` - once on, real Haiku
+''' automatically unmarks every sibling item when one is marked (via a
+''' real click or HMenuItemSetMarked), entirely handled internally, no
+''' extra bookkeeping needed on the eBasic side.
+SUB HMenuSetRadioMode(BYVAL menu AS HMenu, BYVAL isOn AS INTEGER)
+    CALL eb_haiku_menu_set_radio_mode(menu.handle, isOn)
+END SUB
+
+FUNCTION HMenuIsRadioMode(BYVAL menu AS HMenu) AS INTEGER
+    HMenuIsRadioMode = eb_haiku_menu_is_radio_mode(menu.handle)
+END FUNCTION
+
+''' When on (radio mode only), the menu's own displayed label follows
+''' whichever item is currently marked.
+SUB HMenuSetLabelFromMarked(BYVAL menu AS HMenu, BYVAL isOn AS INTEGER)
+    CALL eb_haiku_menu_set_label_from_marked(menu.handle, isOn)
 END SUB
 
 ''' A context (right-click-style) menu - IS-A BMenu (like HMenuBarCreate's

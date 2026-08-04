@@ -545,6 +545,10 @@ void eb_haiku_menu_item_set_marked(void* item, int marked) {
     static_cast<BMenuItem*>(item)->SetMarked(marked != 0);
 }
 
+int eb_haiku_menu_item_is_marked(void* item) {
+    return static_cast<BMenuItem*>(item)->IsMarked() ? 1 : 0;
+}
+
 void eb_haiku_menu_item_invoke_via_messenger(void* item) {
     // Same reasoning/fix as eb_haiku_button_invoke above - BMenuItem is
     // a BInvoker too, and calling Invoke() directly hit the same
@@ -552,6 +556,18 @@ void eb_haiku_menu_item_invoke_via_messenger(void* item) {
     BMenuItem* menuItem = static_cast<BMenuItem*>(item);
     BMessage* msg = menuItem->Message();
     if (msg) menuItem->Messenger().SendMessage(msg);
+}
+
+void eb_haiku_menu_set_radio_mode(void* menu, int on) {
+    static_cast<BMenu*>(menu)->SetRadioMode(on != 0);
+}
+
+int eb_haiku_menu_is_radio_mode(void* menu) {
+    return static_cast<BMenu*>(menu)->IsRadioMode() ? 1 : 0;
+}
+
+void eb_haiku_menu_set_label_from_marked(void* menu, int on) {
+    static_cast<BMenu*>(menu)->SetLabelFromMarked(on != 0);
 }
 
 void* eb_haiku_popup_menu_create(const char* name) { return new BPopUpMenu(name); }

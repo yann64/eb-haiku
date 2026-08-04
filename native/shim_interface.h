@@ -245,11 +245,19 @@ int eb_haiku_menu_add_submenu(void* menu, void* submenu);
 int eb_haiku_menu_add_separator_item(void* menu);
 void eb_haiku_menu_item_set_enabled(void* item, int enabled);
 void eb_haiku_menu_item_set_marked(void* item, int marked);
+int eb_haiku_menu_item_is_marked(void* item);
 // Same "not BInvoker::Invoke() directly" reasoning/fix as
 // eb_haiku_button_invoke above (BMenuItem is a BInvoker too - the same
 // documented crash risk applies) - manually sends the item's own
 // message to its own established target via Messenger().
 void eb_haiku_menu_item_invoke_via_messenger(void* item);
+
+// Radio-mode grouping - once on, marking one item automatically
+// unmarks its siblings, entirely handled internally by real Haiku (no
+// new per-item logic needed here).
+void eb_haiku_menu_set_radio_mode(void* menu, int on);
+int eb_haiku_menu_is_radio_mode(void* menu);
+void eb_haiku_menu_set_label_from_marked(void* menu, int on);
 
 // ---- BPopUpMenu - IS-A BMenu (like BMenuBar already is), reuses the
 // same opaque handle everywhere a BMenu* is expected (add items via

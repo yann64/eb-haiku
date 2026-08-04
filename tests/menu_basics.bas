@@ -86,6 +86,55 @@ CALL Sleep(300)
 CALL HMenuItemSetEnabled(openItem, 0)
 CALL HMenuItemSetMarked(quitItem, 1)
 
+' ---- Radio-mode grouping: real Haiku unmarks siblings automatically
+' when one item is marked, entirely internal - verified by reading the
+' marked state back after each HMenuItemSetMarked call. IMPORTANT,
+' confirmed by direct reproduction: constructing a new BMenu (a BView)
+' after HApplicationFree has already destroyed the BApplication hangs
+' indefinitely - the same "needs a live BApplication" gotcha family as
+' GetBitmap/BClipboard::Lock, but here needing one to still exist
+' rather than merely have existed once. Do all real menu/item
+' construction before HApplicationFree, never after. ----
+
+DIM radioMenu AS HMenu
+radioMenu = HMenuCreate("Size")
+CALL HMenuSetRadioMode(radioMenu, 1)
+IF HMenuIsRadioMode(radioMenu) <> 1 THEN
+    PRINT "FAIL: HMenuIsRadioMode should be true after SetRadioMode(1)"
+    CALL ExitProcess(1)
+END IF
+
+DIM smallItem AS HMenuItem
+smallItem = HMenuItemCreate("Small", HMessageCreate(3001))
+CALL HMenuAddItem(radioMenu, smallItem)
+DIM mediumItem AS HMenuItem
+mediumItem = HMenuItemCreate("Medium", HMessageCreate(3002))
+CALL HMenuAddItem(radioMenu, mediumItem)
+DIM largeItem AS HMenuItem
+largeItem = HMenuItemCreate("Large", HMessageCreate(3003))
+CALL HMenuAddItem(radioMenu, largeItem)
+
+CALL HMenuItemSetMarked(smallItem, 1)
+IF HMenuItemIsMarked(smallItem) <> 1 THEN
+    PRINT "FAIL: smallItem should be marked"
+    CALL ExitProcess(1)
+END IF
+
+CALL HMenuItemSetMarked(mediumItem, 1)
+IF HMenuItemIsMarked(mediumItem) <> 1 THEN
+    PRINT "FAIL: mediumItem should be marked"
+    CALL ExitProcess(1)
+END IF
+IF HMenuItemIsMarked(smallItem) <> 0 THEN
+    PRINT "FAIL: radio mode should have unmarked smallItem when mediumItem was marked"
+    CALL ExitProcess(1)
+END IF
+IF HMenuItemIsMarked(largeItem) <> 0 THEN
+    PRINT "FAIL: largeItem should never have been marked"
+    CALL ExitProcess(1)
+END IF
+PRINT "radio-mode grouping ok"
+
 CALL Sleep(1500) ' visible for an external screenshot
 
 CALL HWindowClose(w)

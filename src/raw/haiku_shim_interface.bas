@@ -163,7 +163,11 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_menu_add_separator_item(BYVAL menu AS ANY PTR) AS INTEGER
     Declare Sub eb_haiku_menu_item_set_enabled(BYVAL item AS ANY PTR, BYVAL enabled AS INTEGER)
     Declare Sub eb_haiku_menu_item_set_marked(BYVAL item AS ANY PTR, BYVAL marked AS INTEGER)
+    Declare Function eb_haiku_menu_item_is_marked(BYVAL item AS ANY PTR) AS INTEGER
     Declare Sub eb_haiku_menu_item_invoke_via_messenger(BYVAL item AS ANY PTR)
+    Declare Sub eb_haiku_menu_set_radio_mode(BYVAL menu AS ANY PTR, BYVAL isOn AS INTEGER)
+    Declare Function eb_haiku_menu_is_radio_mode(BYVAL menu AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_menu_set_label_from_marked(BYVAL menu AS ANY PTR, BYVAL isOn AS INTEGER)
 
     ' ---- BPopUpMenu (IS-A BMenu - reuses BMenu's own add_item/
     ' add_submenu/add_separator_item declares above) ----
