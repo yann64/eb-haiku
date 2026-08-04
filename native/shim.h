@@ -232,6 +232,30 @@ int eb_haiku_roster_team_for(void* roster, const char* signature);
 int eb_haiku_roster_launch(void* roster, const char* signature, int* outTeam);
 int eb_haiku_roster_activate_app(void* roster, int team);
 int eb_haiku_roster_broadcast(void* roster, void* message);
+// Fills outTeam/outThread/outFlags and outPath (an existing BPath*
+// handle, e.g. eb_haiku_path_create_empty - filled from the real
+// app_info's own entry_ref, same "reuse BPath directly" convention as
+// BPackageRoster's own repository-path functions). Returns a status_t
+// (0 = success).
+int eb_haiku_roster_get_app_info(void* roster, const char* signature, int* outTeam,
+                                  int* outThread, unsigned int* outFlags, void* outPath);
+// Like the above, but looked up by team_id instead of signature (real
+// Haiku's own GetRunningAppInfo) - also fills outSignature (caller-
+// supplied, bufSize bytes, NOT null-terminated automatically).
+int eb_haiku_roster_get_running_app_info(void* roster, int team, int* outThread,
+                                          unsigned int* outFlags, void* outPath,
+                                          char* outSignature, int sigBufSize);
+// Real FindApp(mimeType) overload - fills outPath with the preferred
+// handler app's own real executable path.
+int eb_haiku_roster_find_app(void* roster, const char* mimeType, void* outPath);
+// Fills outMessage (an existing eb_haiku_message_create result) with a
+// real repeated entry_ref field named "refs" - read via
+// eb_haiku_message_count_items/find_ref_at (above).
+void eb_haiku_roster_get_recent_documents(void* roster, void* outMessage, int maxCount,
+                                           const char* fileType, const char* signature);
+void eb_haiku_roster_get_recent_folders(void* roster, void* outMessage, int maxCount,
+                                         const char* signature);
+void eb_haiku_roster_get_recent_apps(void* roster, void* outMessage, int maxCount);
 
 // ---- BClipboard (app/Clipboard.h) - the shared be_clipboard
 // singleton, exposed the same way. Never freed by this package for the
@@ -261,6 +285,12 @@ int eb_haiku_clipboard_set_text(void* clipboard, const char* text);
 // null-terminated automatically), or a negative status_t if there's no
 // plain text on the clipboard.
 int eb_haiku_clipboard_get_text(void* clipboard, char* outBuf, int bufSize);
+// `watcher` is an eb_haiku_watcher_create result (shim.h) - a real
+// B_CLIPBOARD_CHANGED message (matching this package's own H_* NodeMonitor-
+// style constant convention, see raw/haiku_shim.bas) is delivered to its
+// own registered callback whenever the clipboard's own content changes.
+int eb_haiku_clipboard_start_watching(void* clipboard, void* watcher);
+int eb_haiku_clipboard_stop_watching(void* clipboard, void* watcher);
 
 // ---- BApplication (app/Application.h) - lifecycle only, no subclass ----
 void* eb_haiku_application_create(const char* signature);

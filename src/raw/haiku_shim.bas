@@ -32,6 +32,11 @@ CONST H_ATTR_TYPE_RAW = 1380013908
 ' comment) - confirmed the same way, not assumed.
 CONST H_ATTR_TYPE_MIME = 1296649541
 
+' Real message `what` delivered by HClipboardStartWatching (app/
+' Clipboard.h's own B_CLIPBOARD_CHANGED) - confirmed via a compiled
+' probe, not hand-derived (a packed 4-character code).
+CONST H_CLIPBOARD_CHANGED = 1129071432
+
 Extern "C" Lib "ebhaikushim"
     ' ---- BPath ----
     Declare Function eb_haiku_path_create(BYVAL pathStr AS ZSTRING) AS ANY PTR
@@ -170,6 +175,12 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_roster_launch(BYVAL roster AS ANY PTR, BYVAL signature AS ZSTRING, BYVAL outTeam AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_roster_activate_app(BYVAL roster AS ANY PTR, BYVAL team AS INTEGER) AS INTEGER
     Declare Function eb_haiku_roster_broadcast(BYVAL roster AS ANY PTR, BYVAL message AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_roster_get_app_info(BYVAL roster AS ANY PTR, BYVAL signature AS ZSTRING, BYVAL outTeam AS ANY PTR, BYVAL outThread AS ANY PTR, BYVAL outFlags AS ANY PTR, BYVAL outPath AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_roster_get_running_app_info(BYVAL roster AS ANY PTR, BYVAL team AS INTEGER, BYVAL outThread AS ANY PTR, BYVAL outFlags AS ANY PTR, BYVAL outPath AS ANY PTR, BYVAL outSignature AS ANY PTR, BYVAL sigBufSize AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_roster_find_app(BYVAL roster AS ANY PTR, BYVAL mimeType AS ZSTRING, BYVAL outPath AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_roster_get_recent_documents(BYVAL roster AS ANY PTR, BYVAL outMessage AS ANY PTR, BYVAL maxCount AS INTEGER, BYVAL fileType AS ZSTRING, BYVAL signature AS ZSTRING)
+    Declare Sub eb_haiku_roster_get_recent_folders(BYVAL roster AS ANY PTR, BYVAL outMessage AS ANY PTR, BYVAL maxCount AS INTEGER, BYVAL signature AS ZSTRING)
+    Declare Sub eb_haiku_roster_get_recent_apps(BYVAL roster AS ANY PTR, BYVAL outMessage AS ANY PTR, BYVAL maxCount AS INTEGER)
 
     ' ---- BClipboard ----
     Declare Function eb_haiku_clipboard_default() AS ANY PTR
@@ -183,6 +194,8 @@ Extern "C" Lib "ebhaikushim"
     Declare Sub eb_haiku_clipboard_destroy(BYVAL clipboard AS ANY PTR)
     Declare Function eb_haiku_clipboard_set_text(BYVAL clipboard AS ANY PTR, BYVAL text AS ZSTRING) AS INTEGER
     Declare Function eb_haiku_clipboard_get_text(BYVAL clipboard AS ANY PTR, BYVAL outBuf AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_clipboard_start_watching(BYVAL clipboard AS ANY PTR, BYVAL watcher AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_clipboard_stop_watching(BYVAL clipboard AS ANY PTR, BYVAL watcher AS ANY PTR) AS INTEGER
 
     ' ---- BApplication (lifecycle only, no subclass) ----
     Declare Function eb_haiku_application_create(BYVAL signature AS ZSTRING) AS ANY PTR

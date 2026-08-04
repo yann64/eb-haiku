@@ -554,6 +554,69 @@ int eb_haiku_roster_broadcast(void* roster, void* message) {
     return static_cast<BRoster*>(roster)->Broadcast(static_cast<BMessage*>(message));
 }
 
+namespace {
+int fillAppInfoOut(const app_info& info, int* outThread, unsigned int* outFlags, void* outPath) {
+    *outThread = info.thread;
+    *outFlags = info.flags;
+    return static_cast<BPath*>(outPath)->SetTo(&info.ref);
+}
+} // namespace
+
+int eb_haiku_roster_get_app_info(void* roster, const char* signature, int* outTeam,
+                                  int* outThread, unsigned int* outFlags, void* outPath) {
+    app_info info;
+    status_t rc = static_cast<BRoster*>(roster)->GetAppInfo(signature, &info);
+    if (rc != B_OK) return rc;
+    *outTeam = info.team;
+    return fillAppInfoOut(info, outThread, outFlags, outPath);
+}
+
+int eb_haiku_roster_get_running_app_info(void* roster, int team, int* outThread,
+                                          unsigned int* outFlags, void* outPath,
+                                          char* outSignature, int sigBufSize) {
+    app_info info;
+    status_t rc = static_cast<BRoster*>(roster)->GetRunningAppInfo(static_cast<team_id>(team),
+                                                                     &info);
+    if (rc != B_OK) return rc;
+    int pathRc = fillAppInfoOut(info, outThread, outFlags, outPath);
+    if (pathRc != B_OK) return pathRc;
+    int sigLen = static_cast<int>(std::strlen(info.signature));
+    int toCopy = sigLen < sigBufSize ? sigLen : sigBufSize;
+    std::memcpy(outSignature, info.signature, static_cast<size_t>(toCopy));
+    return B_OK;
+}
+
+int eb_haiku_roster_find_app(void* roster, const char* mimeType, void* outPath) {
+    entry_ref appRef;
+    status_t rc = static_cast<BRoster*>(roster)->FindApp(mimeType, &appRef);
+    if (rc != B_OK) return rc;
+    return static_cast<BPath*>(outPath)->SetTo(&appRef);
+}
+
+namespace {
+// eBasic's ZSTRING can't represent NULL - an empty string means "no
+// filter" at this package's own idiomatic layer, translated here to
+// the real optional NULL these Haiku functions expect.
+const char* nullIfEmpty(const char* s) { return (s && s[0] != '\0') ? s : nullptr; }
+} // namespace
+
+void eb_haiku_roster_get_recent_documents(void* roster, void* outMessage, int maxCount,
+                                           const char* fileType, const char* signature) {
+    static_cast<BRoster*>(roster)->GetRecentDocuments(
+        static_cast<BMessage*>(outMessage), maxCount, nullIfEmpty(fileType),
+        nullIfEmpty(signature));
+}
+
+void eb_haiku_roster_get_recent_folders(void* roster, void* outMessage, int maxCount,
+                                         const char* signature) {
+    static_cast<BRoster*>(roster)->GetRecentFolders(static_cast<BMessage*>(outMessage), maxCount,
+                                                      nullIfEmpty(signature));
+}
+
+void eb_haiku_roster_get_recent_apps(void* roster, void* outMessage, int maxCount) {
+    static_cast<BRoster*>(roster)->GetRecentApps(static_cast<BMessage*>(outMessage), maxCount);
+}
+
 // ---- BClipboard ----
 
 void* eb_haiku_clipboard_default(void) { return be_clipboard; }
@@ -607,6 +670,16 @@ int eb_haiku_clipboard_get_text(void* clipboard, char* outBuf, int bufSize) {
     }
     cb->Unlock();
     return rc == B_OK ? static_cast<int>(numBytes) : rc;
+}
+
+int eb_haiku_clipboard_start_watching(void* clipboard, void* watcher) {
+    return static_cast<BClipboard*>(clipboard)->StartWatching(
+        BMessenger(static_cast<BHandler*>(watcher)));
+}
+
+int eb_haiku_clipboard_stop_watching(void* clipboard, void* watcher) {
+    return static_cast<BClipboard*>(clipboard)->StopWatching(
+        BMessenger(static_cast<BHandler*>(watcher)));
 }
 
 // ---- BApplication ----

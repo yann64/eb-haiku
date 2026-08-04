@@ -21,6 +21,7 @@
 
 #include once "raw/haiku_shim.bas"
 #include once "message.bas"
+#include once "watcher.bas"
 
 TYPE HClipboard
     handle AS ANY PTR
@@ -109,4 +110,16 @@ END FUNCTION
 ''' END IF
 FUNCTION HClipboardGetText(BYVAL c AS HClipboard, BYVAL outBuf AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
     HClipboardGetText = eb_haiku_clipboard_get_text(c.handle, outBuf, bufSize)
+END FUNCTION
+
+''' Makes `watcher` a real live target for clipboard-change
+''' notifications - a real H_CLIPBOARD_CHANGED message (raw/haiku_shim.bas)
+''' is delivered to its own registered callback whenever the clipboard's
+''' own content changes, system-wide. Returns a status code (0 = success).
+FUNCTION HClipboardStartWatching(BYVAL c AS HClipboard, BYVAL watcher AS HWatcher) AS INTEGER
+    HClipboardStartWatching = eb_haiku_clipboard_start_watching(c.handle, watcher.handle)
+END FUNCTION
+
+FUNCTION HClipboardStopWatching(BYVAL c AS HClipboard, BYVAL watcher AS HWatcher) AS INTEGER
+    HClipboardStopWatching = eb_haiku_clipboard_stop_watching(c.handle, watcher.handle)
 END FUNCTION
