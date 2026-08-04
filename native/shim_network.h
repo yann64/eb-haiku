@@ -46,6 +46,29 @@ int eb_haiku_socket_write(void* socket, const void* buffer, int size);
 void eb_haiku_socket_disconnect(void* socket);
 void eb_haiku_socket_destroy(void* socket);
 
+// ---- BSecureSocket (net/SecureSocket.h) - IS-A BSocket (single
+// inheritance, confirmed), so the existing eb_haiku_socket_connect/
+// read/write/is_connected/disconnect/destroy functions above already
+// operate correctly on a BSecureSocket* via ordinary C++ virtual
+// dispatch (TLS handled internally by the real override) - only the
+// constructor differs. Certificate-verification-failure handling uses
+// real Haiku's own default policy (no shim subclass/override).
+void* eb_haiku_secure_socket_create(void);
+
+// ---- BDatagramSocket (net/DatagramSocket.h) - UDP, a BSocket sibling
+// (BAbstractSocket), not a subclass - its own separate functions.
+void* eb_haiku_datagram_socket_create(void);
+// Real Bind() confusingly names its own local-address parameter
+// "peer" - it's the address THIS socket binds to, not a remote peer.
+int eb_haiku_datagram_socket_bind(void* socket, void* addr, int reuseAddr);
+int eb_haiku_datagram_socket_send_to(void* socket, void* addr, const void* buffer, int size);
+// Fills outFromAddr (an existing eb_haiku_network_address_create_empty
+// result) with the real sender's address. Returns bytes received
+// (>= 0), or a negative status_t.
+int eb_haiku_datagram_socket_receive_from(void* socket, void* buffer, int bufferSize,
+                                           void* outFromAddr);
+void eb_haiku_datagram_socket_destroy(void* socket);
+
 // ---- BUrl (support/Url.h - a plain value class, no I/O) ----
 
 void* eb_haiku_url_create(const char* url);

@@ -1,6 +1,8 @@
 #include "shim_network.h"
 
+#include <DatagramSocket.h>
 #include <NetworkAddress.h>
+#include <SecureSocket.h>
 #include <Socket.h>
 #include <Url.h>
 
@@ -70,6 +72,34 @@ int eb_haiku_socket_write(void* socket, const void* buffer, int size) {
 void eb_haiku_socket_disconnect(void* socket) { static_cast<BSocket*>(socket)->Disconnect(); }
 
 void eb_haiku_socket_destroy(void* socket) { delete static_cast<BSocket*>(socket); }
+
+// ---- BSecureSocket ----
+
+void* eb_haiku_secure_socket_create(void) { return new BSecureSocket(); }
+
+// ---- BDatagramSocket ----
+
+void* eb_haiku_datagram_socket_create(void) { return new BDatagramSocket(); }
+
+int eb_haiku_datagram_socket_bind(void* socket, void* addr, int reuseAddr) {
+    return static_cast<BDatagramSocket*>(socket)->Bind(*static_cast<BNetworkAddress*>(addr),
+                                                         reuseAddr != 0);
+}
+
+int eb_haiku_datagram_socket_send_to(void* socket, void* addr, const void* buffer, int size) {
+    return static_cast<int>(static_cast<BDatagramSocket*>(socket)->SendTo(
+        *static_cast<BNetworkAddress*>(addr), buffer, static_cast<size_t>(size)));
+}
+
+int eb_haiku_datagram_socket_receive_from(void* socket, void* buffer, int bufferSize,
+                                           void* outFromAddr) {
+    return static_cast<int>(static_cast<BDatagramSocket*>(socket)->ReceiveFrom(
+        buffer, static_cast<size_t>(bufferSize), *static_cast<BNetworkAddress*>(outFromAddr)));
+}
+
+void eb_haiku_datagram_socket_destroy(void* socket) {
+    delete static_cast<BDatagramSocket*>(socket);
+}
 
 // ---- BUrl ----
 

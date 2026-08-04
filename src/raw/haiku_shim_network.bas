@@ -22,6 +22,16 @@ Extern "C" Lib "ebhaikushim"
     Declare Sub eb_haiku_socket_disconnect(BYVAL socket AS ANY PTR)
     Declare Sub eb_haiku_socket_destroy(BYVAL socket AS ANY PTR)
 
+    ' ---- BSecureSocket (IS-A BSocket - reuses eb_haiku_socket_* above) ----
+    Declare Function eb_haiku_secure_socket_create() AS ANY PTR
+
+    ' ---- BDatagramSocket (UDP) ----
+    Declare Function eb_haiku_datagram_socket_create() AS ANY PTR
+    Declare Function eb_haiku_datagram_socket_bind(BYVAL socket AS ANY PTR, BYVAL addr AS ANY PTR, BYVAL reuseAddr AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_datagram_socket_send_to(BYVAL socket AS ANY PTR, BYVAL addr AS ANY PTR, BYVAL buffer AS ANY PTR, BYVAL size AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_datagram_socket_receive_from(BYVAL socket AS ANY PTR, BYVAL buffer AS ANY PTR, BYVAL bufferSize AS INTEGER, BYVAL outFromAddr AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_datagram_socket_destroy(BYVAL socket AS ANY PTR)
+
     ' ---- BUrl ----
     Declare Function eb_haiku_url_create(BYVAL url AS ZSTRING) AS ANY PTR
     Declare Function eb_haiku_url_is_valid(BYVAL url AS ANY PTR) AS INTEGER
