@@ -103,6 +103,46 @@ FUNCTION HSerialPortWaitForInput(BYVAL p AS HSerialPort) AS INTEGER
     HSerialPortWaitForInput = eb_haiku_serial_port_wait_for_input(p.handle)
 END FUNCTION
 
+''' `method` is H_NOFLOW_CONTROL/H_HARDWARE_CONTROL/H_SOFTWARE_CONTROL
+''' (combine the latter two with OR). Real, hardware-dependent -
+''' likely a no-op on a virtual serial port with no real modem lines
+''' wired up (e.g. this package's own QEMU-based development host).
+SUB HSerialPortSetFlowControl(BYVAL p AS HSerialPort, BYVAL method AS UINTEGER)
+    CALL eb_haiku_serial_port_set_flow_control(p.handle, method)
+END SUB
+
+FUNCTION HSerialPortFlowControl(BYVAL p AS HSerialPort) AS UINTEGER
+    HSerialPortFlowControl = eb_haiku_serial_port_flow_control(p.handle)
+END FUNCTION
+
+''' Sets/clears the DTR modem control line. Returns a status code - real,
+''' hardware-dependent (see this file's own flow-control note above).
+FUNCTION HSerialPortSetDTR(BYVAL p AS HSerialPort, BYVAL asserted AS INTEGER) AS INTEGER
+    HSerialPortSetDTR = eb_haiku_serial_port_set_dtr(p.handle, asserted)
+END FUNCTION
+
+''' Sets/clears the RTS modem control line. Returns a status code - real,
+''' hardware-dependent (see this file's own flow-control note above).
+FUNCTION HSerialPortSetRTS(BYVAL p AS HSerialPort, BYVAL asserted AS INTEGER) AS INTEGER
+    HSerialPortSetRTS = eb_haiku_serial_port_set_rts(p.handle, asserted)
+END FUNCTION
+
+FUNCTION HSerialPortIsCTS(BYVAL p AS HSerialPort) AS INTEGER
+    HSerialPortIsCTS = eb_haiku_serial_port_is_cts(p.handle)
+END FUNCTION
+
+FUNCTION HSerialPortIsDSR(BYVAL p AS HSerialPort) AS INTEGER
+    HSerialPortIsDSR = eb_haiku_serial_port_is_dsr(p.handle)
+END FUNCTION
+
+FUNCTION HSerialPortIsRI(BYVAL p AS HSerialPort) AS INTEGER
+    HSerialPortIsRI = eb_haiku_serial_port_is_ri(p.handle)
+END FUNCTION
+
+FUNCTION HSerialPortIsDCD(BYVAL p AS HSerialPort) AS INTEGER
+    HSerialPortIsDCD = eb_haiku_serial_port_is_dcd(p.handle)
+END FUNCTION
+
 ''' The real number of serial ports installed on this system.
 FUNCTION HSerialPortCountDevices(BYVAL p AS HSerialPort) AS INTEGER
     HSerialPortCountDevices = eb_haiku_serial_port_count_devices(p.handle)

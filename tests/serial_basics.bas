@@ -90,6 +90,19 @@ IF rc <> 0 THEN
 END IF
 PRINT "chars available=", available
 
+' Modem control lines - real, hardware-dependent (see HSerialPortSet-
+' FlowControl's own doc comment). This host's virtual serial port has
+' no real modem lines wired up, so these are expected to be no-ops/
+' false - verified here as "runs without crashing," not asserted to a
+' specific value, matching this package's own honesty precedent for
+' untestable-on-this-host hardware behavior.
+CALL HSerialPortSetFlowControl(p, H_NOFLOW_CONTROL)
+PRINT "flow control readback=", HSerialPortFlowControl(p)
+PRINT "SetDTR rc=", HSerialPortSetDTR(p, 1)
+PRINT "SetRTS rc=", HSerialPortSetRTS(p, 1)
+PRINT "IsCTS=", HSerialPortIsCTS(p), " IsDSR=", HSerialPortIsDSR(p), " IsRI=", HSerialPortIsRI(p), " IsDCD=", HSerialPortIsDCD(p)
+PRINT "modem control lines ran ok (values not asserted - no real modem lines on this virtual port)"
+
 CALL HSerialPortClose(p)
 CALL HSerialPortFree(p)
 

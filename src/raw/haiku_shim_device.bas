@@ -21,6 +21,11 @@ CONST H_NO_PARITY = 0
 CONST H_ODD_PARITY = 1
 CONST H_EVEN_PARITY = 2
 
+' Real flow-control flags (device/SerialPort.h) - combine with OR.
+CONST H_NOFLOW_CONTROL = 0
+CONST H_HARDWARE_CONTROL = 1
+CONST H_SOFTWARE_CONTROL = 2
+
 Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_serial_port_create() AS ANY PTR
     ' IMPORTANT: returns a non-negative value (not necessarily 0) on
@@ -43,6 +48,16 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_serial_port_parity_mode(BYVAL port AS ANY PTR) AS UINTEGER
     Declare Function eb_haiku_serial_port_num_chars_available(BYVAL port AS ANY PTR, BYVAL outCount AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_serial_port_wait_for_input(BYVAL port AS ANY PTR) AS INTEGER
+    ' Modem control lines - real, hardware-dependent; likely a no-op/
+    ' false on a virtual serial port with no real modem lines wired up.
+    Declare Sub eb_haiku_serial_port_set_flow_control(BYVAL port AS ANY PTR, BYVAL method AS UINTEGER)
+    Declare Function eb_haiku_serial_port_flow_control(BYVAL port AS ANY PTR) AS UINTEGER
+    Declare Function eb_haiku_serial_port_set_dtr(BYVAL port AS ANY PTR, BYVAL asserted AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_serial_port_set_rts(BYVAL port AS ANY PTR, BYVAL asserted AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_serial_port_is_cts(BYVAL port AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_serial_port_is_dsr(BYVAL port AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_serial_port_is_ri(BYVAL port AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_serial_port_is_dcd(BYVAL port AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_serial_port_count_devices(BYVAL port AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_serial_port_get_device_name(BYVAL port AS ANY PTR, BYVAL index AS INTEGER, BYVAL outName AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
     Declare Sub eb_haiku_serial_port_destroy(BYVAL port AS ANY PTR)

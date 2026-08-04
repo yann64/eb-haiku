@@ -45,6 +45,33 @@ PRINT "resolution=", xDPI, "x", yDPI
 
 PRINT "printer type=", HPrintJobPrinterType(job)
 
+' Settings() - a real, borrowed BMessage (never HMessageFree it - see
+' HPrintJobSettings's own doc comment). Confirmed by direct
+' reproduction: without a real ConfigJob/ConfigPage, Settings() legitimately
+' returns a null handle (real Haiku behavior, not a bug - same
+' unconfigured-degenerate-state category as PaperRect/PrintableRect
+' above). HPrintJobSetSettings is deliberately NEVER called here -
+' confirmed by direct reproduction (a standalone C++ probe) that
+' calling it with anything other than a message from a real, configured
+' job can HANG INDEFINITELY, the same real limitation category as
+' ConfigJob/ConfigPage's own interactive dialogs.
+DIM settings AS HMessage
+settings = HPrintJobSettings(job)
+IF settings.handle <> 0 THEN
+    PRINT "FAIL: HPrintJobSettings should be null without real ConfigJob/ConfigPage"
+    CALL ExitProcess(1)
+END IF
+PRINT "Settings() correctly null without configuration ok"
+
+DIM arbitrary AS HMessage
+arbitrary = HMessageCreate(1414743380) ' 'TEST'
+IF HPrintJobIsSettingsMessageValid(job, arbitrary) <> 0 THEN
+    PRINT "FAIL: an arbitrary message should not be a valid settings archive"
+    CALL ExitProcess(1)
+END IF
+CALL HMessageFree(arbitrary)
+PRINT "IsSettingsMessageValid correctly rejects an arbitrary message ok"
+
 CALL HPrintJobBeginJob(job)
 PRINT "BeginJob ran ok"
 

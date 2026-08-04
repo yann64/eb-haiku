@@ -36,6 +36,19 @@ unsigned int eb_haiku_serial_port_parity_mode(void* port);
 int eb_haiku_serial_port_num_chars_available(void* port, int* outCount);
 int eb_haiku_serial_port_wait_for_input(void* port);
 
+// Modem control lines. `method` is a bitwise-OR of H_HARDWARE_CONTROL/
+// H_SOFTWARE_CONTROL (raw/haiku_shim_device.bas). Real, hardware-
+// dependent behavior - likely a no-op/false on a virtual serial port
+// with no real modem lines wired up; see serial.bas's own doc comment.
+void eb_haiku_serial_port_set_flow_control(void* port, unsigned int method);
+unsigned int eb_haiku_serial_port_flow_control(void* port);
+int eb_haiku_serial_port_set_dtr(void* port, int asserted);
+int eb_haiku_serial_port_set_rts(void* port, int asserted);
+int eb_haiku_serial_port_is_cts(void* port);
+int eb_haiku_serial_port_is_dsr(void* port);
+int eb_haiku_serial_port_is_ri(void* port);
+int eb_haiku_serial_port_is_dcd(void* port);
+
 int eb_haiku_serial_port_count_devices(void* port);
 int eb_haiku_serial_port_get_device_name(void* port, int index, char* outName, int bufSize);
 

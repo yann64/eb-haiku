@@ -574,6 +574,19 @@ void eb_haiku_print_job_get_resolution(void* job, int* outXDPI, int* outYDPI) {
     *outYDPI = y;
 }
 
+void* eb_haiku_print_job_settings(void* job) { return static_cast<ShimPrintJob*>(job)->Settings(); }
+
+void eb_haiku_print_job_set_settings(void* job, void* archiveMessage) {
+    static_cast<ShimPrintJob*>(job)->SetSettings(static_cast<BMessage*>(archiveMessage));
+}
+
+int eb_haiku_print_job_is_settings_message_valid(void* job, void* archiveMessage) {
+    return static_cast<ShimPrintJob*>(job)->IsSettingsMessageValid(
+               static_cast<BMessage*>(archiveMessage))
+               ? 1
+               : 0;
+}
+
 int eb_haiku_print_job_first_page(void* job) { return static_cast<ShimPrintJob*>(job)->FirstPage(); }
 
 int eb_haiku_print_job_last_page(void* job) { return static_cast<ShimPrintJob*>(job)->LastPage(); }

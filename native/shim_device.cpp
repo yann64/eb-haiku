@@ -73,6 +73,38 @@ int eb_haiku_serial_port_wait_for_input(void* port) {
     return static_cast<int>(static_cast<BSerialPort*>(port)->WaitForInput());
 }
 
+void eb_haiku_serial_port_set_flow_control(void* port, unsigned int method) {
+    static_cast<BSerialPort*>(port)->SetFlowControl(method);
+}
+
+unsigned int eb_haiku_serial_port_flow_control(void* port) {
+    return static_cast<BSerialPort*>(port)->FlowControl();
+}
+
+int eb_haiku_serial_port_set_dtr(void* port, int asserted) {
+    return static_cast<BSerialPort*>(port)->SetDTR(asserted != 0);
+}
+
+int eb_haiku_serial_port_set_rts(void* port, int asserted) {
+    return static_cast<BSerialPort*>(port)->SetRTS(asserted != 0);
+}
+
+int eb_haiku_serial_port_is_cts(void* port) {
+    return static_cast<BSerialPort*>(port)->IsCTS() ? 1 : 0;
+}
+
+int eb_haiku_serial_port_is_dsr(void* port) {
+    return static_cast<BSerialPort*>(port)->IsDSR() ? 1 : 0;
+}
+
+int eb_haiku_serial_port_is_ri(void* port) {
+    return static_cast<BSerialPort*>(port)->IsRI() ? 1 : 0;
+}
+
+int eb_haiku_serial_port_is_dcd(void* port) {
+    return static_cast<BSerialPort*>(port)->IsDCD() ? 1 : 0;
+}
+
 int eb_haiku_serial_port_count_devices(void* port) {
     return static_cast<BSerialPort*>(port)->CountDevices();
 }

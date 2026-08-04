@@ -32,6 +32,17 @@ CONST H_FULL_LOCK = 2
 CONST H_READ_AREA = 1
 CONST H_WRITE_AREA = 2
 
+' Real timeout/flag constants (kernel/OS.h) for the `_etc` variants
+' below - confirmed by reading the real header, not hand-derived.
+' NOTE: B_RELEASE_ALL and B_TIMEOUT/H_RELATIVE_TIMEOUT share the same
+' real bit value (0x8) - they're interpreted in different, unrelated
+' flag spaces depending on which function you pass them to (real
+' Haiku's own header does this too, not a mistake here).
+CONST H_RELATIVE_TIMEOUT = 8
+CONST H_ABSOLUTE_TIMEOUT = 16
+CONST H_DO_NOT_RESCHEDULE = 2
+CONST H_RELEASE_ALL = 8
+
 Extern "C" Lib "root"
     ' ---- Threads ----
     ' `func` must be a plain top-level bodied FUNCTION taking (data AS
@@ -43,18 +54,31 @@ Extern "C" Lib "root"
     Declare Function wait_for_thread(BYVAL thread AS INTEGER, BYVAL returnValue AS ANY PTR) AS INTEGER
     Declare Function kill_thread(BYVAL thread AS INTEGER) AS INTEGER
     Declare Function snooze(BYVAL amountMicros AS LONGINT) AS INTEGER
+    ' `flags` is H_RELATIVE_TIMEOUT/H_ABSOLUTE_TIMEOUT; `outReturnCode`
+    ' is an ANY PTR to a caller-owned INTEGER, like wait_for_thread's own.
+    Declare Function wait_for_thread_etc(BYVAL thread AS INTEGER, BYVAL flags AS UINTEGER, BYVAL timeoutMicros AS LONGINT, BYVAL outReturnCode AS ANY PTR) AS INTEGER
 
     ' ---- Semaphores ----
     Declare Function create_sem(BYVAL count AS INTEGER, BYVAL name AS ZSTRING) AS INTEGER
     Declare Function acquire_sem(BYVAL id AS INTEGER) AS INTEGER
     Declare Function release_sem(BYVAL id AS INTEGER) AS INTEGER
     Declare Function delete_sem(BYVAL id AS INTEGER) AS INTEGER
+    ' `flags` is H_RELATIVE_TIMEOUT/H_ABSOLUTE_TIMEOUT (only meaningful
+    ' with a real timeout - see this file's own top comment).
+    Declare Function acquire_sem_etc(BYVAL id AS INTEGER, BYVAL count AS INTEGER, BYVAL flags AS UINTEGER, BYVAL timeoutMicros AS LONGINT) AS INTEGER
+    ' `flags` here is H_DO_NOT_RESCHEDULE/H_RELEASE_ALL - a different
+    ' flag space than acquire_sem_etc's own (see this file's own top
+    ' comment about the shared 0x8 bit value).
+    Declare Function release_sem_etc(BYVAL id AS INTEGER, BYVAL count AS INTEGER, BYVAL flags AS UINTEGER) AS INTEGER
 
     ' ---- Ports (real message-passing IPC) ----
     Declare Function create_port(BYVAL capacity AS INTEGER, BYVAL name AS ZSTRING) AS INTEGER
     Declare Function write_port(BYVAL port AS INTEGER, BYVAL code AS INTEGER, BYVAL buffer AS ANY PTR, BYVAL bufferSize AS INTEGER) AS INTEGER
     Declare Function read_port(BYVAL port AS INTEGER, BYVAL outCode AS ANY PTR, BYVAL buffer AS ANY PTR, BYVAL bufferSize AS INTEGER) AS INTEGER
     Declare Function delete_port(BYVAL port AS INTEGER) AS INTEGER
+    ' `flags` is H_RELATIVE_TIMEOUT/H_ABSOLUTE_TIMEOUT.
+    Declare Function write_port_etc(BYVAL port AS INTEGER, BYVAL code AS INTEGER, BYVAL buffer AS ANY PTR, BYVAL bufferSize AS INTEGER, BYVAL flags AS UINTEGER, BYVAL timeoutMicros AS LONGINT) AS INTEGER
+    Declare Function read_port_etc(BYVAL port AS INTEGER, BYVAL outCode AS ANY PTR, BYVAL buffer AS ANY PTR, BYVAL bufferSize AS INTEGER, BYVAL flags AS UINTEGER, BYVAL timeoutMicros AS LONGINT) AS INTEGER
 
     ' ---- Areas (shared/virtual memory regions) ----
     ' `outStartAddress` is an ANY PTR to a caller-owned ANY PTR variable
@@ -62,4 +86,10 @@ Extern "C" Lib "root"
     ' address is written through it.
     Declare Function create_area(BYVAL name AS ZSTRING, BYVAL outStartAddress AS ANY PTR, BYVAL addressSpec AS UINTEGER, BYVAL size AS INTEGER, BYVAL lock AS UINTEGER, BYVAL protection AS UINTEGER) AS INTEGER
     Declare Function delete_area(BYVAL id AS INTEGER) AS INTEGER
+    ' NOTE: clone_area's real signature has no `lock` parameter (unlike
+    ' create_area) - it inherits the source area's own locking.
+    Declare Function clone_area(BYVAL name AS ZSTRING, BYVAL outStartAddress AS ANY PTR, BYVAL addressSpec AS UINTEGER, BYVAL protection AS UINTEGER, BYVAL source AS INTEGER) AS INTEGER
+    Declare Function resize_area(BYVAL id AS INTEGER, BYVAL newSize AS INTEGER) AS INTEGER
+    Declare Function find_area(BYVAL name AS ZSTRING) AS INTEGER
+    Declare Function area_for(BYVAL address AS ANY PTR) AS INTEGER
 End Extern

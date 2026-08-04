@@ -268,6 +268,22 @@ void eb_haiku_print_job_paper_rect(void* job, float* outLeft, float* outTop, flo
 void eb_haiku_print_job_printable_rect(void* job, float* outLeft, float* outTop, float* outRight,
                                         float* outBottom);
 void eb_haiku_print_job_get_resolution(void* job, int* outXDPI, int* outYDPI);
+// Returns a *borrowed* BMessage* (never free/HMessageFree it) - the
+// job's own live settings archive, editable in place. SetSettings/
+// IsSettingsMessageValid operate on a caller-owned HMessage instead.
+// Returns NULL until a real ConfigJob/ConfigPage has established a
+// real printer/page choice (confirmed by direct reproduction - not a
+// bug, real Haiku behavior).
+void* eb_haiku_print_job_settings(void* job);
+// IMPORTANT, confirmed by direct reproduction: calling this with a
+// message that isn't a real, validated settings archive (or without a
+// real printer connection established) can HANG indefinitely - the
+// same real "needs a live print_server round-trip" category as
+// ConfigJob/ConfigPage's own interactive dialogs. Check
+// IsSettingsMessageValid first and only call this with a message
+// that originated from a real Settings()/ConfigJob call.
+void eb_haiku_print_job_set_settings(void* job, void* archiveMessage);
+int eb_haiku_print_job_is_settings_message_valid(void* job, void* archiveMessage);
 int eb_haiku_print_job_first_page(void* job);
 int eb_haiku_print_job_last_page(void* job);
 int eb_haiku_print_job_printer_type(void* job);

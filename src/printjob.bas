@@ -14,6 +14,7 @@
 ' still real and useful for interactive use on a real desktop session.
 
 #include once "raw/haiku_shim_interface.bas"
+#include once "message.bas"
 
 CONST H_BW_PRINTER = 0
 CONST H_COLOR_PRINTER = 1
@@ -104,6 +105,40 @@ SUB HPrintJobGetResolution(BYVAL j AS HPrintJob, BYREF outXDPI AS INTEGER, BYREF
     outXDPI = x
     outYDPI = y
 END SUB
+
+''' The job's own live settings archive - a *borrowed* HMessage, never
+''' call HMessageFree on it (BPrintJob owns it). Read/write its fields
+''' directly via HMessageFindString/AddString/etc. (message.bas) to
+''' inspect or override what a real ConfigJob/ConfigPage dialog set.
+''' IMPORTANT, confirmed by direct reproduction: returns a null handle
+''' (handle = 0) until a real ConfigJob/ConfigPage call has established
+''' a real printer/page choice - real Haiku behavior, not a bug (same
+''' unconfigured-degenerate-state category as PaperRect/PrintableRect).
+FUNCTION HPrintJobSettings(BYVAL j AS HPrintJob) AS HMessage
+    DIM m AS HMessage
+    m.handle = eb_haiku_print_job_settings(j.handle)
+    HPrintJobSettings = m
+END FUNCTION
+
+''' Replaces the job's own settings archive with a caller-built one -
+''' check HPrintJobIsSettingsMessageValid first. IMPORTANT, confirmed
+''' by direct reproduction: calling this with a message that isn't a
+''' real, validated settings archive (or without a real printer
+''' connection established) can HANG INDEFINITELY - the same real
+''' "needs a live print_server round-trip" category as
+''' HPrintJobConfigJob/ConfigPage's own interactive dialogs, not
+''' triggerable/safe over SSH. Only call this with a message that
+''' itself came from a real HPrintJobSettings/ConfigJob call.
+SUB HPrintJobSetSettings(BYVAL j AS HPrintJob, BYVAL archiveMessage AS HMessage)
+    CALL eb_haiku_print_job_set_settings(j.handle, archiveMessage.handle)
+END SUB
+
+''' Whether `archiveMessage` has the real fields a BPrintJob settings
+''' archive needs - safe to call with any message, unlike
+''' HPrintJobSetSettings above.
+FUNCTION HPrintJobIsSettingsMessageValid(BYVAL j AS HPrintJob, BYVAL archiveMessage AS HMessage) AS INTEGER
+    HPrintJobIsSettingsMessageValid = eb_haiku_print_job_is_settings_message_valid(j.handle, archiveMessage.handle)
+END FUNCTION
 
 FUNCTION HPrintJobFirstPage(BYVAL j AS HPrintJob) AS INTEGER
     HPrintJobFirstPage = eb_haiku_print_job_first_page(j.handle)

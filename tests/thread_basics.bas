@@ -134,4 +134,110 @@ CALL HWaitForThread(t3, rv)
 CALL HPortDelete(gPort)
 PRINT "port round-trip ok"
 
+' ---- Part 4: the `_etc` timeout variants - a real timeout actually
+' fires (B_TIMED_OUT), not just "the call doesn't crash" ----
+
+' B_TIMED_OUT = B_GENERAL_ERROR_BASE (INT_MIN) + 9, confirmed via the
+' real support/Errors.h, not guessed.
+CONST B_TIMED_OUT = -2147483639
+
+DIM sem2 AS INTEGER
+sem2 = HSemaphoreCreate(0, "eb-haiku-etc-sem")
+DIM rc2 AS INTEGER
+rc2 = HSemaphoreAcquireEtc(sem2, 1, H_RELATIVE_TIMEOUT, 100000) ' 100ms, no releaser
+PRINT "acquire_sem_etc timeout rc=", rc2
+IF rc2 <> B_TIMED_OUT THEN
+    PRINT "FAIL: expected B_TIMED_OUT (", B_TIMED_OUT, "), got ", rc2
+    CALL ExitProcess(1)
+END IF
+CALL HSemaphoreReleaseEtc(sem2, 1, 0)
+rc2 = HSemaphoreAcquireEtc(sem2, 1, H_RELATIVE_TIMEOUT, 100000)
+IF rc2 <> 0 THEN
+    PRINT "FAIL: expected success after release, got ", rc2
+    CALL ExitProcess(1)
+END IF
+CALL HSemaphoreDelete(sem2)
+PRINT "acquire_sem_etc/release_sem_etc ok"
+
+DIM port2 AS INTEGER
+port2 = HPortCreate(1, "eb-haiku-etc-port")
+DIM outCode2 AS INTEGER
+DIM readBuf2(15) AS BYTE
+DIM n2 AS INTEGER
+n2 = HPortReadEtc(port2, outCode2, @readBuf2(0), 16, H_RELATIVE_TIMEOUT, 100000) ' nothing written yet
+PRINT "read_port_etc timeout rc=", n2
+IF n2 <> B_TIMED_OUT THEN
+    PRINT "FAIL: expected B_TIMED_OUT (", B_TIMED_OUT, "), got ", n2
+    CALL ExitProcess(1)
+END IF
+CALL HPortWriteEtc(port2, 99, @readBuf2(0), 0, H_RELATIVE_TIMEOUT, 100000)
+n2 = HPortReadEtc(port2, outCode2, @readBuf2(0), 16, H_RELATIVE_TIMEOUT, 100000)
+IF n2 <> 0 OR outCode2 <> 99 THEN
+    PRINT "FAIL: expected empty message with code 99, got n=", n2, " code=", outCode2
+    CALL ExitProcess(1)
+END IF
+CALL HPortDelete(port2)
+PRINT "write_port_etc/read_port_etc ok"
+
+FUNCTION QuickThreadFunc(data AS ANY PTR) AS INTEGER
+    QuickThreadFunc = 7
+END FUNCTION
+
+DIM t4 AS INTEGER
+t4 = HSpawnThread(@QuickThreadFunc, "eb-haiku-etc-thread", H_NORMAL_PRIORITY, 0)
+CALL HResumeThread(t4)
+DIM rv4 AS INTEGER
+rc2 = HWaitForThreadEtc(t4, H_RELATIVE_TIMEOUT, 2000000, rv4) ' 2s, generous
+IF rc2 <> 0 OR rv4 <> 7 THEN
+    PRINT "FAIL: HWaitForThreadEtc rc=", rc2, " rv=", rv4
+    CALL ExitProcess(1)
+END IF
+PRINT "wait_for_thread_etc ok"
+
+' ---- Part 5: area introspection (clone_area/resize_area/find_area/area_for) ----
+
+DIM areaAddr AS ANY PTR
+DIM areaId AS INTEGER
+areaId = HAreaCreate("eb-haiku-test-area", @areaAddr, H_ANY_ADDRESS, 4096, H_NO_LOCK, H_READ_AREA OR H_WRITE_AREA)
+IF areaId < 0 THEN
+    PRINT "FAIL: HAreaCreate returned ", areaId
+    CALL ExitProcess(1)
+END IF
+
+DIM foundId AS INTEGER
+foundId = HAreaFind("eb-haiku-test-area")
+IF foundId <> areaId THEN
+    PRINT "FAIL: HAreaFind mismatch, expected ", areaId, " got ", foundId
+    CALL ExitProcess(1)
+END IF
+
+DIM forId AS INTEGER
+forId = HAreaFor(areaAddr)
+IF forId <> areaId THEN
+    PRINT "FAIL: HAreaFor mismatch, expected ", areaId, " got ", forId
+    CALL ExitProcess(1)
+END IF
+PRINT "find_area/area_for ok"
+
+DIM cloneAddr AS ANY PTR
+DIM cloneId AS INTEGER
+cloneId = HAreaClone("eb-haiku-test-area-clone", @cloneAddr, H_ANY_ADDRESS, H_READ_AREA OR H_WRITE_AREA, areaId)
+IF cloneId < 0 THEN
+    PRINT "FAIL: HAreaClone returned ", cloneId
+    CALL ExitProcess(1)
+END IF
+PRINT "clone_area ok, cloneId=", cloneId
+
+DIM resizeRc AS INTEGER
+resizeRc = HAreaResize(areaId, 8192)
+IF resizeRc <> 0 THEN
+    PRINT "FAIL: HAreaResize returned ", resizeRc
+    CALL ExitProcess(1)
+END IF
+PRINT "resize_area ok"
+
+CALL HAreaDelete(cloneId)
+CALL HAreaDelete(areaId)
+PRINT "area introspection ok"
+
 PRINT "thread basics test ok"

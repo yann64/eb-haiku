@@ -44,6 +44,17 @@ FUNCTION HSnooze(BYVAL amountMicros AS LONGINT) AS INTEGER
     HSnooze = snooze(amountMicros)
 END FUNCTION
 
+''' Like HWaitForThread, but with a real timeout - `flags` is
+''' H_RELATIVE_TIMEOUT/H_ABSOLUTE_TIMEOUT (raw/haiku_kernel.bas).
+''' Returns a status code (B_TIMED_OUT on timeout).
+FUNCTION HWaitForThreadEtc(BYVAL thread AS INTEGER, BYVAL flags AS UINTEGER, BYVAL timeoutMicros AS LONGINT, BYREF outReturnValue AS INTEGER) AS INTEGER
+    DIM rv AS INTEGER
+    DIM rc AS INTEGER
+    rc = wait_for_thread_etc(thread, flags, timeoutMicros, @rv)
+    outReturnValue = rv
+    HWaitForThreadEtc = rc
+END FUNCTION
+
 ''' Creates a counting semaphore with the given initial `count`.
 ''' Returns the new semaphore's real sem_id (negative on failure).
 FUNCTION HSemaphoreCreate(BYVAL count AS INTEGER, name AS ZSTRING) AS INTEGER
@@ -62,6 +73,21 @@ END FUNCTION
 
 FUNCTION HSemaphoreDelete(BYVAL id AS INTEGER) AS INTEGER
     HSemaphoreDelete = delete_sem(id)
+END FUNCTION
+
+''' Like HSemaphoreAcquire, but with a real timeout - `flags` is
+''' H_RELATIVE_TIMEOUT/H_ABSOLUTE_TIMEOUT. Returns a status code
+''' (B_TIMED_OUT on timeout).
+FUNCTION HSemaphoreAcquireEtc(BYVAL id AS INTEGER, BYVAL count AS INTEGER, BYVAL flags AS UINTEGER, BYVAL timeoutMicros AS LONGINT) AS INTEGER
+    HSemaphoreAcquireEtc = acquire_sem_etc(id, count, flags, timeoutMicros)
+END FUNCTION
+
+''' Like HSemaphoreRelease, but `flags` is H_DO_NOT_RESCHEDULE/
+''' H_RELEASE_ALL (a different flag space than HSemaphoreAcquireEtc's
+''' own - see raw/haiku_kernel.bas's own note about the shared bit
+''' value between the two).
+FUNCTION HSemaphoreReleaseEtc(BYVAL id AS INTEGER, BYVAL count AS INTEGER, BYVAL flags AS UINTEGER) AS INTEGER
+    HSemaphoreReleaseEtc = release_sem_etc(id, count, flags)
 END FUNCTION
 
 ''' Creates a real message port with the given queue `capacity`.
@@ -93,20 +119,73 @@ FUNCTION HPortDelete(BYVAL port AS INTEGER) AS INTEGER
     HPortDelete = delete_port(port)
 END FUNCTION
 
+''' Like HPortWrite, but with a real timeout - `flags` is
+''' H_RELATIVE_TIMEOUT/H_ABSOLUTE_TIMEOUT. Returns a status code
+''' (B_TIMED_OUT on timeout/full queue).
+FUNCTION HPortWriteEtc(BYVAL port AS INTEGER, BYVAL code AS INTEGER, BYVAL buffer AS ANY PTR, BYVAL bufferSize AS INTEGER, BYVAL flags AS UINTEGER, BYVAL timeoutMicros AS LONGINT) AS INTEGER
+    HPortWriteEtc = write_port_etc(port, code, buffer, bufferSize, flags, timeoutMicros)
+END FUNCTION
+
+''' Like HPortRead, but with a real timeout - `flags` is
+''' H_RELATIVE_TIMEOUT/H_ABSOLUTE_TIMEOUT. Returns the real payload
+''' size in bytes (>= 0), or a negative status code (B_TIMED_OUT on
+''' timeout).
+FUNCTION HPortReadEtc(BYVAL port AS INTEGER, BYREF outCode AS INTEGER, BYVAL buffer AS ANY PTR, BYVAL bufferSize AS INTEGER, BYVAL flags AS UINTEGER, BYVAL timeoutMicros AS LONGINT) AS INTEGER
+    DIM code AS INTEGER
+    DIM n AS INTEGER
+    n = read_port_etc(port, @code, buffer, bufferSize, flags, timeoutMicros)
+    outCode = code
+    HPortReadEtc = n
+END FUNCTION
+
 ''' Allocates a `size`-byte shared/virtual memory region, filling
-''' `outStartAddress` with its own real start address. `addressSpec` is
+''' `outStartAddress` (an ANY PTR to a caller-owned ANY PTR variable,
+''' e.g. `DIM addr AS ANY PTR : HAreaCreate(..., @addr, ...)` - matching
+''' this package's own established buffer-out convention, e.g.
+''' HClipboardGetText) with its own real start address. `addressSpec` is
 ''' H_ANY_ADDRESS/H_EXACT_ADDRESS, `lock` is H_NO_LOCK/H_FULL_LOCK,
 ''' `protection` is H_READ_AREA/H_WRITE_AREA (combine with OR - see
 ''' this package's own established OR-is-bitwise note in file.bas).
 ''' Returns the new area's real area_id (negative on failure).
-FUNCTION HAreaCreate(name AS ZSTRING, BYREF outStartAddress AS ANY PTR, BYVAL addressSpec AS UINTEGER, BYVAL size AS INTEGER, BYVAL lock AS UINTEGER, BYVAL protection AS UINTEGER) AS INTEGER
-    DIM addr AS ANY PTR
-    DIM rc AS INTEGER
-    rc = create_area(name, @addr, addressSpec, size, lock, protection)
-    outStartAddress = addr
-    HAreaCreate = rc
+'''
+''' NOTE: takes `outStartAddress` BYVAL (as a pointer-to-pointer, not
+''' BYREF) - a real eBasic codegen limitation, confirmed by direct
+''' reproduction, means a BYREF ANY PTR parameter can't be called with a
+''' plain ANY PTR-typed argument at all (an invalid `static_cast`
+''' breaks reference binding) - this shape is the correct, callable
+''' workaround, not a stylistic choice.
+FUNCTION HAreaCreate(name AS ZSTRING, BYVAL outStartAddress AS ANY PTR, BYVAL addressSpec AS UINTEGER, BYVAL size AS INTEGER, BYVAL lock AS UINTEGER, BYVAL protection AS UINTEGER) AS INTEGER
+    HAreaCreate = create_area(name, outStartAddress, addressSpec, size, lock, protection)
 END FUNCTION
 
 FUNCTION HAreaDelete(BYVAL id AS INTEGER) AS INTEGER
     HAreaDelete = delete_area(id)
+END FUNCTION
+
+''' Maps `source`'s own memory into a new area in this address space,
+''' filling `outStartAddress` (see HAreaCreate's own doc comment for the
+''' calling convention) with its own real start address (real
+''' clone_area has no separate `lock` parameter - it inherits the
+''' source area's own locking). Returns the new area's real area_id
+''' (negative on failure).
+FUNCTION HAreaClone(name AS ZSTRING, BYVAL outStartAddress AS ANY PTR, BYVAL addressSpec AS UINTEGER, BYVAL protection AS UINTEGER, BYVAL source AS INTEGER) AS INTEGER
+    HAreaClone = clone_area(name, outStartAddress, addressSpec, protection, source)
+END FUNCTION
+
+''' Resizes an existing area in place. Returns a status code (0 =
+''' success) - the area's own start address never changes.
+FUNCTION HAreaResize(BYVAL id AS INTEGER, BYVAL newSize AS INTEGER) AS INTEGER
+    HAreaResize = resize_area(id, newSize)
+END FUNCTION
+
+''' Looks up an area by its own real name. Returns its area_id, or a
+''' negative status code if no such area exists.
+FUNCTION HAreaFind(name AS ZSTRING) AS INTEGER
+    HAreaFind = find_area(name)
+END FUNCTION
+
+''' Looks up the area containing a given address. Returns its area_id,
+''' or a negative status code if `address` isn't inside any area.
+FUNCTION HAreaFor(BYVAL address AS ANY PTR) AS INTEGER
+    HAreaFor = area_for(address)
 END FUNCTION

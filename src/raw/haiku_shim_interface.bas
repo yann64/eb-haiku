@@ -169,6 +169,9 @@ Extern "C" Lib "ebhaikushim"
     Declare Sub eb_haiku_print_job_paper_rect(BYVAL job AS ANY PTR, BYVAL outLeft AS ANY PTR, BYVAL outTop AS ANY PTR, BYVAL outRight AS ANY PTR, BYVAL outBottom AS ANY PTR)
     Declare Sub eb_haiku_print_job_printable_rect(BYVAL job AS ANY PTR, BYVAL outLeft AS ANY PTR, BYVAL outTop AS ANY PTR, BYVAL outRight AS ANY PTR, BYVAL outBottom AS ANY PTR)
     Declare Sub eb_haiku_print_job_get_resolution(BYVAL job AS ANY PTR, BYVAL outXDPI AS ANY PTR, BYVAL outYDPI AS ANY PTR)
+    Declare Function eb_haiku_print_job_settings(BYVAL job AS ANY PTR) AS ANY PTR
+    Declare Sub eb_haiku_print_job_set_settings(BYVAL job AS ANY PTR, BYVAL archiveMessage AS ANY PTR)
+    Declare Function eb_haiku_print_job_is_settings_message_valid(BYVAL job AS ANY PTR, BYVAL archiveMessage AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_print_job_first_page(BYVAL job AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_print_job_last_page(BYVAL job AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_print_job_printer_type(BYVAL job AS ANY PTR) AS INTEGER
