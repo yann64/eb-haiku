@@ -180,4 +180,49 @@ void eb_haiku_network_interface_address_copy_address(void* ifAddr, void* outAddr
         static_cast<BNetworkInterfaceAddress*>(ifAddr)->Address();
 }
 
+// ---- BNetworkInterface configuration ----
+
+int eb_haiku_network_interface_set_flags(void* interface, unsigned int flags) {
+    return static_cast<BNetworkInterface*>(interface)->SetFlags(flags);
+}
+
+int eb_haiku_network_interface_set_mtu(void* interface, unsigned int mtu) {
+    return static_cast<BNetworkInterface*>(interface)->SetMTU(mtu);
+}
+
+int eb_haiku_network_interface_set_media(void* interface, int media) {
+    return static_cast<BNetworkInterface*>(interface)->SetMedia(media);
+}
+
+int eb_haiku_network_interface_set_metric(void* interface, unsigned int metric) {
+    return static_cast<BNetworkInterface*>(interface)->SetMetric(metric);
+}
+
+int eb_haiku_network_interface_add_address(void* interface, void* address) {
+    return static_cast<BNetworkInterface*>(interface)->AddAddress(
+        *static_cast<BNetworkAddress*>(address));
+}
+
+int eb_haiku_network_interface_remove_address(void* interface, void* address) {
+    return static_cast<BNetworkInterface*>(interface)->RemoveAddress(
+        *static_cast<BNetworkAddress*>(address));
+}
+
+int eb_haiku_network_interface_remove_address_at(void* interface, int index) {
+    return static_cast<BNetworkInterface*>(interface)->RemoveAddressAt(index);
+}
+
+int eb_haiku_network_interface_add_default_route(void* interface, void* gatewayAddress) {
+    return static_cast<BNetworkInterface*>(interface)->AddDefaultRoute(
+        *static_cast<BNetworkAddress*>(gatewayAddress));
+}
+
+int eb_haiku_network_interface_remove_default_route(void* interface, int family) {
+    return static_cast<BNetworkInterface*>(interface)->RemoveDefaultRoute(family);
+}
+
+int eb_haiku_network_interface_auto_configure(void* interface, int family) {
+    return static_cast<BNetworkInterface*>(interface)->AutoConfigure(family);
+}
+
 } // extern "C"

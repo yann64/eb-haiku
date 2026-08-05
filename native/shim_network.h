@@ -123,4 +123,30 @@ int eb_haiku_network_interface_get_address_at(void* interface, int index, void* 
 // third address-shaped handle.
 void eb_haiku_network_interface_address_copy_address(void* ifAddr, void* outAddr);
 
+// ---- BNetworkInterface configuration (write side). SAFETY: only ever
+// verified against the loopback interface on this project's own real
+// development host - never a live NIC an active SSH session might
+// depend on. Only the simple, BNetworkAddress-based overloads of
+// AddAddress/RemoveAddress are bound (reusing the existing
+// HNetworkAddress type) - the fuller BNetworkInterfaceAddress-based
+// overloads (with mask/broadcast) and AddRoute/RemoveRoute's own
+// BNetworkRoute-based overloads (raw sockaddr manipulation) are a
+// reasonable follow-on, not bound here - disproportionate new surface
+// for this pass. AddDefaultRoute/RemoveDefaultRoute/AutoConfigure need
+// no new type at all. ----
+
+int eb_haiku_network_interface_set_flags(void* interface, unsigned int flags);
+int eb_haiku_network_interface_set_mtu(void* interface, unsigned int mtu);
+int eb_haiku_network_interface_set_media(void* interface, int media);
+int eb_haiku_network_interface_set_metric(void* interface, unsigned int metric);
+// `address` is an existing eb_haiku_network_address_create_empty
+// result (the simple BNetworkAddress overload, not the fuller
+// BNetworkInterfaceAddress one).
+int eb_haiku_network_interface_add_address(void* interface, void* address);
+int eb_haiku_network_interface_remove_address(void* interface, void* address);
+int eb_haiku_network_interface_remove_address_at(void* interface, int index);
+int eb_haiku_network_interface_add_default_route(void* interface, void* gatewayAddress);
+int eb_haiku_network_interface_remove_default_route(void* interface, int family);
+int eb_haiku_network_interface_auto_configure(void* interface, int family);
+
 } // extern "C"

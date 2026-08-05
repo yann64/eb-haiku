@@ -100,3 +100,59 @@ END FUNCTION
 SUB HNetworkInterfaceAddressCopyAddress(BYVAL ifAddr AS HNetworkInterfaceAddress, BYVAL outAddr AS HNetworkAddress)
     CALL eb_haiku_network_interface_address_copy_address(ifAddr.handle, outAddr.handle)
 END SUB
+
+' ---- BNetworkInterface configuration (write side) ----
+'
+' SAFETY, IMPORTANT: only ever verify these against the real loopback
+' interface ("loop") on a real Haiku host - never a live NIC an active
+' SSH session might depend on. Only the simple, BNetworkAddress-based
+' overloads of AddAddress/RemoveAddress are bound (reusing the existing
+' HNetworkAddress type) - the fuller BNetworkInterfaceAddress-based
+' overloads (with mask/broadcast) and AddRoute/RemoveRoute's own
+' BNetworkRoute-based overloads (raw sockaddr manipulation) are a
+' reasonable follow-on, not bound here.
+
+SUB HNetworkInterfaceSetFlags(BYVAL interface AS HNetworkInterface, BYVAL flags AS UINTEGER)
+    CALL eb_haiku_network_interface_set_flags(interface.handle, flags)
+END SUB
+
+FUNCTION HNetworkInterfaceSetMTU(BYVAL interface AS HNetworkInterface, BYVAL mtu AS UINTEGER) AS INTEGER
+    HNetworkInterfaceSetMTU = eb_haiku_network_interface_set_mtu(interface.handle, mtu)
+END FUNCTION
+
+FUNCTION HNetworkInterfaceSetMedia(BYVAL interface AS HNetworkInterface, BYVAL media AS INTEGER) AS INTEGER
+    HNetworkInterfaceSetMedia = eb_haiku_network_interface_set_media(interface.handle, media)
+END FUNCTION
+
+FUNCTION HNetworkInterfaceSetMetric(BYVAL interface AS HNetworkInterface, BYVAL metric AS UINTEGER) AS INTEGER
+    HNetworkInterfaceSetMetric = eb_haiku_network_interface_set_metric(interface.handle, metric)
+END FUNCTION
+
+''' Adds `address` (an existing HNetworkAddressSetTo result) to this
+''' interface. Returns a status code (0 = success).
+FUNCTION HNetworkInterfaceAddAddress(BYVAL interface AS HNetworkInterface, BYVAL address AS HNetworkAddress) AS INTEGER
+    HNetworkInterfaceAddAddress = eb_haiku_network_interface_add_address(interface.handle, address.handle)
+END FUNCTION
+
+FUNCTION HNetworkInterfaceRemoveAddress(BYVAL interface AS HNetworkInterface, BYVAL address AS HNetworkAddress) AS INTEGER
+    HNetworkInterfaceRemoveAddress = eb_haiku_network_interface_remove_address(interface.handle, address.handle)
+END FUNCTION
+
+FUNCTION HNetworkInterfaceRemoveAddressAt(BYVAL interface AS HNetworkInterface, BYVAL index AS INTEGER) AS INTEGER
+    HNetworkInterfaceRemoveAddressAt = eb_haiku_network_interface_remove_address_at(interface.handle, index)
+END FUNCTION
+
+''' Adds a default route via `gatewayAddress` (an existing
+''' HNetworkAddressSetTo result). Returns a status code (0 = success).
+FUNCTION HNetworkInterfaceAddDefaultRoute(BYVAL interface AS HNetworkInterface, BYVAL gatewayAddress AS HNetworkAddress) AS INTEGER
+    HNetworkInterfaceAddDefaultRoute = eb_haiku_network_interface_add_default_route(interface.handle, gatewayAddress.handle)
+END FUNCTION
+
+''' `family` is H_AF_INET/H_AF_INET6 (raw/haiku_shim_network.bas).
+FUNCTION HNetworkInterfaceRemoveDefaultRoute(BYVAL interface AS HNetworkInterface, BYVAL family AS INTEGER) AS INTEGER
+    HNetworkInterfaceRemoveDefaultRoute = eb_haiku_network_interface_remove_default_route(interface.handle, family)
+END FUNCTION
+
+FUNCTION HNetworkInterfaceAutoConfigure(BYVAL interface AS HNetworkInterface, BYVAL family AS INTEGER) AS INTEGER
+    HNetworkInterfaceAutoConfigure = eb_haiku_network_interface_auto_configure(interface.handle, family)
+END FUNCTION
