@@ -46,3 +46,4 @@
 #include once "package.bas"
 #include once "media.bas"
 #include once "printjob.bas"
+#include once "mail.bas"
