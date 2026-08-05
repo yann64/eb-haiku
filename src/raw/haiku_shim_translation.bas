@@ -50,6 +50,17 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_file_init_check(BYVAL file AS ANY PTR) AS INTEGER
     Declare Sub eb_haiku_file_destroy(BYVAL file AS ANY PTR)
 
+    ' ---- BMemoryIO/BMallocIO ----
+    Declare Function eb_haiku_memory_io_create(BYVAL ioData AS ANY PTR, BYVAL ioLength AS ULONGINT) AS ANY PTR
+    Declare Function eb_haiku_memory_io_create_read_only(BYVAL ioData AS ANY PTR, BYVAL ioLength AS ULONGINT) AS ANY PTR
+    Declare Sub eb_haiku_memory_io_destroy(BYVAL io AS ANY PTR)
+
+    Declare Function eb_haiku_malloc_io_create() AS ANY PTR
+    Declare Sub eb_haiku_malloc_io_set_block_size(BYVAL io AS ANY PTR, BYVAL blockSize AS ULONGINT)
+    Declare Function eb_haiku_malloc_io_buffer(BYVAL io AS ANY PTR) AS ANY PTR
+    Declare Function eb_haiku_malloc_io_buffer_length(BYVAL io AS ANY PTR) AS ULONGINT
+    Declare Sub eb_haiku_malloc_io_destroy(BYVAL io AS ANY PTR)
+
     ' ---- BTranslationUtils ----
     Declare Function eb_haiku_translation_utils_get_bitmap(BYVAL positionIOStream AS ANY PTR) AS ANY PTR
 

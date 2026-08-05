@@ -2,6 +2,7 @@
 
 #include <Bitmap.h>
 #include <BitmapStream.h>
+#include <DataIO.h>
 #include <File.h>
 #include <TranslationUtils.h>
 #include <TranslatorRoster.h>
@@ -75,6 +76,32 @@ int eb_haiku_file_init_check(void* file) {
 }
 
 void eb_haiku_file_destroy(void* file) { delete dynamic_cast<BFile*>(static_cast<BPositionIO*>(file)); }
+
+// ---- BMemoryIO/BMallocIO ----
+
+void* eb_haiku_memory_io_create(void* data, unsigned long length) {
+    return new BMemoryIO(data, static_cast<size_t>(length));
+}
+
+void* eb_haiku_memory_io_create_read_only(const void* data, unsigned long length) {
+    return new BMemoryIO(data, static_cast<size_t>(length));
+}
+
+void eb_haiku_memory_io_destroy(void* io) { delete static_cast<BMemoryIO*>(io); }
+
+void* eb_haiku_malloc_io_create(void) { return new BMallocIO(); }
+
+void eb_haiku_malloc_io_set_block_size(void* io, unsigned long blockSize) {
+    static_cast<BMallocIO*>(io)->SetBlockSize(static_cast<size_t>(blockSize));
+}
+
+const void* eb_haiku_malloc_io_buffer(void* io) { return static_cast<BMallocIO*>(io)->Buffer(); }
+
+unsigned long eb_haiku_malloc_io_buffer_length(void* io) {
+    return static_cast<unsigned long>(static_cast<BMallocIO*>(io)->BufferLength());
+}
+
+void eb_haiku_malloc_io_destroy(void* io) { delete static_cast<BMallocIO*>(io); }
 
 // ---- BTranslationUtils ----
 

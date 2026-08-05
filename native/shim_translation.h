@@ -38,6 +38,27 @@ void* eb_haiku_file_create(const char* path, unsigned int openMode);
 int eb_haiku_file_init_check(void* file);
 void eb_haiku_file_destroy(void* file);
 
+// ---- BMemoryIO/BMallocIO (support/DataIO.h) - both real BPositionIO
+// subclasses (single inheritance, no pointer-adjustment concern -
+// unlike BFile's own MI case above), usable directly wherever the
+// functions in this file already accept a BPositionIO*-shaped stream.
+// BMemoryIO wraps a caller-owned buffer (non-owning); BMallocIO
+// self-manages its own growable buffer. ----
+
+// `data`/`length` describe an existing, caller-owned buffer this
+// BMemoryIO wraps (non-owning - the caller must keep it alive and free
+// it themselves) - writable.
+void* eb_haiku_memory_io_create(void* data, unsigned long length);
+// Read-only variant (real BMemoryIO(const void*, size_t) overload).
+void* eb_haiku_memory_io_create_read_only(const void* data, unsigned long length);
+void eb_haiku_memory_io_destroy(void* io);
+
+void* eb_haiku_malloc_io_create(void);
+void eb_haiku_malloc_io_set_block_size(void* io, unsigned long blockSize);
+const void* eb_haiku_malloc_io_buffer(void* io);
+unsigned long eb_haiku_malloc_io_buffer_length(void* io);
+void eb_haiku_malloc_io_destroy(void* io);
+
 // ---- BTranslationUtils ----
 
 // NULL on failure (unsupported format, bad data, ...) - matching this
