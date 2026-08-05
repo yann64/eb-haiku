@@ -81,14 +81,16 @@ lifecycle - see `src/path.bas`, `src/entry.bas`, `src/directory.bas`,
   below), `BAppFileInfo` (executable metadata - bound as of v0.9.0, see
   below) / `BResources` (embedded resources - still no current eBasic
   packaging story), the Disk Device Kit (mount/unmount, raw
-  device path - a different Kit), `BQuery`'s `Push*`/`PushOp` stack
+  device path - a different Kit - bound as of v0.10.0, see below),
+  `BQuery`'s `Push*`/`PushOp` stack
   builder (a string predicate covers the same expressiveness),
   live/watching variants (`BQuery::SetTarget`/`IsLive`,
   `BVolumeRoster::StartWatching`/`StopWatching` - both need
   `BMessenger`/message-loop integration, deferred together), typed
   attributes beyond the practical scalar set (`B_MESSAGE_TYPE`/
   `B_RECT_TYPE`/`B_POINT_TYPE`/`B_RGB_COLOR_TYPE` - the raw escape
-  hatch already covers these), and `BVolume::GetIcon`/`SetName`.
+  hatch already covers these), and `BVolume::GetIcon`/`SetName` (bound
+  as of v0.11.0, see below).
 
 **Phase 2 (GUI)**: real windows, custom drawing, and stock controls -
 `BWindow`/`BView` reached via real C++ shim subclasses (`ShimWindow`/
@@ -168,9 +170,9 @@ Haiku system.
   20 already-installed translators cover essentially all common real
   formats), styled-text translation (`BTextView` is bound as of v0.8.0,
   but only its plain-text API - `text_run_array` styled-text support is
-  a separate, still-unbound gap), per-translator configuration UI, and
-  `BMemoryIO`/`BMallocIO` (in-memory, non-file-backed translation I/O -
-  a reasonable future addition, not blocking).
+  a separate, still-unbound gap), and per-translator configuration UI.
+  (`BMemoryIO`/`BMallocIO` - in-memory, non-file-backed translation I/O -
+  bound as of v0.11.0, see below.)
 
 ### Translation Kit - read this before calling any Translation Kit function
 
@@ -247,9 +249,9 @@ plain `char*`/`maxSize` buffer, no `BString` involved at all),
 `HNumberFormat` (`FormatDouble`/`FormatInt32`/`FormatMonetary`/
 `FormatPercent`), `HCollator` (`Compare`/locale-aware string sorting -
 a real gap eBasic's own comparison operators don't fill). **Not
-bound**: `BCatalog` (`.catkeys` translation catalogs - a separate,
-larger localization workflow), per-locale customization beyond
-`BLocale::Default()`, `Parse` methods (formatting is the common case).
+bound**: per-locale customization beyond `BLocale::Default()`.
+(`BCatalog` and the `Parse` methods - the inverse of `Format` - are
+bound as of v0.11.0, see below.)
 
 **Kernel Kit concurrency (v0.7.0, complete)** - see `src/thread.bas`:
 real preemptive threads/semaphores/ports/shared-memory areas, bound
@@ -286,9 +288,9 @@ cache/config paths (reusing the existing `HPath` type directly), and
 `HPackageRosterGetActivePackages` + `HPackageInfoSet`/`Iterator` to
 list real installed packages by name/version (confirmed against 726
 real packages on the development host, including `haiku` itself). **Not
-bound**: the full `Solver`/`.hpkg` install/write machinery (package-
-manager-authoring territory), `VisitCommonRepositoryConfigs`/
-`StartWatching` (visitor-pattern/live-notification APIs).
+bound**: the full `Solver`/`.hpkg` install/write machinery
+(package-manager-authoring territory). (`VisitCommonRepositoryConfigs`/
+`StartWatching` are bound as of v0.11.0, see below.)
 
 **Media Kit basics (v0.7.0, complete) - a real, important deviation
 from this package's own original plan** - see `src/media.bas`: real
@@ -301,9 +303,10 @@ nothing). This package binds the real, fully functional path instead:
 `HSoundPlayerCreate`/`Start`/`StartPlaying`/`IsPlaying`/`Stop` (a real
 `BSoundPlayer`), verified via real wall-clock playback (confirmed audio
 duration/timing against a real WAV file, not a mock). **Not bound**:
-real-time buffer-callback synthesis (`BufferPlayerFunc`) and
 `BSound`-adjacent classes beyond loading a whole file - suited to a
 native multimedia app, not "play this sound file" scripting glue.
+(Real-time buffer-callback synthesis, `BufferPlayerFunc`, is bound as
+of v0.11.0, see below.)
 
 **`BPrintJob` (v0.7.0, complete - Interface Kit addition, not a new
 Kit)** - see `src/printjob.bas`: real printing via a `ShimPrintJob`
@@ -368,8 +371,8 @@ linked.
   inconsistency**: `GetInstalledSupertypes` fills a field named
   `"super_types"`, NOT `"types"` like `GetInstalledTypes` - easy to
   assume wrong, confirmed via probe before trusting it. Icon get/set
-  bound as of v0.9.0 (see below); sniffer-rule get/set/check
-  deliberately still not bound.
+  bound as of v0.9.0, sniffer-rule get/set/check as of v0.11.0 (see
+  below).
 - **`HWatcher` + real live `BQuery`/`BVolumeRoster` watching** - the
   one genuinely new piece of infrastructure this phase: a small
   `ShimHandler : public BHandler` (`native/shim.cpp`, alongside
@@ -518,8 +521,8 @@ select questions; user picked all seven. No new libraries needed -
   `Name`/`Flags`/`HasLink`/`CountAddresses`/`GetAddressAt`. An
   interface address's own `Address()` is copied into an existing
   `HNetworkAddress` (`network.bas`) rather than exposing a third
-  address-shaped handle. Diagnostics/enumeration only - interface
-  configuration deliberately not bound.
+  address-shaped handle. Diagnostics/enumeration only in this phase -
+  interface configuration is bound as of v0.11.0, see below.
 
 Verified end-to-end on real Haiku hardware via `scripts/haiku_verify.sh`,
 now running 38 `tests/*.bas` files. Five new examples
@@ -657,6 +660,109 @@ returns `NULL`. Published: pushed with a `v0.10.0` tag, `ebpm-index`
 updated, `ebpm add eb-haiku` confirmed resolving to `v0.10.0` from the
 live index.
 
+**v0.11.0 (eight residual gaps in already-bound Kits)**: asked once
+more whether every Kit is fully implemented - this round closed the 8
+real, tractable residual items still listed as "not bound" across
+`BVolume`/`BMimeType`/Locale Kit/Translation Kit/Network Kit/Media
+Kit/Package Kit, surfaced across four multi-select questions; user
+picked all eight.
+
+- **`BVolume::GetIcon`/`SetName`** (`src/volume.bas`, extended) -
+  `GetIcon` reuses the existing `HBitmap` type (real `BVolume` has no
+  `SetIcon` at all - `GetIcon` only); `SetName` is a real, functional
+  rename, not a documented no-op. **A 4th confirmed occurrence of the
+  "needs `BApplication` first" gotcha family**: `HVolumeGetIcon` hangs
+  indefinitely without one, caught via probe before shipping. Verified
+  `GetIcon` against the real boot volume (read-only, safe) and
+  `SetName` against a throwaway loopback BFS volume, never the real
+  boot volume's own name.
+- **`BMimeType` sniffer rules** (`src/mimetype.bas`, extended) -
+  `GetSnifferRule`/`SetSnifferRule` (real `BString`-based, copied into
+  the caller's buffer) and the static `CheckSnifferRule` validator.
+  Verified with a real, valid rule (`"1.0 [0:3] ('PNG')"`, confirmed
+  plausible via probe) round-tripped on a throwaway type, and a real
+  invalid rule correctly rejected with Haiku's own detailed
+  parse-error message.
+- **Locale Kit `Parse` methods** (`src/locale.bas`, extended) -
+  `HDateFormatParse`/`HTimeFormatParse`/`HNumberFormatParse`, the
+  inverse of the already-bound `Format` direction. `BDate`/`BTime`'s
+  own plain `int32` fields are copied out directly rather than binding
+  whole new handle types for them. **Resolved a real open question from
+  planning**: `BTime`/`BDate` are declared inside `namespace BPrivate`
+  purely as an internal-organization quirk inside the *public*
+  `os/support/DateTime.h` header, which re-exports both via `using
+  BPrivate::BTime;`/`using BPrivate::BDate;` at global scope - fully
+  stable, ordinary public API despite the namespace name; no caution
+  needed after all. Verified via real round-trips through this host's
+  own French locale formatting (`"14/11/2023"`, `"12 345,678"`).
+- **`BCatalog`** (new `src/catalog.bas`) - the runtime-facing surface
+  only (`GetString`/`SetTo`/`InitCheck`/`CountItems`) - deliberately
+  does not attempt `collectcatkeys`/`linkcatkeys` themselves (a
+  separate, build-time tooling pipeline, not a runtime API). Real and
+  useful even with zero `.catkeys` data installed: `GetString`
+  gracefully echoes the key itself back unchanged when no catalog
+  covers it - confirmed to be the entire point of the real
+  `B_TRANSLATE` macro convention, verified exactly this way against a
+  throwaway signature.
+- **`BMemoryIO`/`BMallocIO`** (`src/file.bas`, extended) - both real
+  `BPositionIO` subclasses (single inheritance, no pointer-adjustment
+  concern), usable directly anywhere `HFile` already is.
+  Verified with a real, entirely in-memory round trip: decode a real
+  PNG, `Translate` it into a growing `BMallocIO`, then wrap that exact
+  buffer read-only as a `BMemoryIO` and decode it back - no
+  intermediate file on disk at all.
+- **`BNetworkInterface` configuration** (`src/networkinterface.bas`,
+  extended) - `SetFlags`/`SetMTU`/`SetMedia`/`SetMetric`, the simple
+  `BNetworkAddress`-based overloads of `AddAddress`/`RemoveAddress`/
+  `RemoveAddressAt`, `AddDefaultRoute`/`RemoveDefaultRoute`, and
+  `AutoConfigure`. Deliberately does not bind the fuller
+  `BNetworkInterfaceAddress`-based overloads or `AddRoute`/
+  `RemoveRoute`'s own `BNetworkRoute`-based overloads (raw `sockaddr`
+  manipulation) - disproportionate new surface/risk for this pass.
+  **SAFETY-CRITICAL**: verified via a standalone C++ probe first, then
+  only ever exercised against the real loopback interface - never the
+  live NICs an active SSH session might depend on; loopback health and
+  SSH connectivity explicitly re-confirmed after every test run.
+- **Media Kit real-time buffer synthesis** (`src/media.bas`, extended)
+  - a new `BSoundPlayer` constructor overload taking a real
+  `BufferPlayerFunc` callback, its own `media_raw_audio_format`
+  parameter unpacked into plain scalars at the shim's own trampoline.
+  **A real, confirmed shim bug caught by a standalone C++ probe before
+  shipping**: real `BSoundPlayer::Cookie()` returns a real, non-`NULL`
+  internal pointer even for a plain `HSoundPlayerCreate` result (not
+  `NULL`, as might be assumed) - a single shared destroy function that
+  unconditionally called `delete Cookie()` corrupted the heap and hung
+  the process the moment a plain player was destroyed. Fixed by giving
+  the buffer-callback path its own dedicated free function, never
+  shared with the plain one. Verified with a real, genuinely
+  synthesized 440Hz tone (50 real callback invocations in 500ms).
+- **Package Kit repo-config visiting/watching** (`src/package.bas`,
+  extended) - `VisitCommonRepositoryConfigs`/`VisitUserRepositoryConfigs`
+  via a new `ShimRepositoryConfigVisitor` subclass (the same
+  virtual-forwarding pattern as `ShimWindow`/`ShimView` - real Haiku
+  only ever calls a visitor as a functor, never a plain callback), and
+  `StartWatching`/`StopWatching` reusing the existing `HWatcher`
+  primitive. Verified `VisitCommonRepositoryConfigs` against this
+  host's own two real repository config files (Haiku, HaikuPorts);
+  `StartWatching`/`StopWatching` verified functionally (the calls
+  themselves succeed) - a real package installation/removal event is
+  deliberately not triggered, too invasive to force safely on a shared
+  host.
+
+Verified end-to-end on real Haiku hardware via `scripts/haiku_verify.sh`,
+now running 48 `tests/*.bas` files. Eight new examples
+(`volume_icon_and_rename.bas`, `mimetype_sniffer_rule.bas`,
+`locale_parse.bas`, `catalog_lookup.bas`, `memory_translate.bas`,
+`network_interface_configure.bas`, `synth_tone.bas`,
+`package_repo_configs.bas`), one per area.
+
+With v0.11.0 shipped, every candidate surfaced by two full survey
+rounds (v0.10.0's new-Kit search and this version's own residual-gap
+search) is now bound except Bluetooth Kit (not selected - real but
+lowest-confidence) and Screen Saver Kit (confirmed not bindable given
+`ebc`'s current lack of a shared-library output mode, see "Known
+gaps").
+
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
 **A real, new category of gotcha, confirmed by direct reproduction**:
@@ -746,7 +852,7 @@ Matching `eb-cjson`'s own convention:
   `HDatagramSocket`/`HAppFileInfo`/`HNetworkInterface`/`HNetworkRoster`/
   `HEmailMessage`/`HMailDaemon`/`HGameSound`/`HGLView`/
   `HDiskDeviceRoster`/`HDiskDevice`/`HPartition`/`HMidiProducer`/
-  `HMidiConsumer`, each a thin
+  `HMidiConsumer`/`HCatalog`/`HMemoryIO`/`HMallocIO`, each a thin
   `TYPE ... : handle AS ANY PTR : END TYPE` wrapper plus free functions.
   Every parameter is explicitly `BYVAL` - each is just an 8-byte handle,
   cheap to copy. `BSize`/`BAlignment` are likewise plain value structs
@@ -763,11 +869,12 @@ Matching `eb-cjson`'s own convention:
   instead (freed via `HFreeString`), matching `eb-cjson`'s own
   `JsonStringify`/`JsonFreeString` fix for exactly the same issue.
 - **`ebpm`'s automatic linker-flag forwarding doesn't cover Translation
-  Kit, Network Kit, Device Kit, Package Kit, or Media Kit functions** -
-  a downstream program calling any of these needs to pass
-  `-l translation`/`-l bnetapi`/`-l device`/`-l package`/`-l media`
-  itself; see this file's own "Building" section for why and the exact
-  flags.
+  Kit, Network Kit, Device Kit, Package Kit, Media Kit, Mail Kit, Game
+  Kit, OpenGL Kit, or MIDI Kit 2 functions** - a downstream program
+  calling any of these needs to pass `-l translation`/`-l bnetapi`/
+  `-l device`/`-l package`/`-l media`/`-l mail`/`-l game`/`-l GL`/
+  `-l midi2` itself; see this file's own "Building" section for why and
+  the exact flags.
 - **Screen Saver Kit is not bindable with `ebc` as it stands today** -
   `BScreenSaver` only works as a loadable `.so` add-on exporting
   `extern "C" instantiate_screen_saver()`, which Haiku's screensaver
