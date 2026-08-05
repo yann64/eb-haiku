@@ -51,3 +51,4 @@
 #include once "raw/haiku_gl.bas"
 #include once "glview.bas"
 #include once "diskdevice.bas"
+#include once "midi.bas"

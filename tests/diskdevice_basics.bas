@@ -71,6 +71,13 @@ IF HPartitionIsMounted(device.handle) <> 1 THEN
     CALL ExitProcess(1)
 END IF
 
+' Real Haiku's own Disk Device Kit runs Mount asynchronously via a real
+' background job queue (confirmed in this test's own console output:
+' "DiskDeviceJobQueue::Execute()...") - a brief settle delay avoids a
+' real, observed race where an immediate Unmount can fail with B_BUSY
+' while the mount job is still finishing internally.
+CALL HSnooze(300000)
+
 DIM mountPoint AS HPath
 mountPoint = HPathCreateEmpty()
 CALL HPartitionGetMountPoint(device.handle, mountPoint)
