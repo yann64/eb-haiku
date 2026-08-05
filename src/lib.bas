@@ -50,3 +50,4 @@
 #include once "game.bas"
 #include once "raw/haiku_gl.bas"
 #include once "glview.bas"
+#include once "diskdevice.bas"
