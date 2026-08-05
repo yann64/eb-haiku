@@ -19,5 +19,5 @@ project(ebhaikushim CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(ebhaikushim STATIC shim.cpp shim_interface.cpp shim_translation.cpp shim_storage.cpp shim_network.cpp shim_locale.cpp shim_device.cpp shim_package.cpp shim_media.cpp shim_mail.cpp)
+add_library(ebhaikushim STATIC shim.cpp shim_interface.cpp shim_translation.cpp shim_storage.cpp shim_network.cpp shim_locale.cpp shim_device.cpp shim_package.cpp shim_media.cpp shim_mail.cpp shim_game.cpp)
 target_include_directories(ebhaikushim PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

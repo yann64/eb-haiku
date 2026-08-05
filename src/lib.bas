@@ -47,3 +47,4 @@
 #include once "media.bas"
 #include once "printjob.bas"
 #include once "mail.bas"
+#include once "game.bas"
