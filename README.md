@@ -525,7 +525,9 @@ Verified end-to-end on real Haiku hardware via `scripts/haiku_verify.sh`,
 now running 38 `tests/*.bas` files. Five new examples
 (`drag_and_drop.bas`, `styled_text.bas`, `mimetype_icon.bas`,
 `app_launch_watching.bas`, `network_interfaces.bas`), one per major
-area.
+area. Published: pushed with a `v0.9.0` tag, `ebpm-index` updated,
+`ebpm add eb-haiku` confirmed resolving to `v0.9.0` from the live
+index.
 
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
@@ -723,7 +725,7 @@ instead.
 
 ```toml
 [dependencies]
-eb-haiku = "^0.8"
+eb-haiku = "^0.9"
 ```
 
 ```basic
