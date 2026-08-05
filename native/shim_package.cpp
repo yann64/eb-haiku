@@ -1,5 +1,8 @@
 #include "shim_package.h"
 
+#include <Entry.h>
+#include <Handler.h>
+#include <Messenger.h>
 #include <Path.h>
 #include <package/PackageInfo.h>
 #include <package/PackageInfoSet.h>
@@ -18,6 +21,27 @@ int copyBStringToBuffer(const BString& s, char* outBuf, int bufSize) {
     std::memcpy(outBuf, s.String(), static_cast<size_t>(toCopy));
     return len;
 }
+
+/// Same forwarding pattern as shim_interface.cpp's own ShimView/
+/// ShimWindow (see their top comments) - the only way to reach
+/// BRepositoryConfigVisitor's own virtual operator() from eBasic.
+class ShimRepositoryConfigVisitor : public BRepositoryConfigVisitor {
+public:
+    ShimRepositoryConfigVisitor(EbHaikuRepoConfigVisitCallback cb, void* userData)
+        : fCallback(cb), fUserData(userData) {}
+
+    status_t operator()(const BEntry& entry) override {
+        BPath path;
+        if (fCallback && entry.GetPath(&path) == B_OK) {
+            fCallback(fUserData, path.Path());
+        }
+        return B_OK;
+    }
+
+private:
+    EbHaikuRepoConfigVisitCallback fCallback;
+    void* fUserData;
+};
 
 } // namespace
 
@@ -58,7 +82,35 @@ int eb_haiku_package_roster_get_active_packages(void* roster, unsigned int locat
         *static_cast<BPackageInfoSet*>(infoSet));
 }
 
+int eb_haiku_package_roster_visit_common_repository_configs(void* roster, void* visitor) {
+    return static_cast<BPackageRoster*>(roster)->VisitCommonRepositoryConfigs(
+        *static_cast<ShimRepositoryConfigVisitor*>(visitor));
+}
+
+int eb_haiku_package_roster_visit_user_repository_configs(void* roster, void* visitor) {
+    return static_cast<BPackageRoster*>(roster)->VisitUserRepositoryConfigs(
+        *static_cast<ShimRepositoryConfigVisitor*>(visitor));
+}
+
+int eb_haiku_package_roster_start_watching(void* roster, void* watcher, unsigned int eventMask) {
+    return static_cast<BPackageRoster*>(roster)->StartWatching(
+        BMessenger(static_cast<BHandler*>(watcher)), eventMask);
+}
+
+int eb_haiku_package_roster_stop_watching(void* roster, void* watcher) {
+    return static_cast<BPackageRoster*>(roster)->StopWatching(
+        BMessenger(static_cast<BHandler*>(watcher)));
+}
+
 void eb_haiku_package_roster_destroy(void* roster) { delete static_cast<BPackageRoster*>(roster); }
+
+void* eb_haiku_repo_config_visitor_create(EbHaikuRepoConfigVisitCallback cb, void* userData) {
+    return new ShimRepositoryConfigVisitor(cb, userData);
+}
+
+void eb_haiku_repo_config_visitor_destroy(void* visitor) {
+    delete static_cast<ShimRepositoryConfigVisitor*>(visitor);
+}
 
 // ---- BPackageInfoSet + Iterator ----
 

@@ -5,6 +5,12 @@
 
 #include once "../src/lib.bas"
 
+' HWatcher needs a real HApplication to exist first (be_app - the same
+' "needs BApplication first" family documented elsewhere in this
+' package) - needed below for HPackageRosterStartWatching.
+DIM app AS HApplication
+app = HApplicationCreate("application/x-vnd.EbHaiku-PackageBasicsTest")
+
 DIM roster AS HPackageRoster
 roster = HPackageRosterCreate()
 
@@ -81,10 +87,6 @@ DO WHILE HPackageInfoIteratorHasNext(it) <> 0
     seen = seen + 1
 LOOP
 
-CALL HPackageInfoIteratorFree(it)
-CALL HPackageInfoSetFree(infoSet)
-CALL HPackageRosterFree(roster)
-
 IF seen <> count THEN
     PRINT "FAIL: iterated ", seen, " but CountInfos reported ", count
     CALL ExitProcess(1)
@@ -93,5 +95,57 @@ IF foundHaiku <> 1 THEN
     PRINT "FAIL: the real 'haiku' package should be among installed packages"
     CALL ExitProcess(1)
 END IF
+
+' ---- VisitCommonRepositoryConfigs - a real, live directory walk;
+' this host has real "Haiku"/"HaikuPorts" repository configs
+' installed. ----
+
+DIM gVisitedCount AS INTEGER
+gVisitedCount = 0
+
+SUB OnRepoConfigVisited(userData AS ANY PTR, path AS ZSTRING)
+    gVisitedCount = gVisitedCount + 1
+    PRINT "  repo config: ", path
+END SUB
+
+DIM visitor AS ANY PTR
+visitor = HRepositoryConfigVisitorCreate(@OnRepoConfigVisited, 0)
+rc = HPackageRosterVisitCommonRepositoryConfigs(roster, visitor)
+IF rc <> 0 THEN
+    PRINT "FAIL: HPackageRosterVisitCommonRepositoryConfigs returned ", rc
+    CALL ExitProcess(1)
+END IF
+PRINT "visited ", gVisitedCount, " real common repository configs"
+IF gVisitedCount < 1 THEN
+    PRINT "FAIL: expected at least one real repository config (Haiku/HaikuPorts)"
+    CALL ExitProcess(1)
+END IF
+CALL HRepositoryConfigVisitorFree(visitor)
+
+' ---- StartWatching/StopWatching - verified functionally (the calls
+' themselves succeed without hanging/erroring); a real package
+' installation/removal event is deliberately NOT triggered here - too
+' invasive to force safely on a shared host (would require actually
+' activating/deactivating a real package). ----
+
+DIM watcher AS HWatcher
+watcher = HWatcherCreate()
+rc = HPackageRosterStartWatching(roster, watcher, H_WATCH_PACKAGE_INSTALLATION_LOCATIONS)
+IF rc <> 0 THEN
+    PRINT "FAIL: HPackageRosterStartWatching returned ", rc
+    CALL ExitProcess(1)
+END IF
+rc = HPackageRosterStopWatching(roster, watcher)
+IF rc <> 0 THEN
+    PRINT "FAIL: HPackageRosterStopWatching returned ", rc
+    CALL ExitProcess(1)
+END IF
+CALL HWatcherFree(watcher)
+PRINT "StartWatching/StopWatching ok"
+
+CALL HPackageInfoIteratorFree(it)
+CALL HPackageInfoSetFree(infoSet)
+CALL HPackageRosterFree(roster)
+CALL HApplicationFree(app)
 
 PRINT "package basics test ok"

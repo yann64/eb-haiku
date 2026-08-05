@@ -9,6 +9,9 @@
 CONST H_PACKAGE_INSTALLATION_LOCATION_SYSTEM = 0
 CONST H_PACKAGE_INSTALLATION_LOCATION_HOME = 1
 
+' Real watchable-event value (package/PackageRoster.h).
+CONST H_WATCH_PACKAGE_INSTALLATION_LOCATIONS = 1
+
 Extern "C" Lib "ebhaikushim"
     ' ---- BPackageRoster ----
     Declare Function eb_haiku_package_roster_create() AS ANY PTR
@@ -18,7 +21,15 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_package_roster_get_common_repository_config_path(BYVAL roster AS ANY PTR, BYVAL outPath AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_package_roster_get_user_repository_config_path(BYVAL roster AS ANY PTR, BYVAL outPath AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_package_roster_get_active_packages(BYVAL roster AS ANY PTR, BYVAL location AS UINTEGER, BYVAL infoSet AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_package_roster_visit_common_repository_configs(BYVAL roster AS ANY PTR, BYVAL visitor AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_package_roster_visit_user_repository_configs(BYVAL roster AS ANY PTR, BYVAL visitor AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_package_roster_start_watching(BYVAL roster AS ANY PTR, BYVAL watcher AS ANY PTR, BYVAL eventMask AS UINTEGER) AS INTEGER
+    Declare Function eb_haiku_package_roster_stop_watching(BYVAL roster AS ANY PTR, BYVAL watcher AS ANY PTR) AS INTEGER
     Declare Sub eb_haiku_package_roster_destroy(BYVAL roster AS ANY PTR)
+
+    ' ---- BRepositoryConfigVisitor ----
+    Declare Function eb_haiku_repo_config_visitor_create(BYVAL cb AS ANY PTR, BYVAL userData AS ANY PTR) AS ANY PTR
+    Declare Sub eb_haiku_repo_config_visitor_destroy(BYVAL visitor AS ANY PTR)
 
     ' ---- BPackageInfoSet + Iterator ----
     Declare Function eb_haiku_package_info_set_create() AS ANY PTR

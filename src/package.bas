@@ -6,6 +6,7 @@
 
 #include once "raw/haiku_shim_package.bas"
 #include once "path.bas"
+#include once "watcher.bas"
 
 TYPE HPackageRoster
     handle AS ANY PTR
@@ -52,8 +53,46 @@ FUNCTION HPackageRosterGetActivePackages(BYVAL r AS HPackageRoster, BYVAL locati
     HPackageRosterGetActivePackages = eb_haiku_package_roster_get_active_packages(r.handle, location, infoSet.handle)
 END FUNCTION
 
+''' Visits each real repository config file under the common (system-
+''' wide) install location - `visitor` is an HRepositoryConfigVisitorCreate
+''' result. Returns a status code (0 = success).
+FUNCTION HPackageRosterVisitCommonRepositoryConfigs(BYVAL r AS HPackageRoster, BYVAL visitor AS ANY PTR) AS INTEGER
+    HPackageRosterVisitCommonRepositoryConfigs = eb_haiku_package_roster_visit_common_repository_configs(r.handle, visitor)
+END FUNCTION
+
+''' Same as HPackageRosterVisitCommonRepositoryConfigs, for the
+''' per-user install location.
+FUNCTION HPackageRosterVisitUserRepositoryConfigs(BYVAL r AS HPackageRoster, BYVAL visitor AS ANY PTR) AS INTEGER
+    HPackageRosterVisitUserRepositoryConfigs = eb_haiku_package_roster_visit_user_repository_configs(r.handle, visitor)
+END FUNCTION
+
+''' Makes `watcher` a real live target for package installation/
+''' removal notifications - `eventMask` is
+''' H_WATCH_PACKAGE_INSTALLATION_LOCATIONS. Returns a status code (0 =
+''' success).
+FUNCTION HPackageRosterStartWatching(BYVAL r AS HPackageRoster, BYVAL watcher AS HWatcher, BYVAL eventMask AS UINTEGER) AS INTEGER
+    HPackageRosterStartWatching = eb_haiku_package_roster_start_watching(r.handle, watcher.handle, eventMask)
+END FUNCTION
+
+FUNCTION HPackageRosterStopWatching(BYVAL r AS HPackageRoster, BYVAL watcher AS HWatcher) AS INTEGER
+    HPackageRosterStopWatching = eb_haiku_package_roster_stop_watching(r.handle, watcher.handle)
+END FUNCTION
+
 SUB HPackageRosterFree(BYVAL r AS HPackageRoster)
     CALL eb_haiku_package_roster_destroy(r.handle)
+END SUB
+
+''' `cb` must be a plain top-level bodied SUB taking (userData AS ANY
+''' PTR, path AS ZSTRING) - called once per real repository config file
+''' found by HPackageRosterVisitCommonRepositoryConfigs/
+''' VisitUserRepositoryConfigs.
+FUNCTION HRepositoryConfigVisitorCreate(cb AS ANY PTR, userData AS ANY PTR) AS ANY PTR
+    HRepositoryConfigVisitorCreate = eb_haiku_repo_config_visitor_create(cb, userData)
+END FUNCTION
+
+''' Frees an HRepositoryConfigVisitorCreate result - call exactly once.
+SUB HRepositoryConfigVisitorFree(BYVAL visitor AS ANY PTR)
+    CALL eb_haiku_repo_config_visitor_destroy(visitor)
 END SUB
 
 FUNCTION HPackageInfoSetCreate() AS HPackageInfoSet

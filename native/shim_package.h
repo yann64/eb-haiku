@@ -28,7 +28,34 @@ int eb_haiku_package_roster_get_user_repository_config_path(void* roster, void* 
 // Returns a status_t (0 = success).
 int eb_haiku_package_roster_get_active_packages(void* roster, unsigned int location,
                                                  void* infoSet);
+
+// Visits each real repository config file found - `visitor` is an
+// existing eb_haiku_repo_config_visitor_create result. Returns a
+// status_t (0 = success).
+int eb_haiku_package_roster_visit_common_repository_configs(void* roster, void* visitor);
+int eb_haiku_package_roster_visit_user_repository_configs(void* roster, void* visitor);
+
+// Real app/package installation/removal notifications - `watcher` is
+// an existing eb_haiku_watcher_create result (shim.h), matching
+// BRoster::StartWatching's own established BMessenger-wrapping
+// convention. `eventMask` is H_WATCH_PACKAGE_INSTALLATION_LOCATIONS
+// (raw/haiku_shim_package.bas).
+int eb_haiku_package_roster_start_watching(void* roster, void* watcher, unsigned int eventMask);
+int eb_haiku_package_roster_stop_watching(void* roster, void* watcher);
+
 void eb_haiku_package_roster_destroy(void* roster);
+
+// ---- BRepositoryConfigVisitor - needs a real shim subclass (the same
+// virtual-forwarding pattern as ShimWindow/ShimView elsewhere in this
+// project) since real Haiku only ever calls it as a functor
+// (operator()), never a plain callback. The visited BEntry's own real
+// path is forwarded as a plain string - no new BEntry-shaped handle
+// needed for this. ----
+
+typedef void (*EbHaikuRepoConfigVisitCallback)(void* userData, const char* path);
+
+void* eb_haiku_repo_config_visitor_create(EbHaikuRepoConfigVisitCallback cb, void* userData);
+void eb_haiku_repo_config_visitor_destroy(void* visitor);
 
 // ---- BPackageInfoSet + Iterator ----
 
