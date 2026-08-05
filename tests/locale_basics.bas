@@ -34,6 +34,25 @@ IF InStr(dateStr, "23") = 0 THEN
     CALL ExitProcess(1)
 END IF
 PRINT "date format ok"
+
+' HDateFormatParse - the inverse direction. Round-trip: parse the
+' exact string Format just produced (locale/timezone-independent,
+' rather than hardcoding an assumed calendar date).
+DIM rc AS INTEGER
+DIM parsedYear AS INTEGER
+DIM parsedMonth AS INTEGER
+DIM parsedDay AS INTEGER
+rc = HDateFormatParse(dateFmt, dateStr, H_SHORT_DATE_FORMAT, parsedYear, parsedMonth, parsedDay)
+IF rc <> 0 THEN
+    PRINT "FAIL: HDateFormatParse returned ", rc
+    CALL ExitProcess(1)
+END IF
+PRINT "parsed date=", parsedYear, "-", parsedMonth, "-", parsedDay
+IF parsedYear < 2000 OR parsedMonth < 1 OR parsedMonth > 12 OR parsedDay < 1 OR parsedDay > 31 THEN
+    PRINT "FAIL: parsed date fields look implausible"
+    CALL ExitProcess(1)
+END IF
+PRINT "date parse ok"
 CALL HDateFormatFree(dateFmt)
 
 DIM timeFmt AS HTimeFormat
@@ -51,6 +70,24 @@ timeStr = timeZ
 PRINT "formatted time=", timeStr
 CALL HTimeFormatFree(timeFmt)
 PRINT "time format ok"
+
+DIM timeFmt2 AS HTimeFormat
+timeFmt2 = HTimeFormatCreate()
+DIM parsedHour AS INTEGER
+DIM parsedMinute AS INTEGER
+DIM parsedSecond AS INTEGER
+rc = HTimeFormatParse(timeFmt2, timeStr, H_SHORT_TIME_FORMAT, parsedHour, parsedMinute, parsedSecond)
+IF rc <> 0 THEN
+    PRINT "FAIL: HTimeFormatParse returned ", rc
+    CALL ExitProcess(1)
+END IF
+PRINT "parsed time=", parsedHour, ":", parsedMinute, ":", parsedSecond
+IF parsedHour < 0 OR parsedHour > 23 OR parsedMinute < 0 OR parsedMinute > 59 THEN
+    PRINT "FAIL: parsed time fields look implausible"
+    CALL ExitProcess(1)
+END IF
+CALL HTimeFormatFree(timeFmt2)
+PRINT "time parse ok"
 
 DIM numFmt AS HNumberFormat
 numFmt = HNumberFormatCreate()
@@ -72,6 +109,19 @@ IF InStr(numStr, "12") = 0 OR InStr(numStr, "345") = 0 THEN
     CALL ExitProcess(1)
 END IF
 PRINT "number format ok"
+
+DIM parsedValue AS DOUBLE
+rc = HNumberFormatParse(numFmt, numStr, parsedValue)
+IF rc <> 0 THEN
+    PRINT "FAIL: HNumberFormatParse returned ", rc
+    CALL ExitProcess(1)
+END IF
+PRINT "parsed number=", parsedValue
+IF parsedValue < 12345.0 OR parsedValue > 12346.0 THEN
+    PRINT "FAIL: parsed number does not round-trip to the original value"
+    CALL ExitProcess(1)
+END IF
+PRINT "number parse ok"
 CALL HNumberFormatFree(numFmt)
 
 DIM collator AS HCollator
