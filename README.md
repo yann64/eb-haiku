@@ -653,7 +653,9 @@ Name`/`Type`/`ContentType` are real `NULL` (not empty-string) for an
 unformatted/empty removable drive (e.g. a CD/DVD drive with no media
 inserted) - passing a `NULL const char*` through as a `ZSTRING` broke
 `PRINT`; fixed by returning `""` from the shim whenever the real API
-returns `NULL`.
+returns `NULL`. Published: pushed with a `v0.10.0` tag, `ebpm-index`
+updated, `ebpm add eb-haiku` confirmed resolving to `v0.10.0` from the
+live index.
 
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
@@ -870,7 +872,7 @@ instead.
 
 ```toml
 [dependencies]
-eb-haiku = "^0.9"
+eb-haiku = "^0.10"
 ```
 
 ```basic
