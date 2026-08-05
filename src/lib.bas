@@ -53,3 +53,5 @@
 #include once "glview.bas"
 #include once "diskdevice.bas"
 #include once "midi.bas"
+#include once "raw/haiku_shim_screensaver.bas"
+#include once "screensaver.bas"

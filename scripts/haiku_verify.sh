@@ -24,6 +24,10 @@
 # forwarding (see README's own Building section) applies to a real
 # downstream *consumer* package depending on eb-haiku via `ebpm`, which
 # these direct-`ebc` test invocations intentionally don't exercise.
+# `tests/screensaver_basics.bas` is the one exception to the fixed-list
+# loop below - built via `ebc --shared-lib`, not a plain executable,
+# and verified via a small C++ dlopen harness instead of being run
+# directly (see its own step, after the loop).
 
 set -uo pipefail
 
@@ -77,7 +81,7 @@ for test_name in integration window_basics controls_basics drawing_basics layout
                  gl_view_basics diskdevice_basics midi_basics catalog_basics \
                  dataio_basics; do
     echo "==> Compiling+running tests/$test_name.bas..."
-    if ssh "$HOST" "cd ~/$REMOTE_DIR && ebc tests/$test_name.bas -o /tmp/eb_haiku_${test_name}_test -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be -l translation -l root -l bnetapi -l device -l package -l media -l mail -l game -l GL -l midi2 && /tmp/eb_haiku_${test_name}_test"; then
+    if ssh "$HOST" "cd ~/$REMOTE_DIR && ebc tests/$test_name.bas -o /tmp/eb_haiku_${test_name}_test -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be -l translation -l root -l bnetapi -l device -l package -l media -l mail -l game -l GL -l midi2 -l screensaver && /tmp/eb_haiku_${test_name}_test"; then
         echo "    PASS: $test_name"
     else
         echo "    FAIL: $test_name"
@@ -85,6 +89,44 @@ for test_name in integration window_basics controls_basics drawing_basics layout
     fi
     ssh "$HOST" "rm -f /tmp/eb_haiku_${test_name}_test"
 done
+
+echo "==> Compiling+running tests/screensaver_basics.bas (--shared-lib)..."
+# Screen Saver Kit doesn't fit the fixed-list loop above: it's built via
+# `ebc --shared-lib` (a real, dynamically loadable .so), not a plain
+# executable, and verified by dlopen'ing it from a small C++ harness
+# (tests/native/screensaver_harness.cpp) rather than running it
+# directly - genuine proof of real BScreenSaver virtual dispatch
+# through the exact call shape Haiku's own screensaver daemon uses.
+# `-l screensaver` (Haiku's own libscreensaver.so, providing
+# BScreenSaver's own base-class virtual method bodies) is REQUIRED in
+# addition to `-l be` - a real finding, confirmed by direct
+# reproduction, documented in native/shim_screensaver.h's own top
+# comment; omitting it makes `dlopen` fail with a bare "Symbol not
+# found" (no symbol name given).
+SCREENSAVER_EXPECTED='InitCheck called
+InitCheck returned 0
+StartSaver called, preview=1
+StartSaver returned 0
+Draw called, frame=0
+Draw called, frame=1
+StopSaver called'
+SCREENSAVER_ACTUAL="$(ssh "$HOST" "
+set -e
+cd ~/$REMOTE_DIR
+ebc tests/screensaver_basics.bas --shared-lib -o /tmp/eb_haiku_screensaver_test -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be -l screensaver
+g++ -std=c++17 tests/native/screensaver_harness.cpp -o /tmp/eb_haiku_screensaver_harness -lbe
+/tmp/eb_haiku_screensaver_harness /tmp/libeb_haiku_screensaver_test.so
+rc=\$?
+rm -f /tmp/eb_haiku_screensaver_test /tmp/libeb_haiku_screensaver_test.so /tmp/eb_haiku_screensaver_harness
+exit \$rc
+")"
+if [ "$SCREENSAVER_ACTUAL" = "$SCREENSAVER_EXPECTED" ]; then
+    echo "    PASS: screensaver_basics"
+else
+    echo "    FAIL: screensaver_basics (output mismatch)"
+    echo "$SCREENSAVER_ACTUAL"
+    FAILED=1
+fi
 
 if [ "$FAILED" -eq 0 ]; then
     echo "==> PASSED on $HOST"

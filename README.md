@@ -765,6 +765,75 @@ gaps"). Published: pushed with a `v0.11.0` tag, `ebpm-index` updated,
 `ebpm add eb-haiku` confirmed resolving to `v0.11.0` from the live
 index.
 
+**v0.12.0 (Screen Saver Kit, shipped and published)**: closes the one
+gap named at the end of v0.11.0 above - `ebc` gained real
+`--shared-lib`/`-dll` shared-library output, so `BScreenSaver` is now
+bindable for real. Bluetooth Kit remains the only unbound Kit
+(deliberately, still lowest-confidence - the real Haiku box used for
+verification has no `bluetoothd` running and no BT hardware/device
+visible, so it would ship with only compile-level confidence unlike
+every other Kit here).
+
+- Bound (`native/shim_screensaver.{h,cpp}`, `src/raw/
+  haiku_shim_screensaver.bas`, `src/screensaver.bas`): the four
+  virtuals every real screensaver actually needs - `InitCheck`/
+  `StartSaver`/`StopSaver`/`Draw` - via a new `ShimScreenSaver`
+  subclass, plus the five non-virtual utility methods that control
+  animation frame timing (`SetTickSize`/`TickSize`/`SetLoop`/
+  `LoopOnCount`/`LoopOffCount`). `Draw`'s own `view` parameter is a
+  real, daemon-owned `BView` - this package's existing `view.bas`
+  drawing primitives (`HViewSetHighColor`/`HViewFillRect`/
+  `HViewDrawString`/...) work on it unchanged, no new drawing surface
+  needed.
+- **Deliberately not bound** (a documented gap, not an oversight):
+  `DirectConnected`/`DirectDraw` (direct-screen-access, exotic, no
+  meaningful way to verify without real hardware framebuffer access),
+  `StartConfig`/`StopConfig` (a config dialog needs human interaction
+  to verify - same category as `BPrintJob::ConfigJob`, already
+  deferred elsewhere in this package for the same reason), `SupplyInfo`/
+  `ModulesChanged`/`SaveState` (metadata/state-persistence, lower
+  value, a reasonable follow-on).
+- **A real, non-obvious finding, confirmed by direct reproduction** (a
+  standalone hand-written C++ probe, isolating this from eBasic/`ebc`
+  entirely, before trusting it): any real screensaver `.so` needs `Lib
+  "screensaver"` (Haiku's own `libscreensaver.so`) *in addition to*
+  `Lib "be"` - without it, `dlopen`/`load_add_on` fails with a bare
+  "Symbol not found" (no symbol name given), since `BScreenSaver`'s own
+  base-class virtual method bodies (the non-pure-virtual defaults an
+  override doesn't replace) live in `libscreensaver.so`, not `libbe.so`.
+  Found only by comparing a real, working installed add-on's
+  (`/boot/system/add-ons/Screen Savers/Leaves`) own `readelf -d`/`nm -D`
+  output against a minimal probe's, after a first, wrong guess
+  (`RTLD_LAZY` instead of `RTLD_NOW`) made no difference - vtable/RTTI
+  relocations resolve eagerly in a shared library regardless of
+  `RTLD_LAZY`/`RTLD_NOW`. Documented in `native/shim_screensaver.h`'s
+  own top comment and this file's own "Building" section.
+- Automated verification (`tests/screensaver_basics.bas` +
+  `tests/native/screensaver_harness.cpp`, run by
+  `scripts/haiku_verify.sh`): a real `dlopen`/factory-call/virtual-
+  dispatch round trip through a real `BApplication`+`BWindow`+`BView`
+  context, stdout-diffed - genuine proof of dispatch through the exact
+  call shape Haiku's own daemon uses, not just "the file exists."
+- Real-desktop verification (`examples/screensaver_example.bas`,
+  manually installed to `/boot/system/non-packaged/add-ons/Screen
+  Savers/EbHaikuDemo`): confirmed live via Haiku's own Screensaver
+  preferences panel - listed alongside the stock add-ons (Flurry,
+  Leaves, Nebula, ...), selectable, and its live preview thumbnail
+  already rendering the real `Draw` callback's own output (a color-
+  cycling fill + label text) via the real daemon, not a test harness.
+  The panel's own "Réglages de l'économiseur" (saver settings) pane
+  correctly shows "no options available" for it, matching that
+  `StartConfig` was deliberately not bound.
+- Test suite grew from 48 to 49 `tests/*.bas` files (one new test -
+  Screen Saver Kit's own automated test doesn't fit the existing
+  fixed-list loop, since it's built via `--shared-lib` and verified via
+  `dlopen` rather than run directly - see `scripts/haiku_verify.sh`'s
+  own updated top comment).
+
+Published: `ebasic.toml` bumped to `0.12.0`, tagged `v0.12.0`, pushed,
+`ebpm-index` updated, `ebpm add eb-haiku` confirmed resolving to
+`v0.12.0` from the live index.
+
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
 **A real, new category of gotcha, confirmed by direct reproduction**:
@@ -872,19 +941,11 @@ Matching `eb-cjson`'s own convention:
   `JsonStringify`/`JsonFreeString` fix for exactly the same issue.
 - **`ebpm`'s automatic linker-flag forwarding doesn't cover Translation
   Kit, Network Kit, Device Kit, Package Kit, Media Kit, Mail Kit, Game
-  Kit, OpenGL Kit, or MIDI Kit 2 functions** - a downstream program
-  calling any of these needs to pass `-l translation`/`-l bnetapi`/
-  `-l device`/`-l package`/`-l media`/`-l mail`/`-l game`/`-l GL`/
-  `-l midi2` itself; see this file's own "Building" section for why and
-  the exact flags.
-- **Screen Saver Kit is not bindable with `ebc` as it stands today** -
-  `BScreenSaver` only works as a loadable `.so` add-on exporting
-  `extern "C" instantiate_screen_saver()`, which Haiku's screensaver
-  daemon `dlopen`s at runtime, but `ebc` has no shared-library/PIC
-  output mode at all (only a native executable, or a static `.a` via
-  `--lib`) - confirmed from `ebc`'s own docs, not assumed. Revisit only
-  if `ebc` ever gains such a mode - a compiler-level feature, not a
-  bindings task.
+  Kit, OpenGL Kit, MIDI Kit 2, or Screen Saver Kit functions** - a
+  downstream program calling any of these needs to pass `-l
+  translation`/`-l bnetapi`/`-l device`/`-l package`/`-l media`/`-l
+  mail`/`-l game`/`-l GL`/`-l midi2`/`-l screensaver` itself; see this
+  file's own "Building" section for why and the exact flags.
 
 ## Building
 
@@ -916,25 +977,28 @@ name).
 
 **A real, structural limitation, confirmed directly (not assumed)**: a
 downstream program that calls **any Translation Kit, Network Kit,
-Device Kit, Package Kit, Media Kit, Mail Kit, Game Kit, OpenGL Kit, or
-MIDI Kit 2 function** needs to *also* pass `-l translation`/
-`-l bnetapi`/`-l device`/`-l package`/`-l media`/`-l mail`/`-l game`/
-`-l GL`/`-l midi2` itself - `ebpm`'s sidecar mechanism can't discover
-these automatically, because they're transitive link dependencies of
-the *compiled shim itself* (`shim_translation.cpp.o`/
-`shim_network.cpp.o`/`shim_device.cpp.o`/`shim_package.cpp.o`/
-`shim_media.cpp.o`/`shim_mail.cpp.o`/`shim_game.cpp.o`/`shim_gl.cpp.o`/
-`shim_midi.cpp.o` inside `libebhaikushim.a`), not something any
+Device Kit, Package Kit, Media Kit, Mail Kit, Game Kit, OpenGL Kit,
+MIDI Kit 2, or Screen Saver Kit function** needs to *also* pass `-l
+translation`/`-l bnetapi`/`-l device`/`-l package`/`-l media`/`-l
+mail`/`-l game`/`-l GL`/`-l midi2`/`-l screensaver` itself - `ebpm`'s
+sidecar mechanism can't discover these automatically, because they're
+transitive link dependencies of the *compiled shim itself*
+(`shim_translation.cpp.o`/`shim_network.cpp.o`/`shim_device.cpp.o`/
+`shim_package.cpp.o`/`shim_media.cpp.o`/`shim_mail.cpp.o`/
+`shim_game.cpp.o`/`shim_gl.cpp.o`/`shim_midi.cpp.o`/
+`shim_screensaver.cpp.o` inside `libebhaikushim.a`), not something any
 `Extern "C" Lib` clause in this package's own `.bas` source captures -
 and unlike `find_directory`/`fs_create_index`/the Kernel Kit
 concurrency primitives, none of `libtranslation.so`/`libbnetapi.so`/
 `libdevice.so`/`libpackage.so`/`libmedia.so`/`libmail.so`/`libgame.so`/
-`libGL.so`/`libmidi2.so` export a single plain (non-C++-mangled) symbol
-to hang the same fix on (confirmed via `nm -D --defined-only` on the
-real host - only `_init`/`_fini`). Reproduced directly: a real
-downstream package using only `[dependencies] eb-haiku = ...` and
-calling `HTranslatorRosterDefault`/`HNetworkAddressSetTo` fails to link
-with "undefined reference" errors from inside `libebhaikushim.a` until
+`libGL.so`/`libmidi2.so`/`libscreensaver.so` export a single plain
+(non-C++-mangled) symbol to hang the same fix on (confirmed via `nm -D
+--defined-only` on the real host - only `_init`/`_fini`; `libscreensaver.so`
+specifically only exports `BScreenSaver`'s own mangled base-class
+virtual method bodies). Reproduced directly: a real downstream package
+using only `[dependencies] eb-haiku = ...` and calling
+`HTranslatorRosterDefault`/`HNetworkAddressSetTo` fails to link with
+"undefined reference" errors from inside `libebhaikushim.a` until
 `-l translation -l bnetapi` are added explicitly. Code that never
 touches these Kits' own functions is unaffected (their own object
 files inside the archive are never pulled into the link). Locale Kit,
@@ -950,11 +1014,27 @@ like `find_directory`.
 To compile a program directly with `ebc` (without going through
 `ebpm`), link explicitly - include whichever of `-l translation
 -l bnetapi -l device -l package -l media -l mail -l game -l GL
--l midi2` your own code actually touches:
+-l midi2 -l screensaver` your own code actually touches:
 
 ```sh
-ebc yourprogram.bas -o yourprogram -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be -l translation -l bnetapi -l device -l package -l media -l mail -l game -l GL -l midi2 -l root
+ebc yourprogram.bas -o yourprogram -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be -l translation -l bnetapi -l device -l package -l media -l mail -l game -l GL -l midi2 -l screensaver -l root
 ```
+
+**Screen Saver Kit is different from every other Kit in one respect**:
+the whole *program* is itself the add-on, built via `ebc --shared-lib`
+(not a plain executable) - see the "Screen Saver Kit" section above for
+the exact `Extern "C" Function instantiate_screen_saver(...)` shape and
+install path, and `examples/screensaver_example.bas`'s own top comment
+for the full build+install command. A real, confirmed finding while
+building it: `#include`ing this package's whole aggregated `lib.bas`
+(as every other Kit's test/example does) makes a real shared library
+fail to `dlopen` at all (Haiku's own runtime loader resolves every
+`Shim*` class's vtable/RTTI relocations *eagerly*, regardless of
+`RTLD_LAZY`/`RTLD_NOW`, so every other Kit's own real library
+dependency - `game`/`mail`/`midi2`/... - would need to be linked in
+too, for no reason) - only `#include` the specific Kit file(s) an
+add-on actually uses, never the whole `lib.bas`, when building a real
+`--shared-lib`.
 
 ## Verifying
 
