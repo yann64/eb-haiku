@@ -761,7 +761,9 @@ rounds (v0.10.0's new-Kit search and this version's own residual-gap
 search) is now bound except Bluetooth Kit (not selected - real but
 lowest-confidence) and Screen Saver Kit (confirmed not bindable given
 `ebc`'s current lack of a shared-library output mode, see "Known
-gaps").
+gaps"). Published: pushed with a `v0.11.0` tag, `ebpm-index` updated,
+`ebpm add eb-haiku` confirmed resolving to `v0.11.0` from the live
+index.
 
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
@@ -979,7 +981,7 @@ instead.
 
 ```toml
 [dependencies]
-eb-haiku = "^0.10"
+eb-haiku = "^0.11"
 ```
 
 ```basic
