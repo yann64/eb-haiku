@@ -69,6 +69,15 @@ int eb_haiku_volume_get_name(void* volume, char* outName) {
     return static_cast<BVolume*>(volume)->GetName(outName);
 }
 
+int eb_haiku_volume_set_name(void* volume, const char* name) {
+    return static_cast<BVolume*>(volume)->SetName(name);
+}
+
+int eb_haiku_volume_get_icon(void* volume, void* icon, unsigned int size) {
+    return static_cast<BVolume*>(volume)->GetIcon(static_cast<BBitmap*>(icon),
+                                                   static_cast<icon_size>(size));
+}
+
 int eb_haiku_volume_is_read_only(void* volume) {
     return static_cast<BVolume*>(volume)->IsReadOnly() ? 1 : 0;
 }

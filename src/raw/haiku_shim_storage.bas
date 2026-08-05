@@ -42,6 +42,8 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_volume_capacity(BYVAL volume AS ANY PTR, BYVAL outCapacity AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_volume_free_bytes(BYVAL volume AS ANY PTR, BYVAL outFreeBytes AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_volume_get_name(BYVAL volume AS ANY PTR, BYVAL outName AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_volume_set_name(BYVAL volume AS ANY PTR, BYVAL name AS ZSTRING) AS INTEGER
+    Declare Function eb_haiku_volume_get_icon(BYVAL volume AS ANY PTR, BYVAL icon AS ANY PTR, BYVAL size AS UINTEGER) AS INTEGER
     Declare Function eb_haiku_volume_is_read_only(BYVAL volume AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_volume_is_removable(BYVAL volume AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_volume_is_persistent(BYVAL volume AS ANY PTR) AS INTEGER

@@ -42,6 +42,12 @@ int eb_haiku_volume_free_bytes(void* volume, long long* outFreeBytes);
 // Haiku's own B_FILE_NAME_LENGTH) with the volume's real name. Returns
 // a status_t (0 = success).
 int eb_haiku_volume_get_name(void* volume, char* outName);
+// Real, functional (not a documented no-op) - fails on a read-only or
+// unsupported filesystem with a real status_t, not silently.
+int eb_haiku_volume_set_name(void* volume, const char* name);
+// Reuses the existing HBitmap type, matching BMimeType's own icon
+// get/set convention (v0.9.0) - `size` is H_LARGE_ICON/H_MINI_ICON.
+int eb_haiku_volume_get_icon(void* volume, void* icon, unsigned int size);
 int eb_haiku_volume_is_read_only(void* volume);
 int eb_haiku_volume_is_removable(void* volume);
 int eb_haiku_volume_is_persistent(void* volume);

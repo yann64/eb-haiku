@@ -4,6 +4,13 @@
 
 #include once "../src/lib.bas"
 
+' IMPORTANT, confirmed by direct reproduction (a standalone C++ probe):
+' HVolumeGetIcon hangs indefinitely without a real HApplication existing
+' first - a 4th confirmed occurrence of the "needs BApplication first"
+' gotcha family (GetBitmap/BClipboard::Lock/BMimeType::GetIcon).
+DIM app AS HApplication
+app = HApplicationCreate("application/x-vnd.EbHaiku-VolumeBasicsTest")
+
 DIM roster AS HVolumeRoster
 roster = HVolumeRosterCreate()
 
@@ -56,6 +63,17 @@ IF HVolumeIsPersistent(boot) <> 1 THEN
 END IF
 PRINT "boot volume flags ok"
 
+' GetIcon - real, read-only, safe against the real boot volume.
+DIM bootIcon AS HBitmap
+bootIcon = HBitmapCreate(0, 0, 31, 31, H_RGBA32, 0)
+rc = HVolumeGetIcon(boot, bootIcon, H_LARGE_ICON)
+IF rc = 0 THEN
+    PRINT "got a real large icon for the boot volume ok"
+ELSE
+    PRINT "boot volume GetIcon returned ", rc, " (no custom icon set - not a failure)"
+END IF
+CALL HBitmapFree(bootIcon)
+
 ' Iterate every real mounted volume, counting them and confirming each
 ' one's own InitCheck passes.
 DIM count AS INTEGER
@@ -101,5 +119,86 @@ PRINT "HEntryGetVolume ok"
 CALL HVolumeFree(entryVolume)
 CALL HEntryRemove(e)
 CALL HEntryFree(e)
+
+' ---- HVolumeSetName - a real, functional rename, verified against a
+' throwaway loopback BFS volume (never the real boot volume) ----
+
+CONST IMAGE_PATH = "/boot/home/eb-haiku-volume-setname-test.img"
+CALL Kill(IMAGE_PATH)
+CALL Shell("dd if=/dev/zero of=" & IMAGE_PATH & " bs=1M count=10 2>/dev/null")
+CALL Shell("mkfs -t bfs -q " & IMAGE_PATH & " EbHaikuSetNameTest 2>/dev/null")
+
+DIM diskRoster AS HDiskDeviceRoster
+diskRoster = HDiskDeviceRosterCreate()
+DIM regId AS INTEGER
+regId = HDiskDeviceRosterRegisterFileDevice(diskRoster, IMAGE_PATH)
+IF regId < 0 THEN
+    PRINT "FAIL: HDiskDeviceRosterRegisterFileDevice returned ", regId
+    CALL ExitProcess(1)
+END IF
+
+DIM loopDevice AS HDiskDevice
+loopDevice = HDiskDeviceCreate()
+CALL HDiskDeviceRosterGetDeviceWithId(diskRoster, regId, loopDevice)
+rc = HPartitionMount(loopDevice.handle, "", 0, "")
+IF rc <> 0 THEN
+    PRINT "FAIL: HPartitionMount returned ", rc
+    CALL HDiskDeviceRosterUnregisterFileDevice(diskRoster, IMAGE_PATH)
+    CALL ExitProcess(1)
+END IF
+CALL HSnooze(300000)
+
+DIM loopMountPoint AS HPath
+loopMountPoint = HPathCreateEmpty()
+CALL HPartitionGetMountPoint(loopDevice.handle, loopMountPoint)
+
+DIM mountEntry AS HEntry
+mountEntry = HEntryCreate(HPathGet(loopMountPoint))
+DIM loopVolume AS HVolume
+loopVolume = HVolumeCreateEmpty()
+rc = HEntryGetVolume(mountEntry, loopVolume)
+IF rc <> 0 THEN
+    PRINT "FAIL: HEntryGetVolume on the loopback mount point returned ", rc
+    CALL HPartitionUnmount(loopDevice.handle, 0)
+    CALL HDiskDeviceRosterUnregisterFileDevice(diskRoster, IMAGE_PATH)
+    CALL ExitProcess(1)
+END IF
+
+rc = HVolumeSetName(loopVolume, "RenamedByEbHaiku")
+PRINT "HVolumeSetName rc=", rc
+IF rc <> 0 THEN
+    PRINT "FAIL: HVolumeSetName returned ", rc
+    CALL HPartitionUnmount(loopDevice.handle, 0)
+    CALL HDiskDeviceRosterUnregisterFileDevice(diskRoster, IMAGE_PATH)
+    CALL ExitProcess(1)
+END IF
+
+DIM renamedBuf(255) AS BYTE
+DIM renamedPtr AS ANY PTR
+renamedPtr = @renamedBuf(0)
+CALL HVolumeGetName(loopVolume, renamedPtr)
+DIM renamedZ AS ZSTRING
+renamedZ = renamedPtr
+DIM renamedName AS STRING
+renamedName = renamedZ
+PRINT "renamed volume name=", renamedName
+IF renamedName <> "RenamedByEbHaiku" THEN
+    PRINT "FAIL: expected the real volume name to reflect SetName"
+    CALL HPartitionUnmount(loopDevice.handle, 0)
+    CALL HDiskDeviceRosterUnregisterFileDevice(diskRoster, IMAGE_PATH)
+    CALL ExitProcess(1)
+END IF
+
+CALL HVolumeFree(loopVolume)
+CALL HPathFree(loopMountPoint)
+CALL HEntryFree(mountEntry)
+CALL HPartitionUnmount(loopDevice.handle, 0)
+CALL HDiskDeviceRosterUnregisterFileDevice(diskRoster, IMAGE_PATH)
+CALL HDiskDeviceFree(loopDevice)
+CALL HDiskDeviceRosterFree(diskRoster)
+CALL Kill(IMAGE_PATH)
+PRINT "HVolumeSetName ok"
+
+CALL HApplicationFree(app)
 
 PRINT "volume basics test ok"

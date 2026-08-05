@@ -3,11 +3,19 @@
 ' flags). Also HEntryGetVolume/HNodeGetVolume (BStatable::GetVolume) -
 ' defined here rather than in entry.bas/node.bas since both need the
 ' HVolume type this file itself introduces.
+'
+' IMPORTANT, confirmed by direct reproduction: HVolumeGetIcon hangs
+' indefinitely without a real HApplication existing first (not run -
+' just constructed) - the same "needs BApplication first" gotcha
+' family as Translation Kit's GetBitmap/BClipboard::Lock/BMimeType's
+' own icon get/set. Every other function in this file works fine
+' without one.
 
 #include once "raw/haiku_shim_storage.bas"
 #include once "entry.bas"
 #include once "node.bas"
 #include once "watcher.bas"
+#include once "bitmap.bas"
 
 TYPE HVolume
     handle AS ANY PTR
@@ -53,6 +61,21 @@ END FUNCTION
 ''' CALL HVolumeGetName(v, @buf(0))
 FUNCTION HVolumeGetName(BYVAL v AS HVolume, BYVAL outName AS ANY PTR) AS INTEGER
     HVolumeGetName = eb_haiku_volume_get_name(v.handle, outName)
+END FUNCTION
+
+''' Renames the real volume - a real, functional call (not a
+''' documented no-op); fails with a real status code on a read-only or
+''' unsupported filesystem.
+FUNCTION HVolumeSetName(BYVAL v AS HVolume, name AS ZSTRING) AS INTEGER
+    HVolumeSetName = eb_haiku_volume_set_name(v.handle, name)
+END FUNCTION
+
+''' Fills `icon` (an existing HBitmapCreate result, e.g. a
+''' H_RGBA32-colorspace bitmap sized H_LARGE_ICON/H_MINI_ICON) with the
+''' volume's own real icon. Returns a status code (0 = success). Real
+''' BVolume has no SetIcon - read-only.
+FUNCTION HVolumeGetIcon(BYVAL v AS HVolume, BYVAL icon AS HBitmap, BYVAL size AS UINTEGER) AS INTEGER
+    HVolumeGetIcon = eb_haiku_volume_get_icon(v.handle, icon.handle, size)
 END FUNCTION
 
 FUNCTION HVolumeIsReadOnly(BYVAL v AS HVolume) AS INTEGER
