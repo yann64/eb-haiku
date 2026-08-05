@@ -95,7 +95,8 @@ int eb_haiku_partition_unmount(void* partition, unsigned int unmountFlags) {
 }
 
 const char* eb_haiku_partition_name(void* partition) {
-    return static_cast<BPartition*>(partition)->Name();
+    const char* name = static_cast<BPartition*>(partition)->Name();
+    return name ? name : "";
 }
 
 int eb_haiku_partition_content_name(void* partition, char* outBuf, int bufSize) {
@@ -104,11 +105,17 @@ int eb_haiku_partition_content_name(void* partition, char* outBuf, int bufSize) 
 }
 
 const char* eb_haiku_partition_type(void* partition) {
-    return static_cast<BPartition*>(partition)->Type();
+    // IMPORTANT, confirmed by direct reproduction: Type()/ContentType()
+    // are real NULL (not empty-string) for an unformatted/empty
+    // removable drive (e.g. a CD/DVD drive with no media inserted) -
+    // never pass a NULL const char* through as a ZSTRING.
+    const char* type = static_cast<BPartition*>(partition)->Type();
+    return type ? type : "";
 }
 
 const char* eb_haiku_partition_content_type(void* partition) {
-    return static_cast<BPartition*>(partition)->ContentType();
+    const char* contentType = static_cast<BPartition*>(partition)->ContentType();
+    return contentType ? contentType : "";
 }
 
 int eb_haiku_partition_id(void* partition) { return static_cast<BPartition*>(partition)->ID(); }

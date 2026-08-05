@@ -529,6 +529,132 @@ area. Published: pushed with a `v0.9.0` tag, `ebpm-index` updated,
 `ebpm add eb-haiku` confirmed resolving to `v0.9.0` from the live
 index.
 
+**v0.10.0 (five entirely new Kits)**: asked once more whether every
+Kit is fully implemented - this time research went beyond the
+already-bound Kits' own residual gaps and surveyed the real Haiku host
+for Kits never touched at all. Six real, linkable candidates were
+found (Mail, MIDI Kit 2, Game, OpenGL, Screen Saver, Bluetooth, Disk
+Device); user picked all but Bluetooth Kit (real but lowest-confidence:
+2007-origin headers, a differently-namespaced `Bluetooth::` convention
+unlike every `B`-prefixed class elsewhere). Deep research then found
+Screen Saver Kit is **not realistically bindable**: `BScreenSaver` only
+works as a loadable `.so` add-on exporting `extern "C"
+instantiate_screen_saver()`, which Haiku's screensaver daemon `dlopen`s
+at runtime - but `ebc` has no shared-library/PIC output mode at all
+(only a native executable or a static `.a` archive) - a compiler-level
+limitation, documented in "Known gaps" below rather than attempted.
+
+- **Mail Kit** (new `src/mail.bas`) - `BEmailMessage` (`SetTo`/
+  `SetFrom`/`SetSubject`/`SetBodyTextTo`/`Attach`/`Send`) and
+  `BMailDaemon` (`CheckMail`/`SendQueuedMail`/`CountNewMessages`/
+  `MarkAsRead`/`Quit`/`Launch`). Plain `new`/`delete` throughout - no
+  ref-counting. **Two real findings**: on a host with no mail account
+  configured and no `mail_daemon` running, `CheckMail`/
+  `CountNewMessages` return a real `B_MAIL_NO_DAEMON` status promptly
+  (no hang) and `Send` fails - expected, documented behavior for that
+  environment; and `IsComponentAttachment` (and the underlying
+  `BMailComponent::IsAttachment`) return false even for a genuine
+  attachment, despite `ComponentType()` correctly reporting
+  `B_MAIL_ATTRIBUTED_ATTACHMENT` for that same component - a real,
+  confirmed Mail Kit inconsistency, worked around by verifying via
+  `CountComponents()` instead.
+- **Game Kit** (new `src/game.bas`) - `BGameSound` and its three leaf
+  subclasses: `BFileGameSound` (play a whole file), `BSimpleGameSound`
+  (one-shot, file or raw in-memory PCM), `BPushGameSound` (direct
+  lock/unlock buffer-fill polling, for procedurally-generated audio -
+  no callback needed). Plain `new`/`delete` throughout, confirmed via
+  probe to need no `BApplication` first either (a real, confirmed
+  contrast with Media Kit's own `BSoundPlayer`). Every constructor
+  returns the single shared `HGameSound` type directly (every leaf
+  class IS-A `BGameSound`), matching this package's established
+  base-type-reuse convention (e.g. `HPopUpMenuCreate` returning `HMenu`
+  directly). Hit the same real eBasic codegen limitation already known
+  from `HAreaCreate` (v0.8.0): a `BYREF ... AS ANY PTR` parameter shape
+  doesn't compile at any real call site - fixed the same established
+  way (`BYVAL ... AS ANY PTR` with the caller passing `@variable`
+  explicitly).
+- **OpenGL Kit** (new `src/glview.bas`) - `BGLView` (a real `BView`
+  subclass, addable to a window exactly like any other view) via a new
+  `ShimGLView` subclass overriding `Draw(BRect)` - directly reuses the
+  existing `EbHaikuDrawCallback` typedef and forwarding pattern from
+  `ShimView`/`ShimWindow`. `LockGL`/`UnlockGL`/`SwapBuffers` exposed as
+  plain functions. Raw OpenGL calls (`glClear`/`glViewport`/`glBegin`/
+  etc.) are a separate `libGL.so` surface, not Haiku API - bound
+  directly via a new `Extern "C" Lib "GL"` declare (`src/raw/
+  haiku_gl.bas`), matching the direct-`Lib`-declare precedent already
+  used for Kernel Kit's `Lib "root"`, rather than hand-wrapping every
+  GL entry point in the shim. Verified with a real, genuinely rendered
+  dark-blue-cleared window and an interpolated red/green/blue triangle,
+  confirmed via `screenshot -s` - true OpenGL rendering through the
+  Software Pipe/llvmpipe backend.
+- **Disk Device Kit** (new `src/diskdevice.bas`) - `BDiskDeviceRoster`/
+  `BDiskDevice`/`BPartition`. **A first for this project**: the real
+  classes live under `headers/private/storage`, not the public `os/`
+  tree every other binding has used - a deliberate, documented
+  exception (confirmed live-compilable/linkable with extra `-I` flags;
+  the symbols themselves are in the already-linked `libbe.so`).
+  `BDiskDevice` IS-A `BPartition` (single inheritance, no
+  pointer-adjustment concern), so the `BPartition`-level functions
+  (`Mount`/`Unmount`/`Name`/`ContentType`/`Size`/`ChildAt`/etc.) are
+  shared and work on either handle directly. **A real, confirmed
+  hazard found and deliberately avoided**: `BDiskDeviceRoster`'s own
+  `VisitEachMountablePartition` does not reliably scope its
+  enumeration to a childless `device` filter - a standalone C++ probe
+  showed it visiting every real partition on the entire host,
+  including the live boot volumes, and never returning. Not bound at
+  all - enumeration instead uses only `GetNextDevice`/`RewindDevices`
+  (matching `BVolumeRoster::GetNextVolume`'s own fill-in-place
+  convention) plus direct `ChildAt`/`CountChildren` navigation, both
+  confirmed safe. `BPartition` itself has a private ctor/dtor in real
+  Haiku - there is deliberately no "free" function for it. Verified
+  entirely against a throwaway loopback file device (`dd` + `mkfs -t
+  bfs`, registered via `RegisterFileDevice`) - real `Mount`/`Unmount`/
+  `GetMountPoint`, never any physical/boot device. A brief settle delay
+  after `Mount` was needed - real Haiku's own Disk Device Kit runs
+  `Mount` asynchronously via a background job queue, and an immediate
+  `Unmount` right after occasionally raced with `B_BUSY`.
+- **MIDI Kit 2** (new `src/midi.bas`) - the most novel binding in this
+  package: `BMidiRoster` is a pure static-method facade (private
+  ctor/dtor, never instantiated). Every endpoint class
+  (`BMidiEndpoint`/`BMidiProducer`/`BMidiConsumer`/
+  `BMidiLocalProducer`/`BMidiLocalConsumer`) is real-refcounted (a
+  genuine `fRefCount` field + `Acquire()`/`Release()`, private/
+  protected destructors enforcing it at compile time) - there is
+  deliberately no "destroy" function anywhere in this file; the shim
+  calls `Release()`, never `delete`. `BMidiLocalProducer`
+  (`SprayNoteOn`/`NoteOff`/`ControlChange`/`ProgramChange`) and
+  `BMidiLocalConsumer` via a new `ShimMidiConsumer` subclass (the same
+  virtual-forwarding pattern as `ShimWindow`/`ShimView`) receiving real
+  incoming MIDI through those same four callbacks plus a raw `Data()`
+  catch-all. **Two real findings, both confirmed via standalone C++
+  probes**: (1) both endpoints must be `Register()`'d with the roster
+  BEFORE `Connect()`/`Spray*` for any data to actually be delivered -
+  `Connect` itself succeeds and `IsConnected` reports true even without
+  registering first, but messages then silently never arrive (real
+  MIDI Kit 2 routing always goes through the out-of-process
+  `midi_server`, even for two purely local endpoints); (2) a genuine
+  shim bug, not a Haiku surprise - `ShimMidiConsumer`'s own `Data()`
+  override must call the real `BMidiLocalConsumer::Data()` base
+  implementation, which is what actually parses the raw byte stream and
+  dispatches to `NoteOn`/`NoteOff`/`ControlChange` internally -
+  overriding it without forwarding silently broke every other callback
+  in the class, caught by a shim-level probe that bypassed eBasic
+  entirely to isolate the bug from the glue code. Verified with a real,
+  self-contained loopback test - a local producer connected to a local
+  consumer in the same process, confirming `NoteOn`/`NoteOff`/
+  `ControlChange` all genuinely arrive with matching field values.
+
+Verified end-to-end on real Haiku hardware via `scripts/haiku_verify.sh`,
+now running 43 `tests/*.bas` files. Five new examples
+(`send_email.bas`, `game_sound.bas`, `opengl_triangle.bas`,
+`disk_devices.bas`, `midi_loopback.bas`), one per new Kit. A real edge
+case found while writing the Disk Device Kit example: `BPartition::
+Name`/`Type`/`ContentType` are real `NULL` (not empty-string) for an
+unformatted/empty removable drive (e.g. a CD/DVD drive with no media
+inserted) - passing a `NULL const char*` through as a `ZSTRING` broke
+`PRINT`; fixed by returning `""` from the shim whenever the real API
+returns `NULL`.
+
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
 **A real, new category of gotcha, confirmed by direct reproduction**:
@@ -615,7 +741,10 @@ Matching `eb-cjson`'s own convention:
   `HTimeFormat`/`HNumberFormat`/`HCollator`/`HSerialPort`/
   `HPackageRoster`/`HPackageInfoSet`/`HPackageInfoIterator`/`HSound`/
   `HSoundPlayer`/`HPrintJob`/`HTextView`/`HMimeType`/`HWatcher`/
-  `HDatagramSocket`, each a thin
+  `HDatagramSocket`/`HAppFileInfo`/`HNetworkInterface`/`HNetworkRoster`/
+  `HEmailMessage`/`HMailDaemon`/`HGameSound`/`HGLView`/
+  `HDiskDeviceRoster`/`HDiskDevice`/`HPartition`/`HMidiProducer`/
+  `HMidiConsumer`, each a thin
   `TYPE ... : handle AS ANY PTR : END TYPE` wrapper plus free functions.
   Every parameter is explicitly `BYVAL` - each is just an 8-byte handle,
   cheap to copy. `BSize`/`BAlignment` are likewise plain value structs
@@ -637,6 +766,14 @@ Matching `eb-cjson`'s own convention:
   `-l translation`/`-l bnetapi`/`-l device`/`-l package`/`-l media`
   itself; see this file's own "Building" section for why and the exact
   flags.
+- **Screen Saver Kit is not bindable with `ebc` as it stands today** -
+  `BScreenSaver` only works as a loadable `.so` add-on exporting
+  `extern "C" instantiate_screen_saver()`, which Haiku's screensaver
+  daemon `dlopen`s at runtime, but `ebc` has no shared-library/PIC
+  output mode at all (only a native executable, or a static `.a` via
+  `--lib`) - confirmed from `ebc`'s own docs, not assumed. Revisit only
+  if `ebc` ever gains such a mode - a compiler-level feature, not a
+  bindings task.
 
 ## Building
 
@@ -668,36 +805,44 @@ name).
 
 **A real, structural limitation, confirmed directly (not assumed)**: a
 downstream program that calls **any Translation Kit, Network Kit,
-Device Kit, Package Kit, or Media Kit function** needs to *also* pass
-`-l translation`/`-l bnetapi`/`-l device`/`-l package`/`-l media`
-itself - `ebpm`'s sidecar mechanism can't discover these automatically,
-because they're transitive link dependencies of the *compiled shim
-itself* (`shim_translation.cpp.o`/`shim_network.cpp.o`/
-`shim_device.cpp.o`/`shim_package.cpp.o`/`shim_media.cpp.o` inside
-`libebhaikushim.a`), not something any `Extern "C" Lib` clause in this
-package's own `.bas` source captures - and unlike `find_directory`/
-`fs_create_index`/the Kernel Kit concurrency primitives, none of
-`libtranslation.so`/`libbnetapi.so`/`libdevice.so`/`libpackage.so`/
-`libmedia.so` export a single plain (non-C++-mangled) symbol to hang
-the same fix on (confirmed via `nm -D --defined-only` on the real
-host - only `_init`/`_fini`). Reproduced directly: a real downstream
-package using only `[dependencies] eb-haiku = ...` and calling
-`HTranslatorRosterDefault`/`HNetworkAddressSetTo` fails to link with
-"undefined reference" errors from inside `libebhaikushim.a` until
+Device Kit, Package Kit, Media Kit, Mail Kit, Game Kit, OpenGL Kit, or
+MIDI Kit 2 function** needs to *also* pass `-l translation`/
+`-l bnetapi`/`-l device`/`-l package`/`-l media`/`-l mail`/`-l game`/
+`-l GL`/`-l midi2` itself - `ebpm`'s sidecar mechanism can't discover
+these automatically, because they're transitive link dependencies of
+the *compiled shim itself* (`shim_translation.cpp.o`/
+`shim_network.cpp.o`/`shim_device.cpp.o`/`shim_package.cpp.o`/
+`shim_media.cpp.o`/`shim_mail.cpp.o`/`shim_game.cpp.o`/`shim_gl.cpp.o`/
+`shim_midi.cpp.o` inside `libebhaikushim.a`), not something any
+`Extern "C" Lib` clause in this package's own `.bas` source captures -
+and unlike `find_directory`/`fs_create_index`/the Kernel Kit
+concurrency primitives, none of `libtranslation.so`/`libbnetapi.so`/
+`libdevice.so`/`libpackage.so`/`libmedia.so`/`libmail.so`/`libgame.so`/
+`libGL.so`/`libmidi2.so` export a single plain (non-C++-mangled) symbol
+to hang the same fix on (confirmed via `nm -D --defined-only` on the
+real host - only `_init`/`_fini`). Reproduced directly: a real
+downstream package using only `[dependencies] eb-haiku = ...` and
+calling `HTranslatorRosterDefault`/`HNetworkAddressSetTo` fails to link
+with "undefined reference" errors from inside `libebhaikushim.a` until
 `-l translation -l bnetapi` are added explicitly. Code that never
 touches these Kits' own functions is unaffected (their own object
-files inside the archive are never pulled into the link). Locale Kit
-and the Kernel Kit concurrency primitives need no extra flags at all -
-the former lives directly in `libbe.so`, the latter are plain
-`Lib "root"` functions like `find_directory`.
+files inside the archive are never pulled into the link). Locale Kit,
+Disk Device Kit, and the Kernel Kit concurrency primitives need no
+extra *linker* flags at all - the former two live directly in
+`libbe.so` (Disk Device Kit's real classes live under a private
+*header* path, `headers/private/storage` - a build-time `-I` concern
+only for compiling `libebhaikushim.a` itself, already handled by
+`native/CMakeLists.txt`; downstream consumers never touch those headers
+directly), and Kernel Kit concurrency is plain `Lib "root"` functions
+like `find_directory`.
 
 To compile a program directly with `ebc` (without going through
 `ebpm`), link explicitly - include whichever of `-l translation
--l bnetapi -l device -l package -l media` your own code actually
-touches:
+-l bnetapi -l device -l package -l media -l mail -l game -l GL
+-l midi2` your own code actually touches:
 
 ```sh
-ebc yourprogram.bas -o yourprogram -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be -l translation -l bnetapi -l device -l package -l media -l root
+ebc yourprogram.bas -o yourprogram -L /boot/system/non-packaged/develop/lib -l ebhaikushim -l be -l translation -l bnetapi -l device -l package -l media -l mail -l game -l GL -l midi2 -l root
 ```
 
 ## Verifying
