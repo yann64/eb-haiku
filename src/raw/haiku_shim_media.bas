@@ -10,6 +10,19 @@
 ' negotiation with media_server, real audio playback with wall-clock
 ' timing matching the file's own duration).
 
+' Real media_raw_audio_format::format enum values (media/MediaDefs.h) -
+' a different real enum from Game Kit's own gs_audio_format despite
+' similar-looking values.
+CONST H_AUDIO_CHAR = 1
+CONST H_AUDIO_SHORT = 2
+CONST H_AUDIO_INT = 4
+CONST H_AUDIO_UCHAR = 17
+CONST H_AUDIO_FLOAT = 36
+CONST H_AUDIO_DOUBLE = 40
+' Real B_MEDIA_LITTLE_ENDIAN/B_MEDIA_BIG_ENDIAN values (media/MediaDefs.h).
+CONST H_MEDIA_BIG_ENDIAN = 1
+CONST H_MEDIA_LITTLE_ENDIAN = 2
+
 Extern "C" Lib "ebhaikushim"
     ' ---- BSound ----
     Declare Function eb_haiku_sound_create(BYVAL path AS ZSTRING) AS ANY PTR
@@ -21,6 +34,8 @@ Extern "C" Lib "ebhaikushim"
 
     ' ---- BSoundPlayer ----
     Declare Function eb_haiku_sound_player_create(BYVAL name AS ZSTRING) AS ANY PTR
+    Declare Function eb_haiku_sound_player_create_with_buffer_callback(BYVAL name AS ZSTRING, BYVAL cb AS ANY PTR, BYVAL cookie AS ANY PTR) AS ANY PTR
+    Declare Sub eb_haiku_sound_player_destroy_with_buffer_callback(BYVAL player AS ANY PTR)
     Declare Function eb_haiku_sound_player_init_check(BYVAL player AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_sound_player_start(BYVAL player AS ANY PTR) AS INTEGER
     Declare Sub eb_haiku_sound_player_stop(BYVAL player AS ANY PTR)

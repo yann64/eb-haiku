@@ -52,6 +52,24 @@ FUNCTION HSoundPlayerCreate(name AS ZSTRING) AS HSoundPlayer
     HSoundPlayerCreate = p
 END FUNCTION
 
+''' Real-time buffer-callback synthesis - lower-level than the
+''' whole-file HSound/HSoundPlayerStartPlaying path above. `cb` must be
+''' a plain top-level bodied SUB taking (cookie AS ANY PTR, buffer AS
+''' ANY PTR, size AS UINTEGER, frameRate AS SINGLE, channelCount AS
+''' UINTEGER, audioFormat AS UINTEGER, byteOrder AS UINTEGER) - called
+''' repeatedly on Haiku's own real-time audio thread whenever more data
+''' is needed; fill up to `size` bytes of raw PCM into `buffer` before
+''' returning. `audioFormat` is one of H_AUDIO_FLOAT/DOUBLE/INT/SHORT/
+''' UCHAR/CHAR (raw/haiku_shim_media.bas - media_raw_audio_format's own
+''' real format enum, a different real enum from Game Kit's own
+''' gs_audio_format despite similar-looking values) and `byteOrder` is
+''' H_MEDIA_LITTLE_ENDIAN (2) / H_MEDIA_BIG_ENDIAN (1).
+FUNCTION HSoundPlayerCreateWithBufferCallback(name AS ZSTRING, cb AS ANY PTR, cookie AS ANY PTR) AS HSoundPlayer
+    DIM p AS HSoundPlayer
+    p.handle = eb_haiku_sound_player_create_with_buffer_callback(name, cb, cookie)
+    HSoundPlayerCreateWithBufferCallback = p
+END FUNCTION
+
 FUNCTION HSoundPlayerInitCheck(BYVAL p AS HSoundPlayer) AS INTEGER
     HSoundPlayerInitCheck = eb_haiku_sound_player_init_check(p.handle)
 END FUNCTION
@@ -85,7 +103,24 @@ FUNCTION HSoundPlayerWaitForSound(BYVAL p AS HSoundPlayer, BYVAL id AS INTEGER) 
     HSoundPlayerWaitForSound = eb_haiku_sound_player_wait_for_sound(p.handle, id)
 END FUNCTION
 
-''' Frees an HSoundPlayer - call exactly once.
+''' Frees an HSoundPlayer created via HSoundPlayerCreate - call exactly
+''' once. Do NOT use this on an HSoundPlayerCreateWithBufferCallback
+''' result - use HSoundPlayerFreeWithBufferCallback instead (see its
+''' own doc comment for why these must not be mixed).
 SUB HSoundPlayerFree(BYVAL p AS HSoundPlayer)
     CALL eb_haiku_sound_player_destroy(p.handle)
+END SUB
+
+''' IMPORTANT, confirmed by direct reproduction: real BSoundPlayer's
+''' own Cookie() returns a real, non-NULL internal pointer even for a
+''' plain HSoundPlayerCreate result (not the userData you might expect,
+''' or NULL) - it does NOT point at this package's own internal
+''' buffer-callback context in that case. Calling this function on a
+''' plain HSoundPlayerCreate result (or HSoundPlayerFree on an
+''' HSoundPlayerCreateWithBufferCallback result) corrupts the heap and
+''' hangs the process - confirmed the hard way, caught by a standalone
+''' C++ probe before shipping. Frees an
+''' HSoundPlayerCreateWithBufferCallback result - call exactly once.
+SUB HSoundPlayerFreeWithBufferCallback(BYVAL p AS HSoundPlayer)
+    CALL eb_haiku_sound_player_destroy_with_buffer_callback(p.handle)
 END SUB
