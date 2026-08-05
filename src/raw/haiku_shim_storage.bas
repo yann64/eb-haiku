@@ -96,6 +96,9 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_mime_type_set_icon(BYVAL mime AS ANY PTR, BYVAL icon AS ANY PTR, BYVAL size AS UINTEGER) AS INTEGER
     Declare Function eb_haiku_mime_type_get_icon_for_type(BYVAL mime AS ANY PTR, BYVAL forType AS ZSTRING, BYVAL icon AS ANY PTR, BYVAL size AS UINTEGER) AS INTEGER
     Declare Function eb_haiku_mime_type_set_icon_for_type(BYVAL mime AS ANY PTR, BYVAL forType AS ZSTRING, BYVAL icon AS ANY PTR, BYVAL size AS UINTEGER) AS INTEGER
+    Declare Function eb_haiku_mime_type_get_sniffer_rule(BYVAL mime AS ANY PTR, BYVAL outBuf AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
+    Declare Function eb_haiku_mime_type_set_sniffer_rule(BYVAL mime AS ANY PTR, BYVAL rule AS ZSTRING) AS INTEGER
+    Declare Function eb_haiku_mime_type_check_sniffer_rule(BYVAL rule AS ZSTRING, BYVAL outErrBuf AS ANY PTR, BYVAL errBufSize AS INTEGER) AS INTEGER
     Declare Sub eb_haiku_mime_type_destroy(BYVAL mime AS ANY PTR)
     Declare Function eb_haiku_mime_type_guess_mime_type(BYVAL path AS ZSTRING, BYVAL outMime AS ANY PTR) AS INTEGER
     Declare Function eb_haiku_mime_type_get_installed_types(BYVAL outMessage AS ANY PTR) AS INTEGER

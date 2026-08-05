@@ -10,6 +10,7 @@
 #include <Messenger.h>
 #include <MimeType.h>
 #include <Query.h>
+#include <String.h>
 #include <SymLink.h>
 #include <Volume.h>
 #include <VolumeRoster.h>
@@ -271,6 +272,24 @@ int eb_haiku_mime_type_set_icon_for_type(void* mime, const char* type, void* ico
                                           unsigned int size) {
     return static_cast<BMimeType*>(mime)->SetIconForType(
         type, static_cast<const BBitmap*>(icon), static_cast<icon_size>(size));
+}
+
+int eb_haiku_mime_type_get_sniffer_rule(void* mime, char* outBuf, int bufSize) {
+    BString result;
+    status_t rc = static_cast<BMimeType*>(mime)->GetSnifferRule(&result);
+    if (rc != B_OK) return rc;
+    return copyCStringToBuffer(result.String(), outBuf, bufSize);
+}
+
+int eb_haiku_mime_type_set_sniffer_rule(void* mime, const char* rule) {
+    return static_cast<BMimeType*>(mime)->SetSnifferRule(rule);
+}
+
+int eb_haiku_mime_type_check_sniffer_rule(const char* rule, char* outErrBuf, int errBufSize) {
+    BString parseError;
+    status_t rc = BMimeType::CheckSnifferRule(rule, &parseError);
+    if (rc != B_OK) copyCStringToBuffer(parseError.String(), outErrBuf, errBufSize);
+    return rc;
 }
 
 void eb_haiku_mime_type_destroy(void* mime) { delete static_cast<BMimeType*>(mime); }

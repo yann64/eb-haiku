@@ -193,6 +193,63 @@ CALL HBitmapFree(readBackIcon)
 CALL HMimeTypeDelete(custom)
 CALL HMimeTypeFree(custom)
 
+' ---- Sniffer rules ----
+
+DIM errBuf(511) AS BYTE
+DIM errPtr AS ANY PTR
+errPtr = @errBuf(0)
+rc = HMimeTypeCheckSnifferRule("1.0 [0:3] ('PNG')", errPtr, 512)
+IF rc <> 0 THEN
+    PRINT "FAIL: HMimeTypeCheckSnifferRule rejected a real, valid rule, rc=", rc
+    CALL ExitProcess(1)
+END IF
+PRINT "CheckSnifferRule (valid) ok"
+
+DIM badLen AS INTEGER
+badLen = HMimeTypeCheckSnifferRule("not a valid rule at all!!", errPtr, 512)
+IF badLen = 0 THEN
+    PRINT "FAIL: HMimeTypeCheckSnifferRule accepted a real invalid rule"
+    CALL ExitProcess(1)
+END IF
+errBuf(500) = 0
+DIM errZ AS ZSTRING
+errZ = errPtr
+DIM errStr AS STRING
+errStr = errZ
+PRINT "CheckSnifferRule (invalid) rc=", badLen, " error=", errStr
+
+DIM snifferType AS HMimeType
+snifferType = HMimeTypeCreate("application/x-vnd.EbHaiku-SnifferRuleTest")
+CALL HMimeTypeInstall(snifferType)
+rc = HMimeTypeSetSnifferRule(snifferType, "1.0 [0:3] ('PNG')")
+IF rc <> 0 THEN
+    PRINT "FAIL: HMimeTypeSetSnifferRule returned ", rc
+    CALL ExitProcess(1)
+END IF
+
+DIM ruleBuf(255) AS BYTE
+DIM rulePtr AS ANY PTR
+rulePtr = @ruleBuf(0)
+DIM ruleLen AS INTEGER
+ruleLen = HMimeTypeGetSnifferRule(snifferType, rulePtr, 256)
+IF ruleLen < 0 THEN
+    PRINT "FAIL: HMimeTypeGetSnifferRule returned ", ruleLen
+    CALL ExitProcess(1)
+END IF
+ruleBuf(ruleLen) = 0
+DIM ruleZ AS ZSTRING
+ruleZ = rulePtr
+DIM ruleStr AS STRING
+ruleStr = ruleZ
+PRINT "round-tripped sniffer rule=", ruleStr
+IF ruleStr <> "1.0 [0:3] ('PNG')" THEN
+    PRINT "FAIL: sniffer rule round-trip mismatch"
+    CALL ExitProcess(1)
+END IF
+CALL HMimeTypeDelete(snifferType)
+CALL HMimeTypeFree(snifferType)
+PRINT "SetSnifferRule/GetSnifferRule round-trip ok"
+
 CALL HMimeTypeFree(mt)
 CALL HApplicationFree(app)
 

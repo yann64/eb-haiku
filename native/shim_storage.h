@@ -153,6 +153,12 @@ int eb_haiku_mime_type_get_icon_for_type(void* mime, const char* type, void* ico
                                           unsigned int size);
 int eb_haiku_mime_type_set_icon_for_type(void* mime, const char* type, void* icon,
                                           unsigned int size);
+// A sniffer rule is a plain string (Haiku's own MIME-sniffing mini-
+// language, e.g. "0.5 ('BEOS')"-style patterns). CheckSnifferRule is
+// real Haiku's own static validator - no `mime` instance needed.
+int eb_haiku_mime_type_get_sniffer_rule(void* mime, char* outBuf, int bufSize);
+int eb_haiku_mime_type_set_sniffer_rule(void* mime, const char* rule);
+int eb_haiku_mime_type_check_sniffer_rule(const char* rule, char* outErrBuf, int errBufSize);
 void eb_haiku_mime_type_destroy(void* mime);
 
 // Static methods - `outMime`/`outMessage` are existing handles the

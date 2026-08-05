@@ -137,6 +137,28 @@ FUNCTION HMimeTypeSetIconForType(BYVAL m AS HMimeType, forType AS ZSTRING, BYVAL
     HMimeTypeSetIconForType = eb_haiku_mime_type_set_icon_for_type(m.handle, forType, icon.handle, size)
 END FUNCTION
 
+''' Fills `outBuf` (caller-supplied, `bufSize` bytes, NOT null-
+''' terminated automatically) with this type's own real sniffer rule -
+''' Haiku's own MIME-sniffing mini-language (e.g. "0.5 ('BEOS')"-style
+''' patterns). Returns the real length in bytes (>= 0), or a negative
+''' status code if this type has no sniffer rule set.
+FUNCTION HMimeTypeGetSnifferRule(BYVAL m AS HMimeType, BYVAL outBuf AS ANY PTR, BYVAL bufSize AS INTEGER) AS INTEGER
+    HMimeTypeGetSnifferRule = eb_haiku_mime_type_get_sniffer_rule(m.handle, outBuf, bufSize)
+END FUNCTION
+
+FUNCTION HMimeTypeSetSnifferRule(BYVAL m AS HMimeType, rule AS ZSTRING) AS INTEGER
+    HMimeTypeSetSnifferRule = eb_haiku_mime_type_set_sniffer_rule(m.handle, rule)
+END FUNCTION
+
+''' Validates a candidate sniffer rule string without needing any
+''' HMimeType instance (a real static Haiku method) - on a real parse
+''' error, fills `outErrBuf` (caller-supplied, `errBufSize` bytes, NOT
+''' null-terminated automatically) with Haiku's own real error message.
+''' Returns a status code (0 = valid rule).
+FUNCTION HMimeTypeCheckSnifferRule(rule AS ZSTRING, BYVAL outErrBuf AS ANY PTR, BYVAL errBufSize AS INTEGER) AS INTEGER
+    HMimeTypeCheckSnifferRule = eb_haiku_mime_type_check_sniffer_rule(rule, outErrBuf, errBufSize)
+END FUNCTION
+
 ''' Frees an HMimeType - call exactly once.
 SUB HMimeTypeFree(BYVAL m AS HMimeType)
     CALL eb_haiku_mime_type_destroy(m.handle)
