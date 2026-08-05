@@ -1,11 +1,16 @@
 #include "shim_locale.h"
 
+#include <Catalog.h>
 #include <Collator.h>
 #include <DateFormat.h>
 #include <DateTime.h>
 #include <NumberFormat.h>
 #include <String.h>
 #include <TimeFormat.h>
+
+namespace {
+const char* nullIfEmpty(const char* s) { return (s && s[0] != '\0') ? s : nullptr; }
+} // namespace
 
 extern "C" {
 
@@ -104,5 +109,33 @@ int eb_haiku_collator_compare(void* collator, const char* s1, const char* s2) {
 }
 
 void eb_haiku_collator_destroy(void* collator) { delete static_cast<BCollator*>(collator); }
+
+// ---- BCatalog ----
+
+void* eb_haiku_catalog_create(void) { return new BCatalog(); }
+
+void* eb_haiku_catalog_create_with_signature(const char* signature, const char* language) {
+    return new BCatalog(signature, nullIfEmpty(language));
+}
+
+const char* eb_haiku_catalog_get_string(void* catalog, const char* str, const char* context,
+                                         const char* comment) {
+    return static_cast<BCatalog*>(catalog)->GetString(str, nullIfEmpty(context),
+                                                        nullIfEmpty(comment));
+}
+
+int eb_haiku_catalog_set_to(void* catalog, const char* signature, const char* language) {
+    return static_cast<BCatalog*>(catalog)->SetTo(signature, nullIfEmpty(language));
+}
+
+int eb_haiku_catalog_init_check(void* catalog) {
+    return static_cast<BCatalog*>(catalog)->InitCheck();
+}
+
+int eb_haiku_catalog_count_items(void* catalog) {
+    return static_cast<BCatalog*>(catalog)->CountItems();
+}
+
+void eb_haiku_catalog_destroy(void* catalog) { delete static_cast<BCatalog*>(catalog); }
 
 } // extern "C"

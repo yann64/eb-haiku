@@ -67,4 +67,31 @@ void* eb_haiku_collator_create(void);
 int eb_haiku_collator_compare(void* collator, const char* s1, const char* s2);
 void eb_haiku_collator_destroy(void* collator);
 
+// ---- BCatalog (locale/Catalog.h) - real translation-catalog lookup.
+// Only the runtime-facing surface is bound - GetString(key, context,
+// comment); the entry_ref-based ctor/SetTo, GetData/GetSignature/
+// GetLanguage/GetFingerprint are a reasonable follow-on, not needed
+// for the "look up a key, real .catkeys data or not" scope here. Real
+// and useful even with zero .catkeys data installed: GetString
+// gracefully echoes `string` itself back as the real fallback when no
+// catalog/translation is found (confirmed via header - this is the
+// entire point of the real B_TRANSLATE macro convention). Building the
+// .catkeys data itself is a separate, build-time tool pipeline
+// (collectcatkeys/linkcatkeys) - not bound here, a runtime API only.
+// Plain new/delete - BCatalog's own destructor is public and virtual,
+// no ref-counting. ----
+
+void* eb_haiku_catalog_create(void);
+// `signature`/`language` follow this shim's own established
+// NULL-via-empty-string convention (language "" means the real
+// default: the current system locale).
+void* eb_haiku_catalog_create_with_signature(const char* signature, const char* language);
+// `context`/`comment` likewise "" for real NULL.
+const char* eb_haiku_catalog_get_string(void* catalog, const char* str, const char* context,
+                                         const char* comment);
+int eb_haiku_catalog_set_to(void* catalog, const char* signature, const char* language);
+int eb_haiku_catalog_init_check(void* catalog);
+int eb_haiku_catalog_count_items(void* catalog);
+void eb_haiku_catalog_destroy(void* catalog);
+
 } // extern "C"

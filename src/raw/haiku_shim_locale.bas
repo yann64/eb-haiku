@@ -42,4 +42,13 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_collator_create() AS ANY PTR
     Declare Function eb_haiku_collator_compare(BYVAL collator AS ANY PTR, BYVAL s1 AS ZSTRING, BYVAL s2 AS ZSTRING) AS INTEGER
     Declare Sub eb_haiku_collator_destroy(BYVAL collator AS ANY PTR)
+
+    ' ---- BCatalog ----
+    Declare Function eb_haiku_catalog_create() AS ANY PTR
+    Declare Function eb_haiku_catalog_create_with_signature(BYVAL signature AS ZSTRING, BYVAL language AS ZSTRING) AS ANY PTR
+    Declare Function eb_haiku_catalog_get_string(BYVAL catalog AS ANY PTR, BYVAL str AS ZSTRING, BYVAL context AS ZSTRING, BYVAL comment AS ZSTRING) AS ZSTRING
+    Declare Function eb_haiku_catalog_set_to(BYVAL catalog AS ANY PTR, BYVAL signature AS ZSTRING, BYVAL language AS ZSTRING) AS INTEGER
+    Declare Function eb_haiku_catalog_init_check(BYVAL catalog AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_catalog_count_items(BYVAL catalog AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_catalog_destroy(BYVAL catalog AS ANY PTR)
 End Extern

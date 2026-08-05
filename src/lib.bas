@@ -41,6 +41,7 @@
 #include once "network.bas"
 #include once "networkinterface.bas"
 #include once "locale.bas"
+#include once "catalog.bas"
 #include once "thread.bas"
 #include once "serial.bas"
 #include once "package.bas"
