@@ -5,6 +5,7 @@
 #include <Bitmap.h>
 #include <Button.h>
 #include <CardLayout.h>
+#include <Control.h>
 #include <Font.h>
 #include <GridLayout.h>
 #include <GroupLayout.h>
@@ -280,6 +281,35 @@ void eb_haiku_button_invoke(void* button) {
     BButton* btn = static_cast<BButton*>(button);
     BMessage* msg = btn->Message();
     if (msg) btn->Messenger().SendMessage(msg);
+}
+
+void eb_haiku_button_set_label(void* button, const char* label) {
+    // Needs the same lock as eb_haiku_shim_view_invalidate above -
+    // confirmed by direct reproduction (hung indefinitely without it):
+    // BControl::SetLabel() triggers a redraw internally, the same
+    // cross-thread hazard as calling Invalidate() directly from outside
+    // the window's own thread with no lock held.
+    BButton* btn = static_cast<BButton*>(button);
+    ViewAutolock lock(btn);
+    btn->SetLabel(label);
+}
+
+const char* eb_haiku_button_get_label(void* button) {
+    return static_cast<BButton*>(button)->Label();
+}
+
+void eb_haiku_control_set_enabled(void* control, int enabled) {
+    // Same reasoning as eb_haiku_button_set_label above - SetEnabled()
+    // also redraws (e.g. to gray out the control), so it needs the same
+    // lock; confirmed necessary by direct reproduction, not just
+    // inferred from SetLabel's own case.
+    BControl* ctl = static_cast<BControl*>(control);
+    ViewAutolock lock(ctl);
+    ctl->SetEnabled(enabled != 0);
+}
+
+int eb_haiku_control_is_enabled(void* control) {
+    return static_cast<BControl*>(control)->IsEnabled() ? 1 : 0;
 }
 
 void* eb_haiku_stringview_create(float left, float top, float right, float bottom,

@@ -131,6 +131,20 @@ void* eb_haiku_button_create(float left, float top, float right, float bottom, c
 // eb_haiku_button_invoke); still a legitimate way to programmatically
 // drive a button, not just a test-only hack.
 void eb_haiku_button_invoke(void* button);
+// BButton's own label (its own BControl::Label()/SetLabel(), distinct
+// from BStringView/BTextControl's "text" concept above).
+void eb_haiku_button_set_label(void* button, const char* label);
+// Borrowed from the real BButton's own long-lived storage - no heap
+// allocation, no matching free needed (same convention as
+// eb_haiku_stringview_get_text/textcontrol_get_text).
+const char* eb_haiku_button_get_label(void* button);
+
+// BControl's own Enabled state - generic across every stock control
+// above (BButton/BTextControl both derive from BControl), so `control`
+// takes any of their handles directly rather than needing a per-type
+// overload.
+void eb_haiku_control_set_enabled(void* control, int enabled);
+int eb_haiku_control_is_enabled(void* control);
 
 void* eb_haiku_stringview_create(float left, float top, float right, float bottom,
                                   const char* name, const char* text);

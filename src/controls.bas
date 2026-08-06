@@ -29,6 +29,30 @@ SUB HButtonInvoke(BYVAL b AS HButton)
     CALL eb_haiku_button_invoke(b.handle)
 END SUB
 
+''' Changes the button's own label text.
+SUB HButtonSetLabel(BYVAL b AS HButton, label AS ZSTRING)
+    CALL eb_haiku_button_set_label(b.handle, label)
+END SUB
+
+FUNCTION HButtonGetLabel(BYVAL b AS HButton) AS ZSTRING
+    HButtonGetLabel = eb_haiku_button_get_label(b.handle)
+END FUNCTION
+
+''' Enables/disables a control (BButton or HTextControl - see this
+''' file's own HControlSetEnabled/IsEnabled doc comment below for why
+''' this takes a plain ANY PTR rather than a specific TYPE).
+SUB HControlSetEnabled(BYVAL control AS ANY PTR, BYVAL enabled AS INTEGER)
+    CALL eb_haiku_control_set_enabled(control, enabled)
+END SUB
+
+''' Whether a control currently accepts input - see HControlSetEnabled.
+''' Both stock controls (HButton, HTextControl) share Haiku's own
+''' BControl base, so this one function works on either's `.handle`
+''' directly rather than needing a per-type overload.
+FUNCTION HControlIsEnabled(BYVAL control AS ANY PTR) AS INTEGER
+    HControlIsEnabled = eb_haiku_control_is_enabled(control)
+END FUNCTION
+
 TYPE HStringView
     handle AS ANY PTR
 END TYPE

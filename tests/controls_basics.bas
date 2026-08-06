@@ -48,6 +48,23 @@ CALL HWindowShow(gWindow)
 PRINT HStringViewGetText(gLabel)
 PRINT HTextControlGetText(txt)
 
+' HButtonSetLabel/GetLabel and HControlSetEnabled/IsEnabled - real
+' BControl/BButton API, generic across both stock controls.
+PRINT HButtonGetLabel(btn)
+CALL HButtonSetLabel(btn, "Relabeled")
+PRINT HButtonGetLabel(btn)
+
+PRINT HControlIsEnabled(btn.handle)
+CALL HControlSetEnabled(btn.handle, 0)
+PRINT HControlIsEnabled(btn.handle)
+CALL HControlSetEnabled(btn.handle, 1)
+PRINT HControlIsEnabled(btn.handle)
+
+PRINT HControlIsEnabled(txt.handle)
+CALL HControlSetEnabled(txt.handle, 0)
+PRINT HControlIsEnabled(txt.handle)
+CALL HControlSetEnabled(txt.handle, 1)
+
 CALL Sleep(1000) ' visible before the click, for an external screenshot
 CALL HButtonInvoke(btn)
 CALL Sleep(1000) ' visible after the click, for a second external screenshot

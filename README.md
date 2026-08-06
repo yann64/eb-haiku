@@ -834,6 +834,36 @@ Published: `ebasic.toml` bumped to `0.12.0`, tagged `v0.12.0`, pushed,
 `ebpm-index` updated, `ebpm add eb-haiku` confirmed resolving to
 `v0.12.0` from the live index.
 
+**v0.13.0 (`BButton`/`BControl` label + enabled state)**: found during an
+ecosystem-wide sweep for small polish items - `BButton` had no
+`SetLabel`/`GetLabel` at all, and neither stock control (`BButton`/
+`BTextControl`) had `SetEnabled`/`IsEnabled`, despite being the most
+commonly-wanted control properties. Added `HButtonSetLabel`/
+`HButtonGetLabel` (`native/shim_interface.{h,cpp}`) and
+`HControlSetEnabled`/`HControlIsEnabled` - the latter pair generic across
+both stock controls (both derive from Haiku's own `BControl`), taking a
+plain `ANY PTR` rather than needing a per-type overload.
+
+- **A real, hang-not-crash instance of the cross-thread redraw trap
+  documented above, confirmed by direct reproduction**: `SetLabel`/
+  `SetEnabled` both hung indefinitely (not a clean crash) when called
+  from outside the window's own thread with no lock held - a minimal
+  test bisected line by line (each addition compiled and run standalone,
+  checking only whether the process completed within a timeout, since
+  stdout is fully buffered over SSH and prints nothing until exit even
+  when something *has* run correctly) isolated `SetLabel` specifically,
+  then confirmed `SetEnabled` needed the same fix. Both now use the same
+  `ViewAutolock` `HShimViewInvalidate` already established - their
+  read-only counterparts (`Label()`/`IsEnabled()`) needed no such lock,
+  confirming the rule is "a mutation that redraws needs the lock," not
+  "every `BView`-derived method does."
+- `tests/controls_basics.bas` extended to exercise all four new
+  functions on both a `BButton` and a `BTextControl`, verified end to
+  end on real Haiku hardware via SSH.
+
+Published: `ebasic.toml` bumped to `0.13.0`, tagged `v0.13.0`, pushed,
+`ebpm-index` updated.
+
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
 **A real, new category of gotcha, confirmed by direct reproduction**:
@@ -899,6 +929,17 @@ already handles the ones it exposes correctly (`HButtonInvoke` posts via
 `Messenger()` instead of calling `Invoke()`; `HShimViewInvalidate` locks
 the window first) - but if you ever call a raw Haiku function yourself
 from outside a window's own callback, assume it needs the same care.
+**The same trap doesn't always crash - it can hang instead**:
+`BControl::SetLabel()`/`SetEnabled()` (found while adding
+`HButtonSetLabel`/`HControlSetEnabled`) redraw internally, the same
+cross-thread hazard as `Invalidate()` - but calling them from outside
+the window's own thread with no lock held hung indefinitely rather than
+crashing (confirmed by direct reproduction: a minimal test bisected line
+by line until the exact hanging call was isolated). Both are now locked
+the same way `HShimViewInvalidate` already was; their own read-only
+counterparts (`Label()`/`IsEnabled()`) need no lock, matching
+`HStringViewGetText`'s own precedent - only a mutation that triggers a
+redraw needs one, not every method on a `BView`-derived object.
 
 ## Two `.bas` layers
 

@@ -70,6 +70,13 @@ Extern "C" Lib "ebhaikushim"
     ' Callback), not a separate per-control callback.
     Declare Function eb_haiku_button_create(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, BYVAL name AS ZSTRING, BYVAL label AS ZSTRING, BYVAL what AS UINTEGER) AS ANY PTR
     Declare Sub eb_haiku_button_invoke(BYVAL button AS ANY PTR)
+    Declare Sub eb_haiku_button_set_label(BYVAL button AS ANY PTR, BYVAL label AS ZSTRING)
+    Declare Function eb_haiku_button_get_label(BYVAL button AS ANY PTR) AS ZSTRING
+
+    ' Generic across every stock control (BButton/BTextControl both
+    ' derive from BControl) - pass any of their handles directly.
+    Declare Sub eb_haiku_control_set_enabled(BYVAL control AS ANY PTR, BYVAL enabled AS INTEGER)
+    Declare Function eb_haiku_control_is_enabled(BYVAL control AS ANY PTR) AS INTEGER
 
     Declare Function eb_haiku_stringview_create(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, BYVAL name AS ZSTRING, BYVAL text AS ZSTRING) AS ANY PTR
     Declare Sub eb_haiku_stringview_set_text(BYVAL view AS ANY PTR, BYVAL text AS ZSTRING)
