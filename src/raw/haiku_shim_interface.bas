@@ -203,6 +203,17 @@ Extern "C" Lib "ebhaikushim"
     Declare Sub eb_haiku_button_set_target(BYVAL button AS ANY PTR, BYVAL handler AS ANY PTR)
     Declare Sub eb_haiku_textcontrol_set_target(BYVAL textControl AS ANY PTR, BYVAL handler AS ANY PTR)
 
+    ' ---- BCheckBox/BRadioButton ----
+    Declare Function eb_haiku_checkbox_create(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, BYVAL name AS ZSTRING, BYVAL label AS ZSTRING, BYVAL what AS UINTEGER) AS ANY PTR
+    Declare Sub eb_haiku_checkbox_set_value(BYVAL checkbox AS ANY PTR, BYVAL value AS INTEGER)
+    Declare Function eb_haiku_checkbox_get_value(BYVAL checkbox AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_checkbox_set_target(BYVAL checkbox AS ANY PTR, BYVAL handler AS ANY PTR)
+
+    Declare Function eb_haiku_radiobutton_create(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, BYVAL name AS ZSTRING, BYVAL label AS ZSTRING, BYVAL what AS UINTEGER) AS ANY PTR
+    Declare Sub eb_haiku_radiobutton_set_value(BYVAL radioButton AS ANY PTR, BYVAL value AS INTEGER)
+    Declare Function eb_haiku_radiobutton_get_value(BYVAL radioButton AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_radiobutton_set_target(BYVAL radioButton AS ANY PTR, BYVAL handler AS ANY PTR)
+
     ' ---- ShimTimer (BMessageRunner) ----
     Declare Function eb_haiku_timer_create(BYVAL handler AS ANY PTR) AS ANY PTR
     Declare Sub eb_haiku_timer_set_interval(BYVAL timer AS ANY PTR, BYVAL microseconds AS LONGINT)

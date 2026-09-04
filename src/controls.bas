@@ -111,3 +111,56 @@ END FUNCTION
 SUB HTextControlSetTarget(BYVAL t AS HTextControl, BYVAL handler AS HHandler)
     CALL eb_haiku_textcontrol_set_target(t.handle, handler.handle)
 END SUB
+
+TYPE HCheckBox
+    handle AS ANY PTR
+END TYPE
+
+''' Creates a checkbox - toggling it posts a message with the given
+''' `what` code to its target (see this file's own top comment).
+FUNCTION HCheckBoxCreate(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, name AS ZSTRING, label AS ZSTRING, BYVAL what AS UINTEGER) AS HCheckBox
+    DIM c AS HCheckBox
+    c.handle = eb_haiku_checkbox_create(left, top, right, bottom, name, label, what)
+    HCheckBoxCreate = c
+END FUNCTION
+
+''' Real Haiku uses an int (B_CONTROL_ON=1/B_CONTROL_OFF=0), not a bool.
+SUB HCheckBoxSetValue(BYVAL c AS HCheckBox, BYVAL value AS INTEGER)
+    CALL eb_haiku_checkbox_set_value(c.handle, value)
+END SUB
+
+FUNCTION HCheckBoxGetValue(BYVAL c AS HCheckBox) AS INTEGER
+    HCheckBoxGetValue = eb_haiku_checkbox_get_value(c.handle)
+END FUNCTION
+
+''' Same per-object callback redirection as HButtonSetTarget/
+''' HTextControlSetTarget - `handler` must already be attached to a
+''' window's (or the application's) BLooper.
+SUB HCheckBoxSetTarget(BYVAL c AS HCheckBox, BYVAL handler AS HHandler)
+    CALL eb_haiku_checkbox_set_target(c.handle, handler.handle)
+END SUB
+
+TYPE HRadioButton
+    handle AS ANY PTR
+END TYPE
+
+''' Creates a radio button - real Haiku automatically enforces mutual
+''' exclusivity among BRadioButton siblings in the same container, with
+''' no separate group object needed at all.
+FUNCTION HRadioButtonCreate(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, name AS ZSTRING, label AS ZSTRING, BYVAL what AS UINTEGER) AS HRadioButton
+    DIM r AS HRadioButton
+    r.handle = eb_haiku_radiobutton_create(left, top, right, bottom, name, label, what)
+    HRadioButtonCreate = r
+END FUNCTION
+
+SUB HRadioButtonSetValue(BYVAL r AS HRadioButton, BYVAL value AS INTEGER)
+    CALL eb_haiku_radiobutton_set_value(r.handle, value)
+END SUB
+
+FUNCTION HRadioButtonGetValue(BYVAL r AS HRadioButton) AS INTEGER
+    HRadioButtonGetValue = eb_haiku_radiobutton_get_value(r.handle)
+END FUNCTION
+
+SUB HRadioButtonSetTarget(BYVAL r AS HRadioButton, BYVAL handler AS HHandler)
+    CALL eb_haiku_radiobutton_set_target(r.handle, handler.handle)
+END SUB

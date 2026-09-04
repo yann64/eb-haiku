@@ -5,6 +5,7 @@
 #include <Bitmap.h>
 #include <Button.h>
 #include <CardLayout.h>
+#include <CheckBox.h>
 #include <Control.h>
 #include <Font.h>
 #include <GridLayout.h>
@@ -23,6 +24,7 @@
 #include <Messenger.h>
 #include <PopUpMenu.h>
 #include <PrintJob.h>
+#include <RadioButton.h>
 #include <Size.h>
 #include <SpaceLayoutItem.h>
 #include <SplitView.h>
@@ -785,6 +787,44 @@ void eb_haiku_button_set_target(void* button, void* handler) {
 
 void eb_haiku_textcontrol_set_target(void* textControl, void* handler) {
     static_cast<BTextControl*>(textControl)->SetTarget(static_cast<BHandler*>(handler));
+}
+
+void* eb_haiku_checkbox_create(float left, float top, float right, float bottom, const char* name,
+                                const char* label, unsigned int what) {
+    return new BCheckBox(BRect(left, top, right, bottom), name, label, new BMessage(what));
+}
+
+void eb_haiku_checkbox_set_value(void* checkbox, int value) {
+    BCheckBox* cb = static_cast<BCheckBox*>(checkbox);
+    ViewAutolock lock(cb);   // SetValue redraws - same hazard as SetLabel/SetEnabled
+    cb->SetValue(value);
+}
+
+int eb_haiku_checkbox_get_value(void* checkbox) {
+    return static_cast<BCheckBox*>(checkbox)->Value();
+}
+
+void eb_haiku_checkbox_set_target(void* checkbox, void* handler) {
+    static_cast<BCheckBox*>(checkbox)->SetTarget(static_cast<BHandler*>(handler));
+}
+
+void* eb_haiku_radiobutton_create(float left, float top, float right, float bottom, const char* name,
+                                   const char* label, unsigned int what) {
+    return new BRadioButton(BRect(left, top, right, bottom), name, label, new BMessage(what));
+}
+
+void eb_haiku_radiobutton_set_value(void* radioButton, int value) {
+    BRadioButton* rb = static_cast<BRadioButton*>(radioButton);
+    ViewAutolock lock(rb);
+    rb->SetValue(value);
+}
+
+int eb_haiku_radiobutton_get_value(void* radioButton) {
+    return static_cast<BRadioButton*>(radioButton)->Value();
+}
+
+void eb_haiku_radiobutton_set_target(void* radioButton, void* handler) {
+    static_cast<BRadioButton*>(radioButton)->SetTarget(static_cast<BHandler*>(handler));
 }
 
 void* eb_haiku_timer_create(void* handler) { return new ShimTimer(static_cast<BHandler*>(handler)); }

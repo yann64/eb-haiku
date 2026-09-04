@@ -991,6 +991,33 @@ previously bound. Two plain `Const` additions, no native shim change.
 Published: `ebasic.toml` bumped to `0.14.4`, tagged `v0.14.4`, pushed,
 `ebpm-index` updated.
 
+## v0.15.0 (2026-09-04, same session): `HCheckBox`/`HRadioButton`
+
+Added for [[project_eb_gui]]'s CheckBox/RadioButton/ComboBox widget
+round. Both are real `BControl` subclasses (single inheritance, same
+as `BButton`) - new `eb_haiku_checkbox_create`/`eb_haiku_radiobutton_create`
+mirror `eb_haiku_button_create`'s own signature exactly, plus
+`SetValue`/`Value` (real Haiku uses an `int`, `B_CONTROL_ON`=1/
+`B_CONTROL_OFF`=0, not a bool - needs the same `ViewAutolock` guard
+`SetLabel`/`SetEnabled` already established, since `SetValue` redraws).
+`HControlSetEnabled`/`IsEnabled` already worked on both for free
+(`BControl`-generic). `HCheckBoxSetTarget`/`HRadioButtonSetTarget` are
+their own separate functions, matching `HButtonSetTarget`/
+`HTextControlSetTarget`'s own established per-concrete-type pattern.
+
+**Confirmed by direct reproduction, not assumed**: real Haiku
+`BRadioButton`s that are direct siblings in the same window/container
+enforce mutual exclusivity completely automatically - setting one to
+`1` immediately zeroes every sibling, with **no group object of any
+kind needed**. Verified via a real 2-`HRadioButton` sibling test
+(`HRadioButtonSetValue(r1, 1)` correctly zeroed `r2`, and vice versa)
+rather than assumed from the already-known `BMenuItem` radio-mode
+precedent (a different class family, `BMenu`/`BMenuItem` vs. `BView`-
+based `BControl`).
+
+Published: `ebasic.toml` bumped to `0.15.0`, tagged `v0.15.0`, pushed,
+`ebpm-index` updated.
+
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
 **A real, new category of gotcha, confirmed by direct reproduction**:

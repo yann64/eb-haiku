@@ -382,6 +382,22 @@ void eb_haiku_button_set_target(void* button, void* handler);
 // already do.
 void eb_haiku_textcontrol_set_target(void* textControl, void* handler);
 
+// BCheckBox/BRadioButton - both real BControl subclasses (single
+// inheritance from BControl, same as BButton), constructed the same
+// way eb_haiku_button_create already is. SetValue/Value use real
+// Haiku's own int (B_CONTROL_ON=1/B_CONTROL_OFF=0), not bool.
+void* eb_haiku_checkbox_create(float left, float top, float right, float bottom, const char* name,
+                                const char* label, unsigned int what);
+void eb_haiku_checkbox_set_value(void* checkbox, int value);
+int eb_haiku_checkbox_get_value(void* checkbox);
+void eb_haiku_checkbox_set_target(void* checkbox, void* handler);
+
+void* eb_haiku_radiobutton_create(float left, float top, float right, float bottom, const char* name,
+                                   const char* label, unsigned int what);
+void eb_haiku_radiobutton_set_value(void* radioButton, int value);
+int eb_haiku_radiobutton_get_value(void* radioButton);
+void eb_haiku_radiobutton_set_target(void* radioButton, void* handler);
+
 // ---- ShimTimer (BMessageRunner) - Haiku's own periodic-message
 // primitive doesn't match eb-gui's Start/Stop/SetSingleShot/IsActive
 // shape any more directly than GLib's g_timeout_add did for eb-gtk4's
