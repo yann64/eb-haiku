@@ -961,6 +961,20 @@ reason `v0.14.1`'s own `HButtonSetTarget` is separate from
 Published: `ebasic.toml` bumped to `0.14.2`, tagged `v0.14.2`, pushed,
 `ebpm-index` updated.
 
+**v0.14.3 (`HApplicationAddHandler`)**: found immediately while writing
+`eb-gui-haiku`'s own `GuiButtonConnectClicked` - a widget-level
+`HHandler` (e.g. for a button wired up before being added to any
+window's layout) needs a running `BLooper` to attach to, and no
+specific window may be known yet at connect time. Real `BApplication`
+IS a `BLooper` itself, so this is the exact same `BLooper::AddHandler`
+`HWindowAddHandler` already uses for windows, just targeting the
+application's own looper instead - with the same `Lock()`/`Unlock()`
+guard `HWindowAddHandler` needed (same cross-thread mutation hazard,
+applied defensively here rather than re-discovered the hard way).
+
+Published: `ebasic.toml` bumped to `0.14.3`, tagged `v0.14.3`, pushed,
+`ebpm-index` updated.
+
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
 **A real, new category of gotcha, confirmed by direct reproduction**:

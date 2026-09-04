@@ -333,5 +333,12 @@ int eb_haiku_application_run(void* app);
 // safe to call from any thread, the same fix as eb_haiku_window_close.
 void eb_haiku_application_quit(void* app);
 void eb_haiku_application_destroy(void* app);
+// Attaches `handler` to the application's own BLooper - real
+// BApplication IS a BLooper, so this is the exact same
+// BLooper::AddHandler eb_haiku_window_add_handler (shim_interface.h)
+// already uses for windows, needed here for HHandler-backed widget
+// callbacks (e.g. eb-gui-haiku's own GuiButtonConnectClicked) created
+// before any specific window is known/attached.
+void eb_haiku_application_add_handler(void* app, void* handler);
 
 } // extern "C"

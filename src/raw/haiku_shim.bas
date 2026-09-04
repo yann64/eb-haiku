@@ -235,4 +235,5 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_application_run(BYVAL app AS ANY PTR) AS INTEGER
     Declare Sub eb_haiku_application_quit(BYVAL app AS ANY PTR)
     Declare Sub eb_haiku_application_destroy(BYVAL app AS ANY PTR)
+    Declare Sub eb_haiku_application_add_handler(BYVAL app AS ANY PTR, BYVAL handler AS ANY PTR)
 End Extern

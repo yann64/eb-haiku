@@ -768,4 +768,16 @@ void eb_haiku_application_quit(void* app) {
 }
 void eb_haiku_application_destroy(void* app) { delete static_cast<BApplication*>(app); }
 
+void eb_haiku_application_add_handler(void* app, void* handler) {
+    // Same reasoning as shim_interface.cpp's own WindowAutolock use for
+    // eb_haiku_window_add_handler - confirmed necessary there by direct
+    // reproduction (hung indefinitely without it, called post-Run) -
+    // BApplication is a real BLooper, so the identical cross-thread
+    // mutation hazard applies here.
+    BApplication* application = static_cast<BApplication*>(app);
+    bool locked = application->Lock();
+    application->AddHandler(static_cast<BHandler*>(handler));
+    if (locked) application->Unlock();
+}
+
 } // extern "C"

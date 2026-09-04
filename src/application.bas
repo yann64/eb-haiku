@@ -7,6 +7,7 @@
 ' lifecycle), just not yet "build an interactive app."
 
 #include once "raw/haiku_shim.bas"
+#include once "handler.bas"
 
 TYPE HApplication
     handle AS ANY PTR
@@ -48,4 +49,13 @@ END SUB
 ''' returned.
 SUB HApplicationFree(BYVAL a AS HApplication)
     CALL eb_haiku_application_destroy(a.handle)
+END SUB
+
+''' Attaches `h` to the application's own `BLooper` - the same real
+''' mechanism `HWindowAddHandler` gives windows, needed here for a
+''' widget-level `HHandler` created before any specific window is
+''' known/attached (e.g. a button wired up before being added to a
+''' layout).
+SUB HApplicationAddHandler(BYVAL a AS HApplication, BYVAL h AS HHandler)
+    CALL eb_haiku_application_add_handler(a.handle, h.handle)
 END SUB
