@@ -8,6 +8,7 @@
 ' directly - each is a real BView under the hood.
 
 #include once "raw/haiku_shim_interface.bas"
+#include once "handler.bas"
 
 TYPE HButton
     handle AS ANY PTR
@@ -37,6 +38,15 @@ END SUB
 FUNCTION HButtonGetLabel(BYVAL b AS HButton) AS ZSTRING
     HButtonGetLabel = eb_haiku_button_get_label(b.handle)
 END FUNCTION
+
+''' Redirects `b`'s own invocation message to `handler` instead of
+''' whichever window it happens to be attached to - the same real
+''' per-object callback mechanism HMenuItemSetTarget gives menu items
+''' (`handler` must already be attached to a window's BLooper via
+''' HWindowAddHandler).
+SUB HButtonSetTarget(BYVAL b AS HButton, BYVAL handler AS HHandler)
+    CALL eb_haiku_button_set_target(b.handle, handler.handle)
+END SUB
 
 ''' Enables/disables a control (BButton or HTextControl - see this
 ''' file's own HControlSetEnabled/IsEnabled doc comment below for why

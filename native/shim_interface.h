@@ -367,6 +367,15 @@ void eb_haiku_window_add_handler(void* window, void* handler);
 // BMenuItem inherits BInvoker - redirects its own invocation message
 // to `handler` instead of the window it happens to be attached to.
 void eb_haiku_menu_item_set_target(void* item, void* handler);
+// Same for BButton (also a real BInvoker, via BControl) - a SEPARATE
+// function rather than one generic void*-to-BInvoker* cast, on purpose:
+// static_cast-ing an erased void* to a non-first base of a multiply-
+// inherited class needs the compiler to know the pointer's real
+// concrete type at the cast site to apply the correct offset (the same
+// real bug class this package hit once before with BFile) - each
+// concrete type here gets its own function precisely so that cast is
+// always safe.
+void eb_haiku_button_set_target(void* button, void* handler);
 
 // ---- ShimTimer (BMessageRunner) - Haiku's own periodic-message
 // primitive doesn't match eb-gui's Start/Stop/SetSingleShot/IsActive

@@ -779,6 +779,10 @@ void eb_haiku_menu_item_set_target(void* item, void* handler) {
     static_cast<BMenuItem*>(item)->SetTarget(static_cast<BHandler*>(handler));
 }
 
+void eb_haiku_button_set_target(void* button, void* handler) {
+    static_cast<BButton*>(button)->SetTarget(static_cast<BHandler*>(handler));
+}
+
 void* eb_haiku_timer_create(void* handler) { return new ShimTimer(static_cast<BHandler*>(handler)); }
 
 void eb_haiku_timer_set_interval(void* timer, long long microseconds) {

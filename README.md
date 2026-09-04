@@ -931,6 +931,26 @@ connected callback exactly once via `HMenuItemInvokeViaMessenger`
 Published: `ebasic.toml` bumped to `0.14.0`, tagged `v0.14.0`, pushed,
 `ebpm-index` updated.
 
+**v0.14.1 (`HButtonSetTarget`)**: found immediately while writing
+`eb-gui-haiku` on top of `v0.14.0` - toolbar buttons need the exact
+same per-object redirect menu actions already got
+(`HMenuItemSetTarget`), since Haiku has no native toolbar widget at all
+(a toolbar there is just a row of `BButton`s). Deliberately a *separate*
+function, `eb_haiku_button_set_target`, rather than one generic
+`void*`-to-`BInvoker*` cast shared with `HMenuItemSetTarget`: casting an
+erased `void*` to a non-first base of a multiply-inherited class needs
+the compiler to know the pointer's real concrete type at the cast site
+to apply the correct offset - the same real bug class this package hit
+once before with `BFile` (see the `BStatable` extension work above).
+Each concrete type (`BMenuItem`, `BButton`) gets its own function so
+that cast is always safe. Verified by extending
+`tests/window_gui_extras_basics.bas`'s existing action-handler check to
+also invoke a real `BButton` through the same `HHandler`, confirming
+both a menu item and a button reach the identical per-object callback.
+
+Published: `ebasic.toml` bumped to `0.14.1`, tagged `v0.14.1`, pushed,
+`ebpm-index` updated.
+
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
 **A real, new category of gotcha, confirmed by direct reproduction**:

@@ -86,6 +86,15 @@ CALL HMenuItemInvokeViaMessenger(actionItem)
 CALL Sleep(300)
 PRINT "after action invoke: ", actionCount
 
+' 4b. HButtonSetTarget - the same per-object redirect for a real
+' BButton (a toolbar's own building block, since Haiku has no native
+' BToolBar - see eb-gui-haiku's own toolbar.bas). `btn` is already a
+' child of `win` from section 2 above.
+CALL HButtonSetTarget(btn, actionHandler)
+CALL HButtonInvoke(btn)
+CALL Sleep(300)
+PRINT "after button invoke: ", actionCount
+
 ' 5. HTimer - a real per-timer callback via its own ShimHandler,
 ' driving a real HApplicationQuit from a single-shot tick (the same
 ' "does the whole run/quit loop actually work together" proof
@@ -109,8 +118,8 @@ PRINT "HApplicationRun returned - timer-driven quit worked"
 CALL HTimerDestroy(t)
 CALL HApplicationFree(app)
 
-IF actionCount <> 1 THEN
-    PRINT "FAIL: expected exactly one action invocation, got ", actionCount
+IF actionCount <> 2 THEN
+    PRINT "FAIL: expected exactly two action invocations (menu + button), got ", actionCount
     CALL ExitProcess(1)
 END IF
 

@@ -192,6 +192,7 @@ Extern "C" Lib "ebhaikushim"
     Declare Sub eb_haiku_handler_set_callback(BYVAL handler AS ANY PTR, BYVAL cb AS ANY PTR, BYVAL userData AS ANY PTR)
     Declare Sub eb_haiku_window_add_handler(BYVAL window AS ANY PTR, BYVAL handler AS ANY PTR)
     Declare Sub eb_haiku_menu_item_set_target(BYVAL item AS ANY PTR, BYVAL handler AS ANY PTR)
+    Declare Sub eb_haiku_button_set_target(BYVAL button AS ANY PTR, BYVAL handler AS ANY PTR)
 
     ' ---- ShimTimer (BMessageRunner) ----
     Declare Function eb_haiku_timer_create(BYVAL handler AS ANY PTR) AS ANY PTR
