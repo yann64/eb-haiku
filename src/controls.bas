@@ -102,3 +102,12 @@ END SUB
 FUNCTION HTextControlGetText(BYVAL t AS HTextControl) AS ZSTRING
     HTextControlGetText = eb_haiku_textcontrol_get_text(t.handle)
 END FUNCTION
+
+''' Redirects `t`'s own invocation message to `handler` instead of
+''' whichever window it happens to be attached to - the same real
+''' per-object callback mechanism `HButtonSetTarget`/`HMenuItemSetTarget`
+''' give buttons/menu items (`handler` must already be attached to a
+''' window's BLooper via `HWindowAddHandler`).
+SUB HTextControlSetTarget(BYVAL t AS HTextControl, BYVAL handler AS HHandler)
+    CALL eb_haiku_textcontrol_set_target(t.handle, handler.handle)
+END SUB

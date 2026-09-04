@@ -376,6 +376,11 @@ void eb_haiku_menu_item_set_target(void* item, void* handler);
 // concrete type here gets its own function precisely so that cast is
 // always safe.
 void eb_haiku_button_set_target(void* button, void* handler);
+// Same for BTextControl (also a real BInvoker, via BControl) - added
+// for eb-gui-haiku's own GuiEntryConnectChanged, which needs a
+// per-object target the same way GuiMenuAddAction/GuiToolBarAddAction
+// already do.
+void eb_haiku_textcontrol_set_target(void* textControl, void* handler);
 
 // ---- ShimTimer (BMessageRunner) - Haiku's own periodic-message
 // primitive doesn't match eb-gui's Start/Stop/SetSingleShot/IsActive

@@ -951,6 +951,16 @@ both a menu item and a button reach the identical per-object callback.
 Published: `ebasic.toml` bumped to `0.14.1`, tagged `v0.14.1`, pushed,
 `ebpm-index` updated.
 
+**v0.14.2 (`HTextControlSetTarget`)**: found immediately while writing
+`eb-gui-haiku`'s own `GuiEntryConnectChanged` - a text field needs the
+same per-object redirect buttons/menu items already got. A third
+separate function (not a generic `BInvoker*` cast), for the same
+reason `v0.14.1`'s own `HButtonSetTarget` is separate from
+`HMenuItemSetTarget`.
+
+Published: `ebasic.toml` bumped to `0.14.2`, tagged `v0.14.2`, pushed,
+`ebpm-index` updated.
+
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
 **A real, new category of gotcha, confirmed by direct reproduction**:
