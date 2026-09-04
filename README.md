@@ -1015,6 +1015,21 @@ rather than assumed from the already-known `BMenuItem` radio-mode
 precedent (a different class family, `BMenu`/`BMenuItem` vs. `BView`-
 based `BControl`).
 
+**Refinement, found while building `eb-gui-haiku`'s own consumer of
+this**: the automatic exclusivity above only activates once the
+sibling `BRadioButton`s are actually **attached to a shared parent
+container** (added to the same window/view) - calling
+`HRadioButtonSetValue` on freshly-constructed, not-yet-attached radio
+buttons does NOT enforce exclusivity between them (each simply holds
+whatever value it's given, independently), confirmed via a second
+sibling test that only differed in attaching before vs. after the
+`SetValue` calls. Real Haiku's sibling-scan almost certainly runs from
+an `AttachedToWindow()`-style hook, which has nothing to scan before
+attachment. Not a bug - construct/group/attach to a shared container,
+*then* set values, matching how a real interactive user would only
+ever click an already-visible (hence already-attached) radio button
+anyway.
+
 Published: `ebasic.toml` bumped to `0.15.0`, tagged `v0.15.0`, pushed,
 `ebpm-index` updated.
 
