@@ -33,6 +33,14 @@ CONST H_ALIGN_CENTER = 2
 CONST H_ALIGN_TOP = 16
 CONST H_ALIGN_BOTTOM = 48
 CONST H_ALIGN_MIDDLE = 32
+' Real "fill/stretch this axis" sentinels - both -2, distinct from the
+' LEFT/RIGHT/CENTER/TOP/BOTTOM/MIDDLE values above. This is also
+' BView's own real default alignment on both axes when
+' HViewSetExplicitAlignment is never called at all - passing these
+' explicitly only matters when you need to restore fill on ONE axis
+' after having overridden the other.
+CONST H_ALIGN_USE_FULL_WIDTH = -2
+CONST H_ALIGN_USE_FULL_HEIGHT = -2
 
 ' A real Haiku sentinel value (interface/Layout.h) meaning "use this
 ' layout's own default spacing" - confirmed on the real Haiku host.

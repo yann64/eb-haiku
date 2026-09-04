@@ -975,6 +975,22 @@ applied defensively here rather than re-discovered the hard way).
 Published: `ebasic.toml` bumped to `0.14.3`, tagged `v0.14.3`, pushed,
 `ebpm-index` updated.
 
+**v0.14.4 (`H_ALIGN_USE_FULL_WIDTH`/`H_ALIGN_USE_FULL_HEIGHT`)**: found
+building `eb-gui-haiku`'s own Round 2 layout constraints - a live
+screenshot showed a button given a "fill" alignment rendering centered
+at its natural size instead of stretched, because `H_ALIGN_LEFT/RIGHT/
+CENTER`/`TOP/BOTTOM/MIDDLE` (`v0.1.0`) don't include a "fill" value at
+all, and mapping "fill" to `CENTER` as an approximation actively made
+things worse: calling `HViewSetExplicitAlignment` at all replaces a
+view's real DEFAULT alignment, which is already fill/stretch on both
+axes. Real Haiku has an exact sentinel for this
+(`InterfaceDefs.h`'s `B_ALIGN_USE_FULL_WIDTH`/`B_ALIGN_USE_FULL_HEIGHT`,
+both `-2`, confirmed via this system's own headers) - just not
+previously bound. Two plain `Const` additions, no native shim change.
+
+Published: `ebasic.toml` bumped to `0.14.4`, tagged `v0.14.4`, pushed,
+`ebpm-index` updated.
+
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
 **A real, new category of gotcha, confirmed by direct reproduction**:
