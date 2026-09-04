@@ -1055,6 +1055,38 @@ position both visually matched the values set).
 Published: `ebasic.toml` bumped to `0.16.0`, tagged `v0.16.0`, pushed,
 `ebpm-index` updated.
 
+## v0.17.0 (2026-09-04, same session): `HListView`/`HStringItem`
+
+Added for [[project_eb_gui]]'s Widget Round 6 (ListBox). **A real,
+confirmed-not-assumed finding**: unlike `BButton`/`BCheckBox`/
+`BRadioButton`/`BSlider`, real `BListView` has NO `BInvoker`/
+target+message mechanism for per-selection-change notification - it
+only exposes `SetInvocationMessage`, which fires on double-click/Enter
+(activation), not on every selection change (confirmed against a
+real, hardware-verified sibling FreeBASIC Haiku binding's own header
+comments, since no local Haiku SDK headers exist on the development
+machine). The only way to observe every selection change is the
+protected virtual `SelectionChanged()` hook - this package's own new
+`ShimListView : public BListView` overrides it and forwards to a
+plain callback, the same "no other way to reach a virtual from
+eBasic" reasoning as `ShimWindow`/`ShimView`'s own established pattern
+- NOT the usual `HApplicationAddHandler`+`SetTarget` mechanism every
+other new control this session used.
+
+`BStringItem::Text()` is a real, direct label getter (confirmed via
+the same reference binding) - no internal item-text-tracking table
+needed on this backend, unlike `eb-gui-haiku`'s own `GuiComboBox` item
+tracking from Round 4.
+
+Verified via a standalone test on real Haiku hardware: item add/count,
+selection get/set, `Text()` round-trip, and the `SelectionChanged()`
+callback firing correctly on a real, direct `Select()` call - plus a
+live screenshot confirming three items render with the selected one
+correctly highlighted.
+
+Published: `ebasic.toml` bumped to `0.17.0`, tagged `v0.17.0`, pushed,
+`ebpm-index` updated.
+
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
 **A real, new category of gotcha, confirmed by direct reproduction**:

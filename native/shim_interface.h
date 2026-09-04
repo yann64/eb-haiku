@@ -418,6 +418,32 @@ int eb_haiku_slider_get_value(void* slider);
 void eb_haiku_slider_set_limits(void* slider, int minValue, int maxValue);
 void eb_haiku_slider_set_target(void* slider, void* handler);
 
+// ---- ShimListView (BListView) + BStringItem ----
+// Real BListView's own selection-change notification is NOT a
+// BInvoker/target+message mechanism the way BControl-based widgets
+// are (confirmed against a real, hardware-verified sibling FreeBASIC
+// Haiku binding - BListView only exposes SetInvocationMessage, which
+// fires on double-click/Enter, not on every selection change) - real
+// per-selection-change notification is only available via the
+// protected virtual SelectionChanged() hook, needing a real subclass
+// to override it, same "no other way to reach a virtual from eBasic"
+// reasoning as ShimWindow/ShimView's own top comments.
+void* eb_haiku_listview_create(float left, float top, float right, float bottom, const char* name,
+                                int multipleSelection);
+void eb_haiku_listview_set_selection_changed_callback(void* listView, EbHaikuVoidCallback cb, void* userData);
+void eb_haiku_listview_add_item(void* listView, void* item);
+void eb_haiku_listview_make_empty(void* listView);
+int eb_haiku_listview_count_items(void* listView);
+// -1 if nothing selected (real BListView::CurrentSelection default).
+int eb_haiku_listview_current_selection(void* listView);
+void eb_haiku_listview_select(void* listView, int index);
+
+void* eb_haiku_stringitem_create(const char* text);
+// Borrowed from the real BStringItem's own long-lived storage - no
+// heap allocation, no matching free needed (same convention as
+// eb_haiku_button_get_label).
+const char* eb_haiku_stringitem_get_text(void* item);
+
 // ---- ShimTimer (BMessageRunner) - Haiku's own periodic-message
 // primitive doesn't match eb-gui's Start/Stop/SetSingleShot/IsActive
 // shape any more directly than GLib's g_timeout_add did for eb-gtk4's

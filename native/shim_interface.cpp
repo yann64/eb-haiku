@@ -14,6 +14,8 @@
 #include <Invoker.h>
 #include <Layout.h>
 #include <LayoutItem.h>
+#include <ListItem.h>
+#include <ListView.h>
 #include <Looper.h>
 #include <Menu.h>
 #include <MenuBar.h>
@@ -30,6 +32,7 @@
 #include <Slider.h>
 #include <SplitView.h>
 #include <StatusBar.h>
+#include <StringItem.h>
 #include <StringView.h>
 #include <TextControl.h>
 #include <TextView.h>
@@ -172,6 +175,33 @@ public:
 private:
     BLooper* fLooper;
     bool fLocked;
+};
+
+/// Real BListView has no BInvoker/target+message mechanism for
+/// per-selection-change notification (confirmed against a real,
+/// hardware-verified sibling FreeBASIC Haiku binding - only
+/// SetInvocationMessage exists, firing on double-click/Enter, not
+/// every selection change) - the only way to observe every change is
+/// the protected virtual SelectionChanged() hook, needing a real
+/// subclass, same reasoning as ShimWindow/ShimView's own top comments.
+class ShimListView : public BListView {
+public:
+    ShimListView(BRect frame, const char* name, list_view_type type)
+        : BListView(frame, name, type) {}
+
+    void SetSelectionChangedCallback(EbHaikuVoidCallback cb, void* userData) {
+        fSelectionChangedCallback = cb;
+        fSelectionChangedUserData = userData;
+    }
+
+    void SelectionChanged() override {
+        BListView::SelectionChanged();
+        if (fSelectionChangedCallback) fSelectionChangedCallback(fSelectionChangedUserData);
+    }
+
+private:
+    EbHaikuVoidCallback fSelectionChangedCallback = nullptr;
+    void* fSelectionChangedUserData = nullptr;
 };
 
 /// Same reasoning as ViewAutolock above, for a BWindow directly (a
@@ -869,6 +899,48 @@ void eb_haiku_slider_set_limits(void* slider, int minValue, int maxValue) {
 
 void eb_haiku_slider_set_target(void* slider, void* handler) {
     static_cast<BSlider*>(slider)->SetTarget(static_cast<BHandler*>(handler));
+}
+
+void* eb_haiku_listview_create(float left, float top, float right, float bottom, const char* name,
+                                int multipleSelection) {
+    list_view_type type = multipleSelection ? B_MULTIPLE_SELECTION_LIST : B_SINGLE_SELECTION_LIST;
+    return new ShimListView(BRect(left, top, right, bottom), name, type);
+}
+
+void eb_haiku_listview_set_selection_changed_callback(void* listView, EbHaikuVoidCallback cb, void* userData) {
+    static_cast<ShimListView*>(listView)->SetSelectionChangedCallback(cb, userData);
+}
+
+void eb_haiku_listview_add_item(void* listView, void* item) {
+    static_cast<BListView*>(listView)->AddItem(static_cast<BListItem*>(item));
+}
+
+void eb_haiku_listview_make_empty(void* listView) {
+    BListView* lv = static_cast<BListView*>(listView);
+    ViewAutolock lock(lv);
+    lv->MakeEmpty();
+}
+
+int eb_haiku_listview_count_items(void* listView) {
+    return static_cast<BListView*>(listView)->CountItems();
+}
+
+int eb_haiku_listview_current_selection(void* listView) {
+    return static_cast<BListView*>(listView)->CurrentSelection(0);
+}
+
+void eb_haiku_listview_select(void* listView, int index) {
+    BListView* lv = static_cast<BListView*>(listView);
+    ViewAutolock lock(lv);
+    lv->Select(index);
+}
+
+void* eb_haiku_stringitem_create(const char* text) {
+    return new BStringItem(text);
+}
+
+const char* eb_haiku_stringitem_get_text(void* item) {
+    return static_cast<BStringItem*>(item)->Text();
 }
 
 void* eb_haiku_timer_create(void* handler) { return new ShimTimer(static_cast<BHandler*>(handler)); }

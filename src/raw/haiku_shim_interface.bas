@@ -226,6 +226,18 @@ Extern "C" Lib "ebhaikushim"
     Declare Sub eb_haiku_slider_set_limits(BYVAL slider AS ANY PTR, BYVAL minValue AS INTEGER, BYVAL maxValue AS INTEGER)
     Declare Sub eb_haiku_slider_set_target(BYVAL slider AS ANY PTR, BYVAL handler AS ANY PTR)
 
+    ' ---- ShimListView (BListView) + BStringItem ----
+    Declare Function eb_haiku_listview_create(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, BYVAL name AS ZSTRING, BYVAL multipleSelection AS INTEGER) AS ANY PTR
+    Declare Sub eb_haiku_listview_set_selection_changed_callback(BYVAL listView AS ANY PTR, BYVAL cb AS ANY PTR, BYVAL userData AS ANY PTR)
+    Declare Sub eb_haiku_listview_add_item(BYVAL listView AS ANY PTR, BYVAL item AS ANY PTR)
+    Declare Sub eb_haiku_listview_make_empty(BYVAL listView AS ANY PTR)
+    Declare Function eb_haiku_listview_count_items(BYVAL listView AS ANY PTR) AS INTEGER
+    Declare Function eb_haiku_listview_current_selection(BYVAL listView AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_listview_select(BYVAL listView AS ANY PTR, BYVAL index AS INTEGER)
+
+    Declare Function eb_haiku_stringitem_create(BYVAL text AS ZSTRING) AS ANY PTR
+    Declare Function eb_haiku_stringitem_get_text(BYVAL item AS ANY PTR) AS ZSTRING
+
     ' ---- ShimTimer (BMessageRunner) ----
     Declare Function eb_haiku_timer_create(BYVAL handler AS ANY PTR) AS ANY PTR
     Declare Sub eb_haiku_timer_set_interval(BYVAL timer AS ANY PTR, BYVAL microseconds AS LONGINT)
