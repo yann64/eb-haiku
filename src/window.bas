@@ -74,3 +74,36 @@ END SUB
 SUB HWindowClose(BYVAL w AS HWindow)
     CALL eb_haiku_window_close(w.handle)
 END SUB
+
+SUB HWindowSetTitle(BYVAL w AS HWindow, title AS ZSTRING)
+    CALL eb_haiku_window_set_title(w.handle, title)
+END SUB
+
+SUB HWindowMoveTo(BYVAL w AS HWindow, BYVAL x AS SINGLE, BYVAL y AS SINGLE)
+    CALL eb_haiku_window_move_to(w.handle, x, y)
+END SUB
+
+SUB HWindowResizeTo(BYVAL w AS HWindow, BYVAL width AS SINGLE, BYVAL height AS SINGLE)
+    CALL eb_haiku_window_resize_to(w.handle, width, height)
+END SUB
+
+''' Recursively enables/disables every control (BButton/BTextControl/...)
+''' directly or indirectly attached to `w` - Haiku has no BWindow- or
+''' BView-level "enabled" concept of its own (unlike GTK4's real
+''' recursive widget sensitivity), so this walks the real view tree.
+SUB HWindowSetEnabled(BYVAL w AS HWindow, BYVAL enabled AS INTEGER)
+    CALL eb_haiku_window_set_enabled(w.handle, enabled)
+END SUB
+
+''' Real Haiku modal: makes `w` a modal subset of `parent` - best set
+''' before `w` is first shown for reliable behavior. `HWindowClearModal`
+''' needs the SAME `parent` reference back (real
+''' BWindow::RemoveFromSubset requires it) - callers should keep track
+''' of which window a given `w` was made modal to.
+SUB HWindowSetModal(BYVAL w AS HWindow, BYVAL parent AS HWindow)
+    CALL eb_haiku_window_set_modal(w.handle, parent.handle)
+END SUB
+
+SUB HWindowClearModal(BYVAL w AS HWindow, BYVAL parent AS HWindow)
+    CALL eb_haiku_window_clear_modal(w.handle, parent.handle)
+END SUB

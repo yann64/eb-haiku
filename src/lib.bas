@@ -21,6 +21,8 @@
 #include once "message.bas"
 #include once "application.bas"
 #include once "window.bas"
+#include once "handler.bas"
+#include once "timer.bas"
 #include once "view.bas"
 #include once "controls.bas"
 #include once "textview.bas"

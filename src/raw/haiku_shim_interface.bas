@@ -49,6 +49,12 @@ Extern "C" Lib "ebhaikushim"
     Declare Sub eb_haiku_window_add_child(BYVAL window AS ANY PTR, BYVAL view AS ANY PTR)
     Declare Sub eb_haiku_window_set_layout(BYVAL window AS ANY PTR, BYVAL layout AS ANY PTR)
     Declare Sub eb_haiku_window_close(BYVAL window AS ANY PTR)
+    Declare Sub eb_haiku_window_set_title(BYVAL window AS ANY PTR, BYVAL title AS ZSTRING)
+    Declare Sub eb_haiku_window_move_to(BYVAL window AS ANY PTR, BYVAL x AS SINGLE, BYVAL y AS SINGLE)
+    Declare Sub eb_haiku_window_resize_to(BYVAL window AS ANY PTR, BYVAL width AS SINGLE, BYVAL height AS SINGLE)
+    Declare Sub eb_haiku_window_set_enabled(BYVAL window AS ANY PTR, BYVAL enabled AS INTEGER)
+    Declare Sub eb_haiku_window_set_modal(BYVAL window AS ANY PTR, BYVAL parent AS ANY PTR)
+    Declare Sub eb_haiku_window_clear_modal(BYVAL window AS ANY PTR, BYVAL parent AS ANY PTR)
 
     ' ---- BView (plain) ----
     Declare Function eb_haiku_view_create(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, BYVAL name AS ZSTRING, BYVAL resizingMode AS UINTEGER, BYVAL flags AS UINTEGER) AS ANY PTR
@@ -180,6 +186,21 @@ Extern "C" Lib "ebhaikushim"
     Declare Sub eb_haiku_menu_set_radio_mode(BYVAL menu AS ANY PTR, BYVAL isOn AS INTEGER)
     Declare Function eb_haiku_menu_is_radio_mode(BYVAL menu AS ANY PTR) AS INTEGER
     Declare Sub eb_haiku_menu_set_label_from_marked(BYVAL menu AS ANY PTR, BYVAL isOn AS INTEGER)
+
+    ' ---- ShimHandler - a small, reusable per-object callback target ----
+    Declare Function eb_haiku_handler_create() AS ANY PTR
+    Declare Sub eb_haiku_handler_set_callback(BYVAL handler AS ANY PTR, BYVAL cb AS ANY PTR, BYVAL userData AS ANY PTR)
+    Declare Sub eb_haiku_window_add_handler(BYVAL window AS ANY PTR, BYVAL handler AS ANY PTR)
+    Declare Sub eb_haiku_menu_item_set_target(BYVAL item AS ANY PTR, BYVAL handler AS ANY PTR)
+
+    ' ---- ShimTimer (BMessageRunner) ----
+    Declare Function eb_haiku_timer_create(BYVAL handler AS ANY PTR) AS ANY PTR
+    Declare Sub eb_haiku_timer_set_interval(BYVAL timer AS ANY PTR, BYVAL microseconds AS LONGINT)
+    Declare Sub eb_haiku_timer_set_single_shot(BYVAL timer AS ANY PTR, BYVAL singleShot AS INTEGER)
+    Declare Sub eb_haiku_timer_start(BYVAL timer AS ANY PTR)
+    Declare Sub eb_haiku_timer_stop(BYVAL timer AS ANY PTR)
+    Declare Function eb_haiku_timer_is_active(BYVAL timer AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_timer_destroy(BYVAL timer AS ANY PTR)
 
     ' ---- BPopUpMenu (IS-A BMenu - reuses BMenu's own add_item/
     ' add_submenu/add_separator_item declares above) ----

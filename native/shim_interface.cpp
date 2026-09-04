@@ -9,6 +9,8 @@
 #include <Font.h>
 #include <GridLayout.h>
 #include <GroupLayout.h>
+#include <Handler.h>
+#include <Invoker.h>
 #include <Layout.h>
 #include <LayoutItem.h>
 #include <Looper.h>
@@ -17,6 +19,7 @@
 #include <MenuField.h>
 #include <MenuItem.h>
 #include <Message.h>
+#include <MessageRunner.h>
 #include <Messenger.h>
 #include <PopUpMenu.h>
 #include <PrintJob.h>
@@ -167,6 +170,86 @@ private:
     bool fLocked;
 };
 
+/// Same reasoning as ViewAutolock above, for a BWindow directly (a
+/// BWindow IS its own BLooper, so this locks it via BLooper::Lock()
+/// with no need to go through a child view at all).
+class WindowAutolock {
+public:
+    explicit WindowAutolock(BWindow* window) : fWindow(window), fLocked(window->Lock()) {}
+    ~WindowAutolock() {
+        if (fLocked) fWindow->Unlock();
+    }
+
+private:
+    BWindow* fWindow;
+    bool fLocked;
+};
+
+/// Recursively enables/disables every BControl found under `view` -
+/// see eb_haiku_window_set_enabled's own doc comment (shim_interface.h)
+/// for why this walk exists at all (Haiku has no BView/BWindow-level
+/// SetEnabled).
+void SetViewTreeEnabled(BView* view, bool enabled) {
+    if (BControl* control = dynamic_cast<BControl*>(view)) control->SetEnabled(enabled);
+    for (int32 i = 0; i < view->CountChildren(); i++) {
+        SetViewTreeEnabled(view->ChildAt(i), enabled);
+    }
+}
+
+/// See shim_interface.h's own top comment on ShimHandler for why this
+/// class exists - one instance always dedicated to exactly one
+/// GuiAction/GuiTimer, so firing the callback unconditionally on ANY
+/// received message (never inspecting `what`) is always correct.
+class ShimHandler : public BHandler {
+public:
+    ShimHandler() : BHandler("eb_haiku_shim_handler") {}
+
+    void SetCallback(EbHaikuVoidCallback cb, void* userData) {
+        fCallback = cb;
+        fUserData = userData;
+    }
+
+    void MessageReceived(BMessage* message) override {
+        if (fCallback) fCallback(fUserData);
+        else BHandler::MessageReceived(message);
+    }
+
+private:
+    EbHaikuVoidCallback fCallback = nullptr;
+    void* fUserData = nullptr;
+};
+
+/// Wraps a real BMessageRunner - see eb_haiku_timer_create's own doc
+/// comment (shim_interface.h) for why Start() always recreates it
+/// rather than assuming restart-in-place is safe.
+class ShimTimer {
+public:
+    explicit ShimTimer(BHandler* target) : fTarget(target) {}
+    ~ShimTimer() { delete fRunner; }
+
+    void SetInterval(bigtime_t interval) { fInterval = interval; }
+    void SetSingleShot(bool singleShot) { fSingleShot = singleShot; }
+    bool IsActive() const { return fRunner != nullptr; }
+
+    void Start() {
+        delete fRunner;
+        BMessage message('HTMR');
+        int32 count = fSingleShot ? 1 : -1;
+        fRunner = new BMessageRunner(BMessenger(fTarget), &message, fInterval, count);
+    }
+
+    void Stop() {
+        delete fRunner;
+        fRunner = nullptr;
+    }
+
+private:
+    BHandler* fTarget;
+    BMessageRunner* fRunner = nullptr;
+    bigtime_t fInterval = 0;
+    bool fSingleShot = false;
+};
+
 class ShimPrintJob : public BPrintJob {
 public:
     explicit ShimPrintJob(const char* name) : BPrintJob(name) {}
@@ -226,6 +309,48 @@ void eb_haiku_window_set_layout(void* window, void* layout) {
 
 void eb_haiku_window_close(void* window) {
     BMessenger(static_cast<BWindow*>(window)).SendMessage(B_QUIT_REQUESTED);
+}
+
+void eb_haiku_window_set_title(void* window, const char* title) {
+    BWindow* win = static_cast<BWindow*>(window);
+    WindowAutolock lock(win);
+    win->SetTitle(title);
+}
+
+void eb_haiku_window_move_to(void* window, float x, float y) {
+    BWindow* win = static_cast<BWindow*>(window);
+    WindowAutolock lock(win);
+    win->MoveTo(x, y);
+}
+
+void eb_haiku_window_resize_to(void* window, float width, float height) {
+    BWindow* win = static_cast<BWindow*>(window);
+    WindowAutolock lock(win);
+    win->ResizeTo(width, height);
+}
+
+void eb_haiku_window_set_enabled(void* window, int enabled) {
+    BWindow* win = static_cast<BWindow*>(window);
+    WindowAutolock lock(win);
+    for (int32 i = 0; i < win->CountChildren(); i++) {
+        SetViewTreeEnabled(win->ChildAt(i), enabled != 0);
+    }
+}
+
+void eb_haiku_window_set_modal(void* window, void* parent) {
+    BWindow* win = static_cast<BWindow*>(window);
+    BWindow* parentWin = static_cast<BWindow*>(parent);
+    WindowAutolock lock(win);
+    win->SetFeel(B_MODAL_SUBSET_WINDOW_FEEL);
+    win->AddToSubset(parentWin);
+}
+
+void eb_haiku_window_clear_modal(void* window, void* parent) {
+    BWindow* win = static_cast<BWindow*>(window);
+    BWindow* parentWin = static_cast<BWindow*>(parent);
+    WindowAutolock lock(win);
+    win->RemoveFromSubset(parentWin);
+    win->SetFeel(B_NORMAL_WINDOW_FEEL);
 }
 
 void* eb_haiku_view_create(float left, float top, float right, float bottom, const char* name,
@@ -632,6 +757,46 @@ int eb_haiku_menu_is_radio_mode(void* menu) {
 void eb_haiku_menu_set_label_from_marked(void* menu, int on) {
     static_cast<BMenu*>(menu)->SetLabelFromMarked(on != 0);
 }
+
+void* eb_haiku_handler_create(void) { return new ShimHandler(); }
+
+void eb_haiku_handler_set_callback(void* handler, EbHaikuVoidCallback cb, void* userData) {
+    static_cast<ShimHandler*>(handler)->SetCallback(cb, userData);
+}
+
+void eb_haiku_window_add_handler(void* window, void* handler) {
+    // Same reasoning as WindowAutolock's own use elsewhere in this file
+    // - confirmed necessary by direct reproduction (hung indefinitely
+    // without it, called after the window was already shown/running):
+    // BLooper::AddHandler mutates the looper's own internal handler
+    // list, the same cross-thread hazard as SetTitle/MoveTo/SetEnabled.
+    BWindow* win = static_cast<BWindow*>(window);
+    WindowAutolock lock(win);
+    win->AddHandler(static_cast<BHandler*>(handler));
+}
+
+void eb_haiku_menu_item_set_target(void* item, void* handler) {
+    static_cast<BMenuItem*>(item)->SetTarget(static_cast<BHandler*>(handler));
+}
+
+void* eb_haiku_timer_create(void* handler) { return new ShimTimer(static_cast<BHandler*>(handler)); }
+
+void eb_haiku_timer_set_interval(void* timer, long long microseconds) {
+    static_cast<ShimTimer*>(timer)->SetInterval(static_cast<bigtime_t>(microseconds));
+}
+
+void eb_haiku_timer_set_single_shot(void* timer, int singleShot) {
+    static_cast<ShimTimer*>(timer)->SetSingleShot(singleShot != 0);
+}
+
+void eb_haiku_timer_start(void* timer) { static_cast<ShimTimer*>(timer)->Start(); }
+void eb_haiku_timer_stop(void* timer) { static_cast<ShimTimer*>(timer)->Stop(); }
+
+int eb_haiku_timer_is_active(void* timer) {
+    return static_cast<ShimTimer*>(timer)->IsActive() ? 1 : 0;
+}
+
+void eb_haiku_timer_destroy(void* timer) { delete static_cast<ShimTimer*>(timer); }
 
 void* eb_haiku_popup_menu_create(const char* name) { return new BPopUpMenu(name); }
 

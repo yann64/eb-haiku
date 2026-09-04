@@ -864,6 +864,73 @@ plain `ANY PTR` rather than needing a per-type overload.
 Published: `ebasic.toml` bumped to `0.13.0`, tagged `v0.13.0`, pushed,
 `ebpm-index` updated.
 
+**v0.14.0 (window title/geometry/enable/modal, plus a per-object
+callback target and `HTimer`)**: prerequisite work for a new native
+`BWindow`-based `eb-gui-haiku` adapter (see
+[`eb-gui`](https://github.com/yann64/eb-gui)'s own README) - GTK4/Qt6
+already run on Haiku unmodified via HaikuPorts (`eb-gui-gtk4`/
+`eb-gui-qt6`), so this native adapter serves a narrower goal: apps that
+want zero GTK4/Qt6 runtime dependency and Haiku's own always-present
+native look.
+
+- **`HWindowSetTitle`/`MoveTo`/`ResizeTo`** (`BWindow::SetTitle`/
+  `MoveTo`/`ResizeTo`) - title/frame were previously constructor-only,
+  with no way to change either after creation.
+- **`HWindowSetEnabled`** - real Haiku has no `BWindow`- or `BView`-level
+  "enabled" concept at all (only `BControl` does, via the existing
+  `HControlSetEnabled`) - this recursively walks the window's own real
+  view tree, `dynamic_cast`-ing each child to `BControl` and toggling
+  any hit, mirroring GTK4's own recursive widget-sensitivity
+  propagation, which Haiku has no built-in equivalent of.
+- **`HWindowSetModal`/`ClearModal`** (`BWindow::SetFeel(
+  B_MODAL_SUBSET_WINDOW_FEEL)` + `AddToSubset`/`RemoveFromSubset`) - a
+  real Haiku modal subset relationship; `ClearModal` needs the same
+  `parent` reference back, since `RemoveFromSubset` requires it.
+- **`HHandler`** (new `TYPE`, `src/handler.bas`, backed by a new
+  `ShimHandler : public BHandler` in the native shim) - a small,
+  reusable per-object callback target. Real Haiku's own per-object
+  callback story is thin: `BMenuItem`/`BMessageRunner` both deliver via
+  a `BMessage` sent to a target `BHandler`, defaulting to the window
+  itself (fine for this package's existing shared
+  `HWindowSetMessageReceivedCallback`, but not enough for a genuinely
+  *per-action*/*per-timer* callback the way GTK4's `GSimpleAction`
+  "activate" or Qt6's `QAction::triggered` already are). Each
+  action/timer now gets its own `HHandler`, attached to the owning
+  window's own `BLooper` via the new `HWindowAddHandler`
+  (`BWindow::AddHandler`), and set as the real invocation target
+  (`HMenuItemSetTarget`, wrapping `BInvoker::SetTarget` - `BMenuItem`
+  already inherits `BInvoker`).
+- **`HTimer`** (new `TYPE`, `src/timer.bas`, wrapping `BMessageRunner` +
+  one `HHandler`) - Haiku's own periodic-message primitive doesn't
+  match a `Start`/`Stop`/`SetSingleShot`/`IsActive` shape any more
+  directly than GLib's `g_timeout_add` did for `eb-gtk4`'s own
+  `GtkTimer` - a real `BMessageRunner` is effectively one-shot-lifecycle,
+  so `HTimerStart` always recreates it rather than assuming
+  restart-in-place is safe.
+
+**A real, confirmed-by-direct-reproduction bug caught during
+verification**: the new `eb_haiku_window_add_handler` initially called
+`BWindow::AddHandler` with no lock, and hung indefinitely (not a clean
+crash) when called on a window that was already shown/running its own
+message-loop thread - the same cross-thread redraw/mutation hazard
+`v0.13.0`'s own `SetLabel`/`SetEnabled` hit, just for `AddHandler`
+instead. Fixed with the same `WindowAutolock` pattern already
+established for every other post-show window mutation in this file.
+
+Verified: `tests/window_gui_extras_basics.bas` (new) exercises every
+addition above end to end on real Haiku hardware via
+`scripts/haiku_verify.sh` - title/move/resize don't crash; a real
+`BButton`'s own enabled state is read back after `HWindowSetEnabled`
+toggles it (not just "didn't crash"); modal set/clear doesn't crash; a
+menu action wired via `HMenuItemSetTarget`+`HHandler` fires its
+connected callback exactly once via `HMenuItemInvokeViaMessenger`
+(confirmed independent of the window's own shared
+`MessageReceived`); an `HTimer`-driven `HApplicationQuit` exits
+`HApplicationRun` promptly. Full existing suite (46 tests) still green.
+
+Published: `ebasic.toml` bumped to `0.14.0`, tagged `v0.14.0`, pushed,
+`ebpm-index` updated.
+
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
 **A real, new category of gotcha, confirmed by direct reproduction**:

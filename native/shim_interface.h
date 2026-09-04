@@ -46,6 +46,31 @@ void eb_haiku_window_set_layout(void* window, void* layout);
 // window's own thread).
 void eb_haiku_window_close(void* window);
 
+// ---- Window title/geometry/enable/modal - added for the eb-gui
+// universal cross-toolkit GUI API (see eb-gui-haiku). Locked internally
+// (a WindowAutolock, matching this file's own eb_haiku_button_set_label/
+// eb_haiku_control_set_enabled convention) since these mutate an
+// already-running window's redraw/layout state from a thread other
+// than its own, unlike eb_haiku_window_show/hide (which start/stop the
+// window's own thread and are confirmed safe uncalled-for-a-lock, per
+// this file's existing code).
+void eb_haiku_window_set_title(void* window, const char* title);
+void eb_haiku_window_move_to(void* window, float x, float y);
+void eb_haiku_window_resize_to(void* window, float width, float height);
+// Recursively enables/disables every BControl found under `window`'s
+// own direct children (Haiku has no BView-level or BWindow-level
+// SetEnabled at all - only BControl does - so this walks the real view
+// tree and toggles each BControl found, mirroring GTK4's own recursive
+// widget-sensitivity propagation, which Haiku has no built-in
+// equivalent of).
+void eb_haiku_window_set_enabled(void* window, int enabled);
+// Real Haiku modal: SetFeel(B_MODAL_SUBSET_WINDOW_FEEL) + AddToSubset
+// (parent)/RemoveFromSubset(parent) - `parent` is required on both, not
+// just SetModal, since RemoveFromSubset needs the exact same window
+// reference that was added.
+void eb_haiku_window_set_modal(void* window, void* parent);
+void eb_haiku_window_clear_modal(void* window, void* parent);
+
 // ---- BView (plain, non-subclassed - see shim_interface.cpp's own
 // ShimView, added when custom Draw/MouseDown/KeyDown is needed) ----
 
@@ -312,6 +337,51 @@ void eb_haiku_menu_item_invoke_via_messenger(void* item);
 void eb_haiku_menu_set_radio_mode(void* menu, int on);
 int eb_haiku_menu_is_radio_mode(void* menu);
 void eb_haiku_menu_set_label_from_marked(void* menu, int on);
+
+// ---- ShimHandler - a small, reusable per-object callback target,
+// added for the eb-gui universal cross-toolkit GUI API (see
+// eb-gui-haiku). Real Haiku's own per-object callback story is thin:
+// BMenuItem/BMessageRunner (and BControl's own invocation) all deliver
+// via a BMessage sent to a *target* BHandler, which defaults to the
+// window itself - fine for this package's own existing
+// HWindowSetMessageReceivedCallback (one shared dispatch point), but
+// eb-gui's contract needs a genuinely PER-ACTION/PER-TIMER callback
+// (unlike GTK4's GSimpleAction "activate" signal or Qt6's
+// QAction::triggered, which are real per-object signals Haiku has no
+// equivalent of). Rather than a fragile global `what`-code dispatch
+// table, each GuiAction/GuiTimer gets its OWN ShimHandler instance,
+// added to the owning window's own BLooper (BWindow::AddHandler - a
+// real, ordinary BLooper method, not a new subclass), and set as the
+// BMenuItem's/BMessageRunner's own invocation target - so this single
+// class's MessageReceived (which fires unconditionally on ANY message,
+// since one instance is always dedicated to exactly one thing) is the
+// only new virtual-method-forwarding subclass this addition needs.
+typedef void (*EbHaikuVoidCallback)(void* userData);
+
+void* eb_haiku_handler_create(void);
+void eb_haiku_handler_set_callback(void* handler, EbHaikuVoidCallback cb, void* userData);
+// Attaches `handler` to `window`'s own BLooper - required before the
+// handler can be used as a real invocation target (BMessenger/SetTarget
+// both need the handler to already have an associated BLooper).
+void eb_haiku_window_add_handler(void* window, void* handler);
+// BMenuItem inherits BInvoker - redirects its own invocation message
+// to `handler` instead of the window it happens to be attached to.
+void eb_haiku_menu_item_set_target(void* item, void* handler);
+
+// ---- ShimTimer (BMessageRunner) - Haiku's own periodic-message
+// primitive doesn't match eb-gui's Start/Stop/SetSingleShot/IsActive
+// shape any more directly than GLib's g_timeout_add did for eb-gtk4's
+// own GtkTimer (a real BMessageRunner is effectively one-shot-lifecycle
+// - this recreates it on every Start() rather than assuming it can be
+// restarted in place). `handler` must already be attached to a window
+// via eb_haiku_window_add_handler (above) before being passed here.
+void* eb_haiku_timer_create(void* handler);
+void eb_haiku_timer_set_interval(void* timer, long long microseconds);
+void eb_haiku_timer_set_single_shot(void* timer, int singleShot);
+void eb_haiku_timer_start(void* timer);
+void eb_haiku_timer_stop(void* timer);
+int eb_haiku_timer_is_active(void* timer);
+void eb_haiku_timer_destroy(void* timer);
 
 // ---- BPopUpMenu - IS-A BMenu (like BMenuBar already is), reuses the
 // same opaque handle everywhere a BMenu* is expected (add items via

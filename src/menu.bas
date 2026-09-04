@@ -21,6 +21,7 @@
 
 #include once "raw/haiku_shim_interface.bas"
 #include once "message.bas"
+#include once "handler.bas"
 
 TYPE HMenu
     handle AS ANY PTR
@@ -104,6 +105,14 @@ END FUNCTION
 ''' test-only hack.
 SUB HMenuItemInvokeViaMessenger(BYVAL item AS HMenuItem)
     CALL eb_haiku_menu_item_invoke_via_messenger(item.handle)
+END SUB
+
+''' Redirects `item`'s own invocation message to `handler` instead of
+''' whichever window it happens to be attached to - lets a real
+''' per-item callback be wired via HHandlerSetCallback (`handler` must
+''' already be attached to a window's BLooper via HWindowAddHandler).
+SUB HMenuItemSetTarget(BYVAL item AS HMenuItem, BYVAL handler AS HHandler)
+    CALL eb_haiku_menu_item_set_target(item.handle, handler.handle)
 END SUB
 
 ''' Turns radio-mode grouping on/off for `menu` - once on, real Haiku

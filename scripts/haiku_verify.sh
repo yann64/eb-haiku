@@ -68,7 +68,7 @@ if ! ssh "$HOST" "cd ~/$REMOTE_DIR && ebpm build"; then
     exit 1
 fi
 
-for test_name in integration window_basics controls_basics drawing_basics layout_basics \
+for test_name in integration window_basics window_gui_extras_basics controls_basics drawing_basics layout_basics \
                  nested_layout_basics grid_layout_basics card_layout_basics split_view_basics \
                  space_layout_item_basics translation_basics translation_get_bitmap \
                  translation_draw_bitmap translation_convert translation_identify \
