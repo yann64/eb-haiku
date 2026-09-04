@@ -214,6 +214,18 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_radiobutton_get_value(BYVAL radioButton AS ANY PTR) AS INTEGER
     Declare Sub eb_haiku_radiobutton_set_target(BYVAL radioButton AS ANY PTR, BYVAL handler AS ANY PTR)
 
+    ' ---- BStatusBar/BSlider ----
+    Declare Function eb_haiku_statusbar_create(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, BYVAL name AS ZSTRING, BYVAL label AS ZSTRING, BYVAL trailingLabel AS ZSTRING) AS ANY PTR
+    Declare Sub eb_haiku_statusbar_set_max_value(BYVAL statusBar AS ANY PTR, BYVAL max AS SINGLE)
+    Declare Function eb_haiku_statusbar_current_value(BYVAL statusBar AS ANY PTR) AS SINGLE
+    Declare Sub eb_haiku_statusbar_set_to(BYVAL statusBar AS ANY PTR, BYVAL value AS SINGLE)
+
+    Declare Function eb_haiku_slider_create(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, BYVAL name AS ZSTRING, BYVAL label AS ZSTRING, BYVAL minValue AS INTEGER, BYVAL maxValue AS INTEGER, BYVAL what AS UINTEGER) AS ANY PTR
+    Declare Sub eb_haiku_slider_set_value(BYVAL slider AS ANY PTR, BYVAL value AS INTEGER)
+    Declare Function eb_haiku_slider_get_value(BYVAL slider AS ANY PTR) AS INTEGER
+    Declare Sub eb_haiku_slider_set_limits(BYVAL slider AS ANY PTR, BYVAL minValue AS INTEGER, BYVAL maxValue AS INTEGER)
+    Declare Sub eb_haiku_slider_set_target(BYVAL slider AS ANY PTR, BYVAL handler AS ANY PTR)
+
     ' ---- ShimTimer (BMessageRunner) ----
     Declare Function eb_haiku_timer_create(BYVAL handler AS ANY PTR) AS ANY PTR
     Declare Sub eb_haiku_timer_set_interval(BYVAL timer AS ANY PTR, BYVAL microseconds AS LONGINT)

@@ -27,7 +27,9 @@
 #include <RadioButton.h>
 #include <Size.h>
 #include <SpaceLayoutItem.h>
+#include <Slider.h>
 #include <SplitView.h>
+#include <StatusBar.h>
 #include <StringView.h>
 #include <TextControl.h>
 #include <TextView.h>
@@ -825,6 +827,48 @@ int eb_haiku_radiobutton_get_value(void* radioButton) {
 
 void eb_haiku_radiobutton_set_target(void* radioButton, void* handler) {
     static_cast<BRadioButton*>(radioButton)->SetTarget(static_cast<BHandler*>(handler));
+}
+
+void* eb_haiku_statusbar_create(float left, float top, float right, float bottom, const char* name,
+                                 const char* label, const char* trailingLabel) {
+    return new BStatusBar(BRect(left, top, right, bottom), name, label, trailingLabel);
+}
+
+void eb_haiku_statusbar_set_max_value(void* statusBar, float max) {
+    static_cast<BStatusBar*>(statusBar)->SetMaxValue(max);
+}
+
+float eb_haiku_statusbar_current_value(void* statusBar) {
+    return static_cast<BStatusBar*>(statusBar)->CurrentValue();
+}
+
+void eb_haiku_statusbar_set_to(void* statusBar, float value) {
+    BStatusBar* bar = static_cast<BStatusBar*>(statusBar);
+    ViewAutolock lock(bar);   // SetTo redraws - same hazard as SetLabel/SetEnabled/SetValue
+    bar->SetTo(value);
+}
+
+void* eb_haiku_slider_create(float left, float top, float right, float bottom, const char* name,
+                              const char* label, int minValue, int maxValue, unsigned int what) {
+    return new BSlider(BRect(left, top, right, bottom), name, label, new BMessage(what), minValue, maxValue);
+}
+
+void eb_haiku_slider_set_value(void* slider, int value) {
+    BSlider* s = static_cast<BSlider*>(slider);
+    ViewAutolock lock(s);
+    s->SetValue(value);
+}
+
+int eb_haiku_slider_get_value(void* slider) {
+    return static_cast<BSlider*>(slider)->Value();
+}
+
+void eb_haiku_slider_set_limits(void* slider, int minValue, int maxValue) {
+    static_cast<BSlider*>(slider)->SetLimits(minValue, maxValue);
+}
+
+void eb_haiku_slider_set_target(void* slider, void* handler) {
+    static_cast<BSlider*>(slider)->SetTarget(static_cast<BHandler*>(handler));
 }
 
 void* eb_haiku_timer_create(void* handler) { return new ShimTimer(static_cast<BHandler*>(handler)); }

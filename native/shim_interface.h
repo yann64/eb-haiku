@@ -398,6 +398,26 @@ void eb_haiku_radiobutton_set_value(void* radioButton, int value);
 int eb_haiku_radiobutton_get_value(void* radioButton);
 void eb_haiku_radiobutton_set_target(void* radioButton, void* handler);
 
+// BStatusBar - real Haiku's actual progress-bar widget (not a BControl -
+// it's a plain BView, no target/invocation concept at all, purely a
+// passive display). Real Haiku has no "minimum value" concept, only a
+// max (implicit min is always 0).
+void* eb_haiku_statusbar_create(float left, float top, float right, float bottom, const char* name,
+                                 const char* label, const char* trailingLabel);
+void eb_haiku_statusbar_set_max_value(void* statusBar, float max);
+float eb_haiku_statusbar_current_value(void* statusBar);
+void eb_haiku_statusbar_set_to(void* statusBar, float value);
+
+// BSlider - a real BControl subclass (single inheritance, same as
+// BButton/BCheckBox). SetValue/Value are real int32 (inherited from
+// BControl); SetLimits changes the range after construction.
+void* eb_haiku_slider_create(float left, float top, float right, float bottom, const char* name,
+                              const char* label, int minValue, int maxValue, unsigned int what);
+void eb_haiku_slider_set_value(void* slider, int value);
+int eb_haiku_slider_get_value(void* slider);
+void eb_haiku_slider_set_limits(void* slider, int minValue, int maxValue);
+void eb_haiku_slider_set_target(void* slider, void* handler);
+
 // ---- ShimTimer (BMessageRunner) - Haiku's own periodic-message
 // primitive doesn't match eb-gui's Start/Stop/SetSingleShot/IsActive
 // shape any more directly than GLib's g_timeout_add did for eb-gtk4's

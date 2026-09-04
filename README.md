@@ -1033,6 +1033,28 @@ anyway.
 Published: `ebasic.toml` bumped to `0.15.0`, tagged `v0.15.0`, pushed,
 `ebpm-index` updated.
 
+## v0.16.0 (2026-09-04, same session): `HStatusBar`/`HSlider`
+
+Added for [[project_eb_gui]]'s Widget Round 5 (ProgressBar/Slider).
+`BStatusBar` is real Haiku's own progress-bar widget (not to be
+confused with a window's own status bar) - a plain `BView`, no
+target/invocation concept at all, purely passive display:
+`SetMaxValue(float)`/`CurrentValue()`/`SetTo(value)`. Real Haiku has
+**no minimum-value concept at all** for it - the implicit min is
+always `0`. `BSlider` is a real `BControl` subclass (single
+inheritance, same as `BButton`/`BCheckBox`) - `SetValue`/`Value` (real
+`int32`) plus `SetLimits` for changing the range after construction;
+`HSliderSetTarget` follows the same per-concrete-type pattern as
+`HButtonSetTarget`/`HCheckBoxSetTarget`.
+
+Verified via a standalone test on real Haiku hardware: range/value
+round-trips for both, then a live screenshot confirming both widgets
+render correctly (the progress bar's fill and the slider's thumb
+position both visually matched the values set).
+
+Published: `ebasic.toml` bumped to `0.16.0`, tagged `v0.16.0`, pushed,
+`ebpm-index` updated.
+
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
 **A real, new category of gotcha, confirmed by direct reproduction**:

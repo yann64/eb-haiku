@@ -164,3 +164,57 @@ END FUNCTION
 SUB HRadioButtonSetTarget(BYVAL r AS HRadioButton, BYVAL handler AS HHandler)
     CALL eb_haiku_radiobutton_set_target(r.handle, handler.handle)
 END SUB
+
+TYPE HStatusBar
+    handle AS ANY PTR
+END TYPE
+
+''' Real Haiku's actual progress-bar widget (not to be confused with a
+''' window's own status bar) - a plain BView, no target/invocation
+''' concept, purely a passive display. No minimum-value concept at all
+''' (implicit min is always 0).
+FUNCTION HStatusBarCreate(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, name AS ZSTRING, label AS ZSTRING, trailingLabel AS ZSTRING) AS HStatusBar
+    DIM b AS HStatusBar
+    b.handle = eb_haiku_statusbar_create(left, top, right, bottom, name, label, trailingLabel)
+    HStatusBarCreate = b
+END FUNCTION
+
+SUB HStatusBarSetMaxValue(BYVAL b AS HStatusBar, BYVAL max AS SINGLE)
+    CALL eb_haiku_statusbar_set_max_value(b.handle, max)
+END SUB
+
+FUNCTION HStatusBarCurrentValue(BYVAL b AS HStatusBar) AS SINGLE
+    HStatusBarCurrentValue = eb_haiku_statusbar_current_value(b.handle)
+END FUNCTION
+
+SUB HStatusBarSetTo(BYVAL b AS HStatusBar, BYVAL value AS SINGLE)
+    CALL eb_haiku_statusbar_set_to(b.handle, value)
+END SUB
+
+TYPE HSlider
+    handle AS ANY PTR
+END TYPE
+
+''' Creates a slider - dragging it posts a message with the given
+''' `what` code to its target (see this file's own top comment).
+FUNCTION HSliderCreate(BYVAL left AS SINGLE, BYVAL top AS SINGLE, BYVAL right AS SINGLE, BYVAL bottom AS SINGLE, name AS ZSTRING, label AS ZSTRING, BYVAL minValue AS INTEGER, BYVAL maxValue AS INTEGER, BYVAL what AS UINTEGER) AS HSlider
+    DIM s AS HSlider
+    s.handle = eb_haiku_slider_create(left, top, right, bottom, name, label, minValue, maxValue, what)
+    HSliderCreate = s
+END FUNCTION
+
+SUB HSliderSetValue(BYVAL s AS HSlider, BYVAL value AS INTEGER)
+    CALL eb_haiku_slider_set_value(s.handle, value)
+END SUB
+
+FUNCTION HSliderGetValue(BYVAL s AS HSlider) AS INTEGER
+    HSliderGetValue = eb_haiku_slider_get_value(s.handle)
+END FUNCTION
+
+SUB HSliderSetLimits(BYVAL s AS HSlider, BYVAL minValue AS INTEGER, BYVAL maxValue AS INTEGER)
+    CALL eb_haiku_slider_set_limits(s.handle, minValue, maxValue)
+END SUB
+
+SUB HSliderSetTarget(BYVAL s AS HSlider, BYVAL handler AS HHandler)
+    CALL eb_haiku_slider_set_target(s.handle, handler.handle)
+END SUB
