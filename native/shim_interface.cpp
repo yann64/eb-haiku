@@ -543,8 +543,19 @@ void eb_haiku_textview_set_text_changed_callback(void* view, EbHaikuVoidCallback
     static_cast<ShimTextView*>(view)->SetTextChangedCallback(cb, userData);
 }
 
+/// Real BUG caught by direct reproduction (not assumed): calling
+/// SetText() on a BTextView already attached to a SHOWN window, from a
+/// thread other than that window's own, hangs indefinitely without a
+/// lock - the same cross-thread mutation hazard already established
+/// for HButtonSetLabel/SetEnabled (see this file's own ViewAutolock).
+/// Every earlier textview_basics.bas run happened to only ever call
+/// this on a still-detached view, never exercising the hazard until
+/// GuiTextViewConnectTextChanged's own verify example attached+showed
+/// one first.
 void eb_haiku_textview_set_text(void* view, const char* text) {
-    static_cast<BTextView*>(view)->SetText(text);
+    BTextView* tv = static_cast<BTextView*>(view);
+    ViewAutolock lock(tv);
+    tv->SetText(text);
 }
 
 const char* eb_haiku_textview_get_text(void* view) { return static_cast<BTextView*>(view)->Text(); }

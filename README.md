@@ -1124,6 +1124,28 @@ correctly against a known marker address.
 Published: `ebasic.toml` bumped to `0.18.0`, tagged `v0.18.0`, pushed,
 `ebpm-index` updated.
 
+## v0.18.1 (2026-09-05, same session): real bug fix - `eb_haiku_textview_set_text` needed a lock
+
+**A real bug caught by direct reproduction while building
+`eb-gui-haiku`'s own Round 8 (`GuiTextViewConnectTextChanged`)
+verification**: calling `HTextViewSetText` on a `HTextView` already
+attached to an already-SHOWN window, from a thread other than that
+window's own, hung indefinitely - the exact same cross-thread
+mutation hazard already established for `HButtonSetLabel`/`SetEnabled`
+(see this file's own earlier gotcha entries), just never previously
+exercised for `HTextViewSetText`: every prior `textview_basics.bas`
+run (and `HTextViewConnectTextChanged`'s own v0.18.0 standalone test)
+only ever called it on a still-detached view. Fixed by wrapping the
+real `SetText()` call in the same `ViewAutolock` guard already used
+elsewhere in this file - safe on a still-detached view too
+(`ViewAutolock`'s own constructor no-ops when `Looper()` is null).
+Re-verified: the full `scripts/haiku_verify.sh` suite (46 tests, all
+passing) plus the `eb-gui-haiku` verify scenario that originally
+caught it.
+
+Published: `ebasic.toml` bumped to `0.18.1`, tagged `v0.18.1`, pushed,
+`ebpm-index` updated.
+
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
 **A real, new category of gotcha, confirmed by direct reproduction**:
