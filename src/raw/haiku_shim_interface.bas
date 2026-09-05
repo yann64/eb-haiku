@@ -112,6 +112,7 @@ Extern "C" Lib "ebhaikushim"
     Declare Function eb_haiku_textview_is_stylable(BYVAL view AS ANY PTR) AS INTEGER
     Declare Sub eb_haiku_textview_set_color(BYVAL view AS ANY PTR, BYVAL start AS INTEGER, BYVAL end_ AS INTEGER, BYVAL r AS UBYTE, BYVAL g AS UBYTE, BYVAL b AS UBYTE, BYVAL a AS UBYTE)
     Declare Sub eb_haiku_textview_get_color(BYVAL view AS ANY PTR, BYVAL offset AS INTEGER, BYVAL outR AS ANY PTR, BYVAL outG AS ANY PTR, BYVAL outB AS ANY PTR, BYVAL outA AS ANY PTR)
+    Declare Sub eb_haiku_textview_set_text_changed_callback(BYVAL view AS ANY PTR, BYVAL cb AS ANY PTR, BYVAL userData AS ANY PTR)
 
     ' ---- Custom drawing/input (ShimView) - a view only receives Draw
     ' if created with the H_WILL_DRAW flag.

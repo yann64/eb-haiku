@@ -1,9 +1,15 @@
-' Idiomatic layer: BTextView - real multi-line, plain-text editing (a
-' concrete BView subclass needing no shim subclass of its own, unlike
-' BWindow/BView - Text() returns a plain const char*, so it marshals
-' via ZSTRING exactly like HStringViewGetText/HTextControlGetText
-' already do). Add to a window/view via HWindowAddChild/HViewAddChild,
-' passing `.handle` directly - a real BView under the hood.
+' Idiomatic layer: BTextView - real multi-line, plain-text editing.
+' Text() returns a plain const char*, so it marshals via ZSTRING
+' exactly like HStringViewGetText/HTextControlGetText already do). Add
+' to a window/view via HWindowAddChild/HViewAddChild, passing `.handle`
+' directly - a real BView under the hood.
+'
+' Backed by a real ShimTextView subclass (native/shim_interface.cpp)
+' for HTextViewConnectTextChanged below - real BTextView has no single
+' "TextChanged" hook (confirmed via direct header inspection, not
+' assumed), only two separate protected virtuals, InsertText/DeleteText,
+' each firing on every real text mutation (interactive OR programmatic
+' SetText/Insert/Delete - confirmed via a standalone hardware probe).
 '
 ' Real per-character-range *color* styling is bound (HTextViewSetColor/
 ' GetColor, v0.9.0) - font family/size/style changes are not: BFont
@@ -88,4 +94,12 @@ SUB HTextViewGetColor(BYVAL t AS HTextView, BYVAL offset AS INTEGER, BYREF outR 
     outG = buf(1)
     outB = buf(2)
     outA = buf(3)
+END SUB
+
+''' Fires on EVERY real text change - interactive typing/pasting/
+''' deleting, AND programmatic HTextViewSetText/Insert/Delete alike
+''' (see this file's own top comment for why this needed a real
+''' virtual-forwarding subclass rather than a single native signal).
+SUB HTextViewConnectTextChanged(BYVAL t AS HTextView, BYVAL cb AS ANY PTR, BYVAL userData AS ANY PTR)
+    CALL eb_haiku_textview_set_text_changed_callback(t.handle, cb, userData)
 END SUB

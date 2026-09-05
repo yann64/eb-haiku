@@ -204,6 +204,39 @@ private:
     void* fSelectionChangedUserData = nullptr;
 };
 
+/// Real BTextView has no single "TextChanged" virtual (confirmed via
+/// direct header inspection, not assumed) - only InsertText/DeleteText,
+/// each called on every real text mutation, interactive or
+/// programmatic (SetText() itself calls DeleteText() then InsertText()
+/// internally - confirmed via a standalone hardware probe). Overriding
+/// both and firing the same plain callback from each catches every
+/// change with a single eb-gui-level notification, same reasoning as
+/// ShimListView's own single SelectionChanged() override above.
+class ShimTextView : public BTextView {
+public:
+    ShimTextView(BRect frame, const char* name, BRect textRect, uint32 resizeMask)
+        : BTextView(frame, name, textRect, resizeMask) {}
+
+    void SetTextChangedCallback(EbHaikuVoidCallback cb, void* userData) {
+        fTextChangedCallback = cb;
+        fTextChangedUserData = userData;
+    }
+
+    void InsertText(const char* text, int32 length, int32 offset, const text_run_array* runs) override {
+        BTextView::InsertText(text, length, offset, runs);
+        if (fTextChangedCallback) fTextChangedCallback(fTextChangedUserData);
+    }
+
+    void DeleteText(int32 fromOffset, int32 toOffset) override {
+        BTextView::DeleteText(fromOffset, toOffset);
+        if (fTextChangedCallback) fTextChangedCallback(fTextChangedUserData);
+    }
+
+private:
+    EbHaikuVoidCallback fTextChangedCallback = nullptr;
+    void* fTextChangedUserData = nullptr;
+};
+
 /// Same reasoning as ViewAutolock above, for a BWindow directly (a
 /// BWindow IS its own BLooper, so this locks it via BLooper::Lock()
 /// with no need to go through a child view at all).
@@ -503,7 +536,11 @@ void* eb_haiku_textview_create(float left, float top, float right, float bottom,
                                 const char* name) {
     BRect frame(left, top, right, bottom);
     BRect textRect(0, 0, right - left, bottom - top);
-    return new BTextView(frame, name, textRect, B_FOLLOW_LEFT_TOP);
+    return new ShimTextView(frame, name, textRect, B_FOLLOW_LEFT_TOP);
+}
+
+void eb_haiku_textview_set_text_changed_callback(void* view, EbHaikuVoidCallback cb, void* userData) {
+    static_cast<ShimTextView*>(view)->SetTextChangedCallback(cb, userData);
 }
 
 void eb_haiku_textview_set_text(void* view, const char* text) {

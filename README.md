@@ -1087,6 +1087,43 @@ correctly highlighted.
 Published: `ebasic.toml` bumped to `0.17.0`, tagged `v0.17.0`, pushed,
 `ebpm-index` updated.
 
+## v0.18.0 (2026-09-05, new session): `HTextViewConnectTextChanged`
+
+Added for [[project_eb_gui]]'s deferred Round 6 item (a real, scoped
+prerequisite flagged at the time, not speculative). **A real,
+confirmed-not-assumed finding, checked via direct header inspection
+this time (real Haiku SDK headers ARE reachable over SSH, unlike the
+Linux dev machine)**: unlike `BListView`'s own single
+`SelectionChanged()` hook, real `BTextView` has NO single
+"TextChanged" virtual at all - only two SEPARATE protected virtuals,
+`InsertText`/`DeleteText`, each called on every real text mutation.
+Confirmed via a standalone hardware probe (not assumed from the method
+names) that `SetText()` itself internally calls `DeleteText()` then
+`InsertText()`, so overriding both and firing the same plain callback
+from each catches every kind of change - interactive typing/pasting/
+deleting AND programmatic `SetText`/`Insert`/`Delete` alike - with a
+single notification. `eb_haiku_textview_create` now returns a new
+`ShimTextView : public BTextView` (overriding both virtuals) instead
+of a plain `BTextView` - safe for every pre-existing
+`eb_haiku_textview_*` function, which all `static_cast` to
+`BTextView*` (single inheritance, no MI-pointer-adjustment risk, same
+reasoning as `ShimListView`'s own identical situation for
+`BListView`). `HTextViewConnectTextChanged` is a direct pass-through
+to the new native setter - NOT the usual `HApplicationAddHandler`+
+`SetTarget` mechanism, `ShimTextView`'s own callback is already
+self-contained, same shape as `HListViewSetSelectionChangedCallback`'s
+own precedent.
+
+Verified via a standalone test on real Haiku hardware: a fresh
+`HTextView`'s callback fires once for an initial `SetText` on an empty
+buffer (just `InsertText`), then twice for a second `SetText`
+replacing existing content (`DeleteText` + `InsertText`, matching the
+call count seen in the underlying probe), with `userData` delivered
+correctly against a known marker address.
+
+Published: `ebasic.toml` bumped to `0.18.0`, tagged `v0.18.0`, pushed,
+`ebpm-index` updated.
+
 ### Media Kit / `BPrintJob` - real background-thread and interactive-dialog gotchas
 
 **A real, new category of gotcha, confirmed by direct reproduction**:

@@ -185,13 +185,15 @@ void* eb_haiku_textcontrol_create(float left, float top, float right, float bott
 void eb_haiku_textcontrol_set_text(void* view, const char* text);
 const char* eb_haiku_textcontrol_get_text(void* view);
 
-// ---- BTextView (multi-line, plain-text editing - a concrete BView
-// subclass needing no shim subclass of its own, unlike BWindow/BView:
-// Text() returns a plain const char*, so it marshals exactly like
-// eb_haiku_stringview_get_text/textcontrol_get_text above). Font
+// ---- BTextView (multi-line, plain-text editing). Text() returns a
+// plain const char*, so it marshals exactly like
+// eb_haiku_stringview_get_text/textcontrol_get_text above. Font
 // family/size/style changes are deliberately not bound - BFont itself
 // isn't bound anywhere in this package (a separate, larger future
-// addition); per-range *color* styling below doesn't need one.
+// addition); per-range *color* styling below doesn't need one. NOW
+// backed by a real ShimTextView subclass (see its own section below)
+// for live text-change notification - every function below still
+// takes/returns a plain `void* view` and still works unchanged.
 void* eb_haiku_textview_create(float left, float top, float right, float bottom,
                                 const char* name);
 void eb_haiku_textview_set_text(void* view, const char* text);
@@ -443,6 +445,23 @@ void* eb_haiku_stringitem_create(const char* text);
 // heap allocation, no matching free needed (same convention as
 // eb_haiku_button_get_label).
 const char* eb_haiku_stringitem_get_text(void* item);
+
+// ---- ShimTextView (BTextView) live text-change notification ----
+// CONFIRMED absent, not assumed (direct header inspection of real
+// TextView.h): unlike BListView's own single SelectionChanged() hook,
+// real BTextView has NO single "TextChanged" virtual at all - only two
+// separate protected virtuals, InsertText/DeleteText, each called on
+// EVERY real text mutation (both interactive editing and programmatic
+// SetText/Insert/Delete - confirmed via a standalone hardware probe,
+// not assumed from the method names alone: SetText() itself internally
+// calls DeleteText() then InsertText()). eb_haiku_textview_create now
+// returns a ShimTextView (a real BTextView subclass overriding both),
+// not a plain BTextView - safe for every existing
+// eb_haiku_textview_*(void* view) function above, which all
+// static_cast to BTextView* (single inheritance, no MI-pointer-
+// adjustment risk - same reasoning as ShimListView's own identical
+// situation for BListView).
+void eb_haiku_textview_set_text_changed_callback(void* view, EbHaikuVoidCallback cb, void* userData);
 
 // ---- ShimTimer (BMessageRunner) - Haiku's own periodic-message
 // primitive doesn't match eb-gui's Start/Stop/SetSingleShot/IsActive

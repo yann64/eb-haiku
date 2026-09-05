@@ -1,7 +1,7 @@
-' Interface Kit: BTextView - real multi-line, plain-text editing. A
-' concrete BView subclass needing no shim subclass of its own (unlike
-' BWindow/BView) - added to a window exactly like any other stock
-' control.
+' Interface Kit: BTextView - real multi-line, plain-text editing,
+' added to a window exactly like any other stock control. Backed by a
+' real ShimTextView subclass (v0.18.0+) for HTextViewConnectTextChanged
+' below - see textview.bas's own top comment for why.
 
 #include once "../src/lib.bas"
 
@@ -78,6 +78,35 @@ IF r = 255 AND g = 0 AND b = 0 THEN
     CALL ExitProcess(1)
 END IF
 PRINT "SetColor/GetColor ok"
+
+' ---- HTextViewConnectTextChanged - fires on every real mutation,
+' interactive OR programmatic (see textview.bas's own top comment for
+' why this needed a real ShimTextView subclass, unlike a single native
+' signal). Confirmed count: SetText on an already-non-empty buffer
+' fires DeleteText (removing the old content) then InsertText (adding
+' the new), so exactly 2 callbacks per call here, not 1. ----
+DIM textChangedCount AS INTEGER
+DIM marker AS INTEGER
+marker = 424242
+DIM receivedUserData AS ANY PTR
+
+SUB OnTextChanged(userData AS ANY PTR)
+    textChangedCount = textChangedCount + 1
+    receivedUserData = userData
+END SUB
+CALL HTextViewConnectTextChanged(tv, @OnTextChanged, @marker)
+
+CALL HTextViewSetText(tv, "replaced")
+PRINT "text changed count after SetText on non-empty buffer=", textChangedCount
+IF textChangedCount <> 2 THEN
+    PRINT "FAIL: expected 2 (DeleteText + InsertText), got ", textChangedCount
+    CALL ExitProcess(1)
+END IF
+IF receivedUserData <> @marker THEN
+    PRINT "FAIL: userData delivery incorrect"
+    CALL ExitProcess(1)
+END IF
+PRINT "HTextViewConnectTextChanged ok"
 
 CALL HWindowShow(w)
 CALL Sleep(500) ' visible for an external screenshot
